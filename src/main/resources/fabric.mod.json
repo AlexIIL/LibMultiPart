@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "libmultipart",
+  "name": "LibMultiPart",
+  "description": "A MultiPart library for fabric. Based on LibBlockAttributes and LibNetworkStack",
+  "version": "$version",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "alexiil.mc.lib.multipart.impl.LibMultiPart"
+    ],
+    "client": [
+      "alexiil.mc.lib.multipart.impl.LibMultiPartClient"
+    ]
+  },
+  "requires": {
+    "fabricloader": ">=0.4.0",
+    "fabric": "*",
+    "libblockattributes": ">=0.4",
+    "libnetworkstack": ">=0.4"
+  },
+  "mixins": [
+    "libmultipart.client.json",
+    "libmultipart.common.json"
+  ],
+  "icon": "assets/libmultipart/icon.png",
+  "authors": [ "AlexIIL" ]
+}

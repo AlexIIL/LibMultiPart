@@ -1,0 +1,147 @@
+package alexiil.mc.lib.multipart.impl;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockEntityProvider;
+import net.minecraft.block.BlockRenderLayer;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.EntityContext;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.DefaultedList;
+import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BoundingBox;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockView;
+import net.minecraft.world.IWorld;
+import net.minecraft.world.World;
+
+import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
+
+public class MultiPartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier> {
+
+    public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
+        // X
+        createCuboidShape(0, 0, 0, 16, 4, 4), createCuboidShape(0, 12, 0, 16, 16, 4), //
+        createCuboidShape(0, 0, 12, 16, 4, 16), createCuboidShape(0, 12, 12, 16, 16, 16), //
+        // Y
+        createCuboidShape(0, 0, 0, 4, 16, 4), createCuboidShape(12, 0, 0, 16, 16, 4), //
+        createCuboidShape(0, 0, 12, 4, 16, 16), createCuboidShape(12, 0, 12, 16, 16, 16), //
+        // Z
+        createCuboidShape(0, 0, 0, 4, 4, 16), createCuboidShape(12, 0, 0, 16, 4, 16), //
+        createCuboidShape(0, 12, 0, 4, 16, 16), createCuboidShape(12, 12, 0, 16, 16, 16)//
+    );
+
+    public MultiPartBlock(Settings settings) {
+        super(settings);
+    }
+
+    @Override
+    public BlockEntity createBlockEntity(BlockView var1) {
+        return new MultiPartBlockEntity();
+    }
+
+    @Override
+    public BlockRenderLayer getRenderLayer() {
+        return BlockRenderLayer.CUTOUT;
+    }
+
+    @Override
+    public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+            return container.container.getCollisionShape();
+        }
+        return MISSING_PARTS_SHAPE;
+    }
+
+    @Override
+    public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
+        return getCollisionShape(state, view, pos, ctx);
+    }
+
+    // IBlockMultipart
+
+    @Override
+    public Class<TransientPartIdentifier> getKeyClass() {
+        return TransientPartIdentifier.class;
+    }
+
+    @Override
+    public void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player,
+        TransientPartIdentifier subpart) {
+        onBlockBreakStart(state, world, pos, player);
+    }
+
+    @Override
+    public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView view, BlockPos pos,
+        TransientPartIdentifier subpart) {
+
+        // TODO: More/less expensive depending on the part hit?
+        return calcBlockBreakingDelta(state, player, view, pos);
+    }
+
+    @Override
+    public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player,
+        TransientPartIdentifier subpart) {
+
+        onBreak(world, pos, state, player);
+    }
+
+    @Override
+    public boolean clearBlockState(World world, BlockPos pos, TransientPartIdentifier subpart) {
+
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity multi = (MultiPartBlockEntity) be;
+            return multi.container.removePart(subpart.part);
+        }
+        return world.clearBlockState(pos, false);
+    }
+
+    @Override
+    public void onBroken(IWorld world, BlockPos pos, BlockState state, TransientPartIdentifier subpart) {
+        onBroken(world, pos, state);
+    }
+
+    @Override
+    public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be,
+        ItemStack stack, TransientPartIdentifier subpart) {
+
+        DefaultedList<ItemStack> drops = DefaultedList.create();
+        subpart.part.addDrops(drops);
+        ItemScatterer.spawn(world, pos, drops);
+    }
+
+    @Override
+    public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, PlayerEntity pl,
+        Vec3d vec) {
+
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity multi = (MultiPartBlockEntity) be;
+
+            vec = vec.subtract(new Vec3d(pos));
+
+            for (PartHolder holder : multi.container.parts) {
+
+                AbstractPart part = holder.getPart();
+                // TODO: Allow for parts made up of sub-parts!
+
+                VoxelShape shape = part.getDynamicShape(1);
+                for (BoundingBox box : shape.getBoundingBoxes()) {
+                    if (box.expand(0.01).contains(vec)) {
+                        return new TransientPartIdentifier(part);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+}
