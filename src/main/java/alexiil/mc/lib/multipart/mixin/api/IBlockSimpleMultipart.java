@@ -6,11 +6,11 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BoundingBox;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
@@ -20,7 +20,7 @@ public interface IBlockSimpleMultipart<T> extends IBlockMultipart<T> {
 
     @Override
     @Nullable
-    default T getTargetedMultipart(BlockState state, World w, BlockPos pos, PlayerEntity pl, Vec3d hitVec) {
+    default T getTargetedMultipart(BlockState state, World w, BlockPos pos, Vec3d hitVec) {
         Map<T, VoxelShape> map = getSubParts(w, pos, state);
 
         for (Entry<T, VoxelShape> entry : map.entrySet()) {
@@ -32,5 +32,14 @@ public interface IBlockSimpleMultipart<T> extends IBlockMultipart<T> {
             }
         }
         return null;
+    }
+
+    @Override
+    default VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
+        T targetted = getTargetedMultipart(state, world, pos, hitVec);
+        if (targetted == null) {
+            return VoxelShapes.empty();
+        }
+        return getSubParts(world, pos, state).get(targetted);
     }
 }
