@@ -87,7 +87,7 @@ public class ServerPlayerInteractionManagerMixin {
             }
             vec = rayTrace.getPos();
         }
-        T bestKey = block.getTargetedMultipart(state, w, pos, pl, vec);
+        T bestKey = block.getTargetedMultipart(state, w, pos, vec);
 
         if (bestKey == null) {
             // TODO!

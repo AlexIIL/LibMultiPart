@@ -10,6 +10,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
@@ -39,6 +40,8 @@ public interface IBlockMultipart<T> {
     void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity be,
         ItemStack stack, T subpart);
 
+    VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec);
+
     @Nullable
-    T getTargetedMultipart(BlockState state, World world, BlockPos pos, PlayerEntity pl, Vec3d hitVec);
+    T getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d hitVec);
 }

@@ -66,7 +66,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         IBlockMultipart<T> blockMulti) {
 
         HitResult hit = MinecraftClient.getInstance().hitResult;
-        T key = blockMulti.getTargetedMultipart(state, world, pos, player, hit.getPos());
+        T key = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         partKey = key;
         blockMulti.onBlockBreakStart(state, world, pos, player, key);
     }
@@ -96,7 +96,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         HitResult hit = MinecraftClient.getInstance().hitResult;
         World world = client.world;
         BlockState state = world.getBlockState(pos);
-        T target = blockMulti.getTargetedMultipart(state, world, pos, client.player, hit.getPos());
+        T target = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         T previous;
         if (partKey == null) {
             previous = target;

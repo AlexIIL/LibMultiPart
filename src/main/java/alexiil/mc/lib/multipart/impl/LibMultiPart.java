@@ -2,6 +2,7 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +19,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
 
+import alexiil.mc.lib.multipart.api.misc.FloatSupplier;
+
 public class LibMultiPart implements ModInitializer {
 
     public static final String NAMESPACE = "libmultipart";
@@ -27,6 +30,8 @@ public class LibMultiPart implements ModInitializer {
     public static final BlockEntityType<MultiPartBlockEntity> BLOCK_ENTITY;
 
     static Predicate<World> isWorldClientPredicate = w -> false;
+    static BooleanSupplier isDrawingBlockOutlines = () -> false;
+    static FloatSupplier partialTickGetter = () -> 1;
 
     static {
         Material material = new Material.Builder(MaterialColor.BLACK).build();

@@ -5,6 +5,7 @@ import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -62,7 +63,18 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
-        return getCollisionShape(state, view, pos, ctx);
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+
+            if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
+                Vec3d hitVec = MinecraftClient.getInstance().hitResult.getPos();
+                return getPartShape(state, (World) view, pos, hitVec);
+            }
+
+            return container.container.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
+        }
+        return MISSING_PARTS_SHAPE;
     }
 
     // IBlockMultipart
@@ -119,21 +131,21 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     }
 
     @Override
-    public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, PlayerEntity pl,
-        Vec3d vec) {
+    public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d vec) {
 
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof MultiPartBlockEntity) {
             MultiPartBlockEntity multi = (MultiPartBlockEntity) be;
 
             vec = vec.subtract(new Vec3d(pos));
+            float partialTicks = LibMultiPart.partialTickGetter.getAsFloat();
 
             for (PartHolder holder : multi.container.parts) {
 
                 AbstractPart part = holder.getPart();
                 // TODO: Allow for parts made up of sub-parts!
 
-                VoxelShape shape = part.getDynamicShape(1);
+                VoxelShape shape = part.getDynamicShape(partialTicks);
                 for (BoundingBox box : shape.getBoundingBoxes()) {
                     if (box.expand(0.01).contains(vec)) {
                         return new TransientPartIdentifier(part);
@@ -143,5 +155,14 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
         }
 
         return null;
+    }
+
+    @Override
+    public VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
+        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hitVec);
+        if (target == null) {
+            return VoxelShapes.empty();
+        }
+        return target.part.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
     }
 }
