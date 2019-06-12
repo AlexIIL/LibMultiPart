@@ -13,7 +13,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.1.0+build.36"
+version = "0.1.0+build.40"
 
 minecraft {
 }

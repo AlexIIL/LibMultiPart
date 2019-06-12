@@ -26,7 +26,6 @@ import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
 import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
 import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
-import alexiil.mc.lib.multipart.api.shape.TaggedShape;
 import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.IMsgWriteCtx;
@@ -182,16 +181,10 @@ public class PartContainer implements MultiPartContainer {
     }
 
     private boolean canAdd(PartHolder holder) {
-        List<TaggedShape> list = holder.getPart().getOverlapShapeInformation();
-
         for (PartHolder otherH : parts) {
             AbstractPart other = otherH.part;
-            for (TaggedShape taggedShape : other.getOverlapShapeInformation()) {
-                for (TaggedShape offeredTaggedShape : list) {
-                    if (taggedShape.doesInvalidlyOverlap(offeredTaggedShape)) {
-                        return false;
-                    }
-                }
+            if (!AbstractPart.canPartShapesCoexist(holder.part, other)) {
+                return false;
             }
         }
 
