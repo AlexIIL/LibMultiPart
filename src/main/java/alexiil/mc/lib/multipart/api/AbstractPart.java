@@ -1,18 +1,18 @@
 package alexiil.mc.lib.multipart.api;
 
+import java.util.function.Function;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
-import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
@@ -83,29 +83,10 @@ public abstract class AbstractPart {
      * {@link #getShape()} of this part intersects with the {@link #getShape()} of the other part. However this is never
      * called if the shape of one of the parts is completely contained by the shape of the other part.
      * <p>
-     * This is called once for each part by {@link #canPartShapesCoexist(AbstractPart, AbstractPart)}. */
+     * This is called once for each part currently contained in a {@link MultiPartContainer} in
+     * {@link MultiPartContainer#offerNewPart(Function)}. */
     public boolean canOverlapWith(AbstractPart other) {
         return false;
-    }
-
-    public static boolean canPartShapesCoexist(AbstractPart one, AbstractPart two) {
-        VoxelShape shapeA = one.getShape();
-        VoxelShape shapeB = two.getShape();
-
-        // Basic overlap checking
-        if (!VoxelShapes.matchesAnywhere(shapeA, shapeB, BooleanBiFunction.OR)) {
-            return true;
-        }
-
-        // Complete containment checking
-        if (!VoxelShapes.matchesAnywhere(shapeA, shapeB, BooleanBiFunction.ONLY_FIRST)) {
-            return false;
-        }
-        if (!VoxelShapes.matchesAnywhere(shapeA, shapeB, BooleanBiFunction.ONLY_SECOND)) {
-            return false;
-        }
-
-        return one.canOverlapWith(two) && two.canOverlapWith(one);
     }
 
     /** @return The shape to use when calculating lighting, solidity logic, collisions with entities, ray tracing, etc.

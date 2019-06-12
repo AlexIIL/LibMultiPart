@@ -11,6 +11,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -180,15 +181,41 @@ public class PartContainer implements MultiPartContainer {
         return holder;
     }
 
-    private boolean canAdd(PartHolder holder) {
-        for (PartHolder otherH : parts) {
-            AbstractPart other = otherH.part;
-            if (!AbstractPart.canPartShapesCoexist(holder.part, other)) {
+    private boolean canAdd(PartHolder offered) {
+        VoxelShape currentShape = getCurrentShape();
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+
+            VoxelShape shapeOther = part.getShape();
+            VoxelShape shapeOffered = offered.part.getShape();
+
+            // Basic overlap checking
+            if (!VoxelShapes.matchesAnywhere(shapeOther, shapeOffered, BooleanBiFunction.OR)) {
+                continue;
+            }
+
+            // Complete containment checking
+            if (!VoxelShapes.matchesAnywhere(currentShape, shapeOffered, BooleanBiFunction.ONLY_SECOND)) {
+                return false;
+            }
+
+            VoxelShape proposedFullShape = shapeOffered;
+            for (PartHolder h2 : parts) {
+                if (h2.part != part) {
+                    proposedFullShape = VoxelShapes.union(proposedFullShape, h2.part.getShape());
+                }
+            }
+            if (!VoxelShapes.matchesAnywhere(proposedFullShape, shapeOther, BooleanBiFunction.ONLY_SECOND)) {
+                return false;
+            }
+
+            // Check with each part for overlaps
+            if (!part.canOverlapWith(offered.part) || !offered.part.canOverlapWith(part)) {
                 return false;
             }
         }
 
-        PartOfferedEvent event = new PartOfferedEvent(holder.part);
+        PartOfferedEvent event = new PartOfferedEvent(offered.part);
         eventBus.fireEvent(event);
         return event.isAllowed();
     }
