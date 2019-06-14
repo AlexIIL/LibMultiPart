@@ -1,5 +1,8 @@
 package alexiil.mc.lib.multipart.impl;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockRenderLayer;
@@ -11,6 +14,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BoundingBox;
 import net.minecraft.util.math.Vec3d;
@@ -75,6 +79,20 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
             return container.container.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
         }
         return MISSING_PARTS_SHAPE;
+    }
+
+    @Override
+    @Environment(EnvType.CLIENT)
+    public ItemStack getPickStack(BlockView view, BlockPos pos, BlockState state) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (view != null && view == mc.world) {
+            HitResult hit = mc.hitResult;
+            TransientPartIdentifier target = getTargetedMultipart(state, (World) view, pos, hit.getPos());
+            if (target != null) {
+                return target.part.getPickStack();
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     // IBlockMultipart

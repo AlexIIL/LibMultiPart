@@ -199,13 +199,20 @@ public class PartContainer implements MultiPartContainer {
                 return false;
             }
 
-            VoxelShape proposedFullShape = shapeOffered;
+            VoxelShape leftoverShape = shapeOther;
             for (PartHolder h2 : parts) {
                 if (h2.part != part) {
-                    proposedFullShape = VoxelShapes.union(proposedFullShape, h2.part.getShape());
+                    VoxelShape h2shape = h2.part.getShape();
+                    if (!h2shape.getBoundingBox().intersects(leftoverShape.getBoundingBox())) {
+                        continue;
+                    }
+                    leftoverShape = VoxelShapes.combine(leftoverShape, h2shape, BooleanBiFunction.ONLY_FIRST);
+                    if (leftoverShape.isEmpty()) {
+                        return false;
+                    }
                 }
             }
-            if (!VoxelShapes.matchesAnywhere(proposedFullShape, shapeOther, BooleanBiFunction.ONLY_SECOND)) {
+            if (!VoxelShapes.matchesAnywhere(leftoverShape, shapeOffered, BooleanBiFunction.ONLY_FIRST)) {
                 return false;
             }
 
