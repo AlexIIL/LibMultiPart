@@ -93,6 +93,26 @@ public class SimpleEventBus implements MultiPartEventBus {
         fireEvent(new PartListenerRemoved<>(single.key, single.clazz, single.listener));
     }
 
+    void clearListeners() {
+        ListIterator<SingleListener<?>> iter = listeners.listIterator(listeners.size());
+        boolean removedAny = false;
+        while (iter.hasPrevious()) {
+            SingleListener<?> single = iter.previous();
+            iter.remove();
+            removedAny = true;
+            if (eventCallLevel > 0) {
+                listenersChanged.add(single);
+                listenerChangedToAdd.add(false);
+                didListenersChange = true;
+            } else {
+                fireListenerRemoveEvent(single);
+            }
+        }
+        if (removedAny) {
+            packedListeners = listeners.toArray(new SingleListener[0]);
+        }
+    }
+
     @Override
     public void removeListeners(Object key) {
         ListIterator<SingleListener<?>> iter = listeners.listIterator(listeners.size());

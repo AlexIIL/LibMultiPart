@@ -24,10 +24,13 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 
+import alexiil.mc.lib.attributes.AttributeList;
+import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
-public class MultiPartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier> {
+public class MultiPartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>,
+    AttributeProvider {
 
     public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
         // X
@@ -79,6 +82,25 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
             return container.container.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
         }
         return MISSING_PARTS_SHAPE;
+    }
+
+    @Override
+    public void onBlockRemoved(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean bool) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+            container.onRemoved();
+        }
+        super.onBlockRemoved(oldState, world, pos, newState, bool);
+    }
+
+    @Override
+    public void addAllAttributes(World world, BlockPos pos, BlockState state, AttributeList<?> to) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultiPartBlockEntity) {
+            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+            container.addAllAttributes(to);
+        }
     }
 
     @Override

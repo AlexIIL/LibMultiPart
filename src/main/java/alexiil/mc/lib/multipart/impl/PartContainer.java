@@ -24,6 +24,7 @@ import alexiil.mc.lib.multipart.api.MultiPartContainer;
 import alexiil.mc.lib.multipart.api.MultiPartEventBus;
 import alexiil.mc.lib.multipart.api.MultiPartHolder;
 import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
+import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
 import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
@@ -34,6 +35,7 @@ import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
+import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdDuel;
 import alexiil.mc.lib.net.ParentNetIdSingle;
@@ -44,6 +46,7 @@ public class PartContainer implements MultiPartContainer {
     static final NetIdDataK<PartContainer> NET_ID_INITIAL_RENDER_DATA;
     static final NetIdDataK<PartContainer> NET_ID_ADD_PART;
     static final NetIdDataK<PartContainer> NET_ID_REMOVE_PART;
+    static final NetIdSignalK<PartContainer> NET_SIGNAL_REDRAW;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
     static PartHolder extractPartHolder(AbstractPart value) {
@@ -53,7 +56,7 @@ public class PartContainer implements MultiPartContainer {
         }
         throw new IllegalStateException(
             "Found an AbstractPart that doesn't have the correct class for it's holder! It should be using "
-            + PartHolder.class.getName() + ", but instead it's using " + holder.getClass().getName() + "!"
+                + PartHolder.class.getName() + ", but instead it's using " + holder.getClass().getName() + "!"
         );
     }
 
@@ -66,6 +69,7 @@ public class PartContainer implements MultiPartContainer {
         NET_ID_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").setReadWrite(
             PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData
         );
+        NET_SIGNAL_REDRAW = NET_KEY.idSignal("redraw").setReceiver(PartContainer::receiveRedraw);
         NET_KEY_PART = new ParentNetIdDuel<PartContainer, AbstractPart>(NET_KEY, "holder", AbstractPart.class) {
             @Override
             protected PartContainer extractParent(AbstractPart value) {
@@ -93,7 +97,7 @@ public class PartContainer implements MultiPartContainer {
                 if (index >= parts.size()) {
                     throw new InvalidInputDataException(
                         ("The client is aware of " + parts.size() + " parts, ")
-                        + ("but the server has sent data for the " + index + " part!")
+                            + ("but the server has sent data for the " + index + " part!")
                     );
                 }
                 return parts.get(index).part;
@@ -190,7 +194,7 @@ public class PartContainer implements MultiPartContainer {
             VoxelShape shapeOffered = offered.part.getShape();
 
             // Basic overlap checking
-            if (!VoxelShapes.matchesAnywhere(shapeOther, shapeOffered, BooleanBiFunction.OR)) {
+            if (!VoxelShapes.matchesAnywhere(shapeOther, shapeOffered, BooleanBiFunction.AND)) {
                 continue;
             }
 
@@ -229,7 +233,7 @@ public class PartContainer implements MultiPartContainer {
 
     void addPartInternal(PartHolder holder) {
         parts.add(holder);
-        holder.part.registerEventListeners(eventBus);
+        holder.part.onAdded(eventBus);
         recalculateShape();
         eventBus.fireEvent(new PartAddedEvent(holder.part));
         sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
@@ -242,7 +246,7 @@ public class PartContainer implements MultiPartContainer {
         PartHolder holder = new PartHolder(this, buffer, ctx);
         assert holder.part != null;
         parts.add(holder);
-        holder.part.registerEventListeners(eventBus);
+        holder.part.onAdded(eventBus);
         eventBus.fireEvent(new PartAddedEvent(holder.part));
         recalculateShape();
         redrawIfChanged();
@@ -254,12 +258,12 @@ public class PartContainer implements MultiPartContainer {
             PartHolder holder = parts.get(i);
             if (holder.part == part) {
                 if (blockEntity.isServerWorld()) {
-                    holder.part.onRemove();
+                    holder.part.onRemoved();
                     parts.remove(i);
                     eventBus.removeListeners(part);
                     final int index = i;
                     eventBus.fireEvent(new PartRemovedEvent(part));
-                    part.onRemove();
+                    part.onRemoved();
                     if (parts.isEmpty()) {
                         // TODO: Waterlogging!
                         blockEntity.world().setBlockState(getMultiPartPos(), Blocks.AIR.getDefaultState());
@@ -286,7 +290,7 @@ public class PartContainer implements MultiPartContainer {
         PartHolder removed = parts.remove(index);
         eventBus.fireEvent(new PartRemovedEvent(removed.part));
         eventBus.removeListeners(removed.part);
-        removed.part.onRemove();
+        removed.part.onRemoved();
         recalculateShape();
         redrawIfChanged();
     }
@@ -335,14 +339,26 @@ public class PartContainer implements MultiPartContainer {
     public void redrawIfChanged() {
         ImmutableList.Builder<PartModelKey> builder = ImmutableList.builder();
         for (PartHolder holder : parts) {
-            builder.add(holder.part.getModelKey());
+            PartModelKey key = holder.part.getModelKey();
+            if (key != null) {
+                builder.add(key);
+            }
         }
         ImmutableList<PartModelKey> list = builder.build();
         if (list.equals(partModelKeys)) {
             return;
         }
         partModelKeys = list;
-        blockEntity.world().scheduleBlockRender(blockEntity.getPos());
+        if (isClientWorld()) {
+            blockEntity.world().scheduleBlockRender(blockEntity.getPos());
+        } else {
+            sendNetworkUpdate(this, NET_SIGNAL_REDRAW);
+        }
+    }
+
+    private void receiveRedraw(IMsgReadCtx ctx) throws InvalidInputDataException {
+        ctx.assertClientSide();
+        redrawIfChanged();
     }
 
     public ImmutableList<PartModelKey> getPartModelKeys() {
@@ -361,8 +377,9 @@ public class PartContainer implements MultiPartContainer {
         for (int i = 0; i < count; i++) {
             PartHolder holder = new PartHolder(this, buffer, ctx);
             parts.add(holder);
-            holder.part.registerEventListeners(eventBus);
+            holder.part.onAdded(eventBus);
         }
+        validate();
         recalculateShape();
         redrawIfChanged();
     }
@@ -391,7 +408,6 @@ public class PartContainer implements MultiPartContainer {
             PartHolder holder = new PartHolder(this, partTag);
             if (holder.part != null) {
                 parts.add(holder);
-                holder.part.registerEventListeners(eventBus);
             }
         }
     }
@@ -404,6 +420,18 @@ public class PartContainer implements MultiPartContainer {
         }
         tag.put("parts", partsTag);
         return tag;
+    }
+
+    void validate() {
+        eventBus.clearListeners();
+        for (PartHolder holder : parts) {
+            holder.part.onAdded(eventBus);
+        }
+        eventBus.fireEvent(PartContainerState.VALIDATE);
+    }
+
+    void invalidate() {
+        eventBus.fireEvent(PartContainerState.INVALIDATE);
     }
 
     void onListenerAdded(SingleListener<?> single) {

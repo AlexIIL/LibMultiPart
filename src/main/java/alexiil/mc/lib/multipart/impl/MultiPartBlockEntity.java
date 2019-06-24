@@ -15,7 +15,9 @@ import net.minecraft.util.Tickable;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
+import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
@@ -24,7 +26,7 @@ import alexiil.mc.lib.net.ParentNetIdSingle;
 import alexiil.mc.lib.net.impl.ActiveMinecraftConnection;
 import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 
-public class MultiPartBlockEntity extends BlockEntity implements Tickable {
+public class MultiPartBlockEntity extends BlockEntity implements Tickable, IUnloadableBlockEntity {
 
     static final ParentNetIdSingle<MultiPartBlockEntity> NET_KEY;
 
@@ -72,6 +74,27 @@ public class MultiPartBlockEntity extends BlockEntity implements Tickable {
         } else {
             throw new IllegalStateException("This doesn't have a world!");
         }
+    }
+
+    @Override
+    public void validate() {
+        super.validate();
+        container.validate();
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        container.invalidate();
+    }
+
+    @Override
+    public void onChunkUnload() {
+        container.fireEvent(PartContainerState.CHUNK_UNLOAD);
+    }
+
+    public void onRemoved() {
+        container.fireEvent(PartContainerState.REMOVE);
     }
 
     public PartContainer getContainer() {

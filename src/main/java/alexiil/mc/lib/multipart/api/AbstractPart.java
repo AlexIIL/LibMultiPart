@@ -4,6 +4,7 @@ import java.util.function.Function;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
@@ -68,12 +69,19 @@ public abstract class AbstractPart {
         ctx.assertClientSide();
     }
 
-    /** Register event handlers (as methods) with {@link MultiPartEventBus#addListener(Object, Class, EventListener)}.
+    /** Called whenever this part was added to the {@link MultiPartContainer}, either in {@link BlockEntity#validate()}
+     * or when it is manually added by an item.
+     * <p>
+     * Register event handlers (as methods) with {@link MultiPartEventBus#addListener(Object, Class, EventListener)}.
      * 
      * @param bus The event bus to register with. This is shorthand for
      *            <code>holder.getContainer().getEventBus()</code> */
-    public void registerEventListeners(MultiPartEventBus bus) {
+    public void onAdded(MultiPartEventBus bus) {
         // Nothing registers by default.
+    }
+
+    public void onRemoved() {
+        // Nothing to do by default
     }
 
     /** @return The {@link VoxelShape} to use for calculating if this pluggable overlaps with another pluggable. */
@@ -134,10 +142,6 @@ public abstract class AbstractPart {
      * {@link Block#activate(BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult)}. */
     public boolean onActivate(PlayerEntity player, Hand hand, BlockHitResult hit) {
         return false;
-    }
-
-    public void onRemove() {
-        // Nothing to do by default
     }
 
     public abstract PartModelKey getModelKey();

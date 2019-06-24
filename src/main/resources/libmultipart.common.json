@@ -3,7 +3,8 @@
   "package": "alexiil.mc.lib.multipart.mixin.impl",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "ServerPlayerInteractionManagerMixin"
+    "ServerPlayerInteractionManagerMixin",
+    "WorldMixin"
   ],
   "injectors": {
     "defaultRequire": 1

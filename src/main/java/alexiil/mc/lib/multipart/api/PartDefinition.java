@@ -6,15 +6,11 @@ import java.util.Map;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Identifier;
 
-import alexiil.mc.lib.net.ActiveConnection;
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetObjectCache;
-import alexiil.mc.lib.net.NetObjectCache.IEntrySerialiser;
-
-import it.unimi.dsi.fastutil.Hash;
 
 /** Contains the definition for an {@link AbstractPart}. Used for saving and loading, and syncing server -> client. */
 public final class PartDefinition {
@@ -22,29 +18,8 @@ public final class PartDefinition {
     public static final NetObjectCache<PartDefinition> ID_NET_CACHE;
 
     static {
-        ID_NET_CACHE = new NetObjectCache<>(
-            McNetworkStack.ROOT.child("libmultipart:part_definition_cache"), new Hash.Strategy<PartDefinition>() {
-                @Override
-                public int hashCode(PartDefinition o) {
-                    return o.identifier.hashCode();
-                }
-
-                @Override
-                public boolean equals(PartDefinition a, PartDefinition b) {
-                    return a.identifier.equals(b.identifier);
-                }
-            }, new IEntrySerialiser<PartDefinition>() {
-                @Override
-                public void write(PartDefinition obj, ActiveConnection connection, NetByteBuf buffer) {
-                    buffer.writeIdentifier(obj.identifier);
-                }
-
-                @Override
-                public PartDefinition read(ActiveConnection connection, NetByteBuf buffer)
-                    throws InvalidInputDataException {
-                    return PARTS.get(buffer.readIdentifierSafe());
-                }
-            }
+        ID_NET_CACHE = NetObjectCache.createMappedIdentifier(
+            McNetworkStack.ROOT.child("libmultipart:part_definition_cache"), def -> def.identifier, PARTS
         );
     }
 
