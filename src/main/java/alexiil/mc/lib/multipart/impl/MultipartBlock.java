@@ -20,7 +20,9 @@ import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.DefaultedList;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BoundingBox;
@@ -36,7 +38,7 @@ import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
-public class MultiPartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>,
+public class MultipartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>,
     AttributeProvider {
 
     public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
@@ -51,13 +53,13 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
         createCuboidShape(0, 12, 0, 4, 16, 16), createCuboidShape(12, 12, 0, 16, 16, 16)//
     );
 
-    public MultiPartBlock(Settings settings) {
+    public MultipartBlock(Settings settings) {
         super(settings);
     }
 
     @Override
     public BlockEntity createBlockEntity(BlockView var1) {
-        return new MultiPartBlockEntity();
+        return new MultipartBlockEntity();
     }
 
     @Override
@@ -68,8 +70,8 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
             return container.container.getCollisionShape();
         }
         return MISSING_PARTS_SHAPE;
@@ -78,8 +80,8 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
 
             if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
                 Vec3d hitVec = MinecraftClient.getInstance().hitResult.getPos();
@@ -94,8 +96,8 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     @Override
     public void onBlockRemoved(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean bool) {
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
             container.onRemoved();
         }
         super.onBlockRemoved(oldState, world, pos, newState, bool);
@@ -104,10 +106,32 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     @Override
     public void addAllAttributes(World world, BlockPos pos, BlockState state, AttributeList<?> to) {
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity container = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
             container.addAllAttributes(to);
         }
+    }
+
+    @Override
+    public void neighborUpdate(BlockState state, World world, BlockPos thisPos, Block otherBlock, BlockPos otherPos,
+        boolean unknownBoolean) {
+        super.neighborUpdate(state, world, thisPos, otherBlock, otherPos, unknownBoolean);
+        BlockEntity be = world.getBlockEntity(thisPos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
+            container.onNeighbourUpdate(otherPos);
+        }
+    }
+
+    @Override
+    public boolean activate(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
+        BlockHitResult hit) {
+        boolean handled = super.activate(state, world, pos, player, hand, hit);
+        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hit.getPos());
+        if (target != null) {
+            handled |= target.part.onActivate(player, hand, hit);
+        }
+        return handled;
     }
 
     @Override
@@ -156,8 +180,8 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     public boolean clearBlockState(World world, BlockPos pos, TransientPartIdentifier subpart) {
 
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity multi = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity multi = (MultipartBlockEntity) be;
             return multi.container.removePart(subpart.part);
         }
         return world.clearBlockState(pos, false);
@@ -181,8 +205,8 @@ public class MultiPartBlock extends Block implements BlockEntityProvider, IBlock
     public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d vec) {
 
         BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            MultiPartBlockEntity multi = (MultiPartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity multi = (MultipartBlockEntity) be;
 
             vec = vec.subtract(new Vec3d(pos));
             float partialTicks = LibMultiPart.partialTickGetter.getAsFloat();

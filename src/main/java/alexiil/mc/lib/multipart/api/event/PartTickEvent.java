@@ -8,7 +8,7 @@
 package alexiil.mc.lib.multipart.api.event;
 
 /** Fired once per block entity tick. */
-public final class PartTickEvent extends MultiPartEvent {
+public final class PartTickEvent extends MultipartEvent {
     public static final PartTickEvent INSTANCE = new PartTickEvent();
 
     private PartTickEvent() {}

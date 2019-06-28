@@ -28,7 +28,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.ExtendedBlockView;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.render.MultiPartRenderRegistry;
+import alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry;
 import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 
@@ -69,7 +69,7 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
 
     private void emitQuads(RenderContext context) {
         if (key != null) {
-            PartModelBaker<? super K> baker = MultiPartRenderRegistry.getBaker(clazz);
+            PartModelBaker<? super K> baker = MultipartRenderRegistry.getBaker(clazz);
             if (baker != null) {
                 baker.emitQuads(key, new NormalPartRenderContext(context));
             }

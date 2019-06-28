@@ -16,7 +16,7 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 
 /** Fired when the state of a container's block entity changes. Listen for subclasses, not this one! */
-public abstract class PartContainerState extends MultiPartEvent {
+public abstract class PartContainerState extends MultipartEvent {
     /** Fired in {@link BlockEntity#invalidate()} */
     public static final Invalidate INVALIDATE = new Invalidate();
 

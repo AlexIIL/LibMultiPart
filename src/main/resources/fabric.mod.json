@@ -13,11 +13,11 @@
       "alexiil.mc.lib.multipart.impl.LibMultiPartClient"
     ]
   },
-  "requires": {
+  "depends": {
     "fabricloader": ">=0.4.0",
     "fabric": "*",
-    "libblockattributes": ">=0.4",
-    "libnetworkstack": ">=0.4"
+    "libblockattributes_core": ">=0.4.0",
+    "libnetworkstack": ">=0.1.1"
   },
   "mixins": [
     "libmultipart.client.json",

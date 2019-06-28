@@ -7,10 +7,10 @@
  */
 package alexiil.mc.lib.multipart.api;
 
-/** Wrapper interface for an {@link AbstractPart} in a {@link MultiPartContainer}. */
-public interface MultiPartHolder {
+/** Wrapper interface for an {@link AbstractPart} in a {@link MultipartContainer}. */
+public interface MultipartHolder {
 
-    MultiPartContainer getContainer();
+    MultipartContainer getContainer();
 
     AbstractPart getPart();
 

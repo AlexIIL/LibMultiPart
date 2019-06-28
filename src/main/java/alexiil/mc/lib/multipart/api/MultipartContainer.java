@@ -9,7 +9,6 @@ package alexiil.mc.lib.multipart.api;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
@@ -24,15 +23,15 @@ import net.minecraft.world.dimension.DimensionType;
 
 import alexiil.mc.lib.attributes.Attribute;
 import alexiil.mc.lib.attributes.Attributes;
-import alexiil.mc.lib.multipart.api.event.MultiPartEvent;
+import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 
-public interface MultiPartContainer {
+public interface MultipartContainer {
 
-    public static final Attribute<MultiPartContainer> ATTRIBUTE = Attributes.create(MultiPartContainer.class);
+    public static final Attribute<MultipartContainer> ATTRIBUTE = Attributes.create(MultipartContainer.class);
 
     // Outside object interaction
 
@@ -95,11 +94,11 @@ public interface MultiPartContainer {
     }
 
     @Nullable
-    IPartOffer offerNewPart(Function<MultiPartHolder, AbstractPart> creator);
+    PartOffer offerNewPart(MultiPartCreator creator);
 
     @Nullable
-    default MultiPartHolder addNewPart(Function<MultiPartHolder, AbstractPart> creator) {
-        IPartOffer offer = offerNewPart(creator);
+    default MultipartHolder addNewPart(MultiPartCreator creator) {
+        PartOffer offer = offerNewPart(creator);
         if (offer == null) {
             return null;
         }
@@ -111,15 +110,20 @@ public interface MultiPartContainer {
      *         <p>
      *         Note that this will never actually add a part to the container, so it is safe to be called on the client
      *         side. */
-    default boolean testNewPart(Function<MultiPartHolder, AbstractPart> creator) {
+    default boolean testNewPart(MultiPartCreator creator) {
         return offerNewPart(creator) != null;
     }
 
-    public interface IPartOffer {
-        MultiPartHolder getHolder();
+    @FunctionalInterface
+    public interface MultiPartCreator {
+        AbstractPart create(MultipartHolder holder);
+    }
+
+    public interface PartOffer {
+        MultipartHolder getHolder();
 
         /** Adds the part to the holder, throwing an exception if anything about the container changed in the time
-         * between calling {@link MultiPartContainer#offerNewPart(Function)} and {@link #apply()}. */
+         * between calling {@link MultipartContainer#offerNewPart(MultiPartCreator)} and {@link #apply()}. */
         void apply();
     }
 
@@ -154,14 +158,14 @@ public interface MultiPartContainer {
 
     // Events
 
-    MultiPartEventBus getEventBus();
+    MultipartEventBus getEventBus();
 
-    /** Fires the given event on the {@link #getEventBus()} via {@link MultiPartEventBus#fireEvent(MultiPartEvent)}.
+    /** Fires the given event on the {@link #getEventBus()} via {@link MultipartEventBus#fireEvent(MultipartEvent)}.
      * 
      * @return True if any listeners received the given event, false if none did. This may be useful for optimisation
      *         purposes.
-     * @see MultiPartEventBus#fireEvent(MultiPartEvent) */
-    default boolean fireEvent(MultiPartEvent event) {
+     * @see MultipartEventBus#fireEvent(MultipartEvent) */
+    default boolean fireEvent(MultipartEvent event) {
         return getEventBus().fireEvent(event);
     }
 

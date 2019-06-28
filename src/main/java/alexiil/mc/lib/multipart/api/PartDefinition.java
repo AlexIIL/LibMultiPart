@@ -48,11 +48,11 @@ public final class PartDefinition {
         }
     }
 
-    public AbstractPart readFromNbt(MultiPartHolder holder, CompoundTag nbt) {
+    public AbstractPart readFromNbt(MultipartHolder holder, CompoundTag nbt) {
         return reader.readFromNbt(this, holder, nbt);
     }
 
-    public AbstractPart loadFromBuffer(MultiPartHolder holder, NetByteBuf buffer, IMsgReadCtx ctx)
+    public AbstractPart loadFromBuffer(MultipartHolder holder, NetByteBuf buffer, IMsgReadCtx ctx)
         throws InvalidInputDataException {
         return loader.loadFromBuffer(this, holder, buffer, ctx);
     }
@@ -62,12 +62,12 @@ public final class PartDefinition {
         /** Reads the pipe pluggable from NBT. Unlike {@link IPartNetLoader} (which is allowed to fail and throw an
          * exception if the wrong data is given) this should make a best effort to read the pluggable from nbt, or fall
          * back to sensible defaults. */
-        AbstractPart readFromNbt(PartDefinition definition, MultiPartHolder holder, CompoundTag nbt);
+        AbstractPart readFromNbt(PartDefinition definition, MultipartHolder holder, CompoundTag nbt);
     }
 
     @FunctionalInterface
     public interface IPartNetLoader {
-        AbstractPart loadFromBuffer(PartDefinition definition, MultiPartHolder holder, NetByteBuf buffer,
+        AbstractPart loadFromBuffer(PartDefinition definition, MultipartHolder holder, NetByteBuf buffer,
             IMsgReadCtx ctx) throws InvalidInputDataException;
     }
 }

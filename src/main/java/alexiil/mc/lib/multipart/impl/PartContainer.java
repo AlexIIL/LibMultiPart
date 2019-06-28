@@ -9,7 +9,6 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
 
@@ -27,9 +26,9 @@ import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.MultiPartContainer;
-import alexiil.mc.lib.multipart.api.MultiPartEventBus;
-import alexiil.mc.lib.multipart.api.MultiPartHolder;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
+import alexiil.mc.lib.multipart.api.MultipartEventBus;
+import alexiil.mc.lib.multipart.api.MultipartHolder;
 import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
 import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
@@ -47,7 +46,7 @@ import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdDuel;
 import alexiil.mc.lib.net.ParentNetIdSingle;
 
-public class PartContainer implements MultiPartContainer {
+public class PartContainer implements MultipartContainer {
 
     static final ParentNetIdSingle<PartContainer> NET_KEY;
     static final NetIdDataK<PartContainer> NET_ID_INITIAL_RENDER_DATA;
@@ -57,7 +56,7 @@ public class PartContainer implements MultiPartContainer {
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
     static PartHolder extractPartHolder(AbstractPart value) {
-        MultiPartHolder holder = value.holder;
+        MultipartHolder holder = value.holder;
         if (holder == null || holder instanceof PartHolder) {
             return (PartHolder) holder;
         }
@@ -68,7 +67,7 @@ public class PartContainer implements MultiPartContainer {
     }
 
     static {
-        NET_KEY = MultiPartBlockEntity.NET_KEY.extractor(
+        NET_KEY = MultipartBlockEntity.NET_KEY.extractor(
             PartContainer.class, "container", c -> c.blockEntity, b -> b.container
         );
         NET_ID_ADD_PART = NET_KEY.idData("add_part").setReceiver(PartContainer::readAddPart);
@@ -115,13 +114,13 @@ public class PartContainer implements MultiPartContainer {
     public final SimpleEventBus eventBus = new SimpleEventBus(this);
     public final List<PartHolder> parts = new ArrayList<>();
 
-    MultiPartBlockEntity blockEntity;
+    MultipartBlockEntity blockEntity;
     VoxelShape cachedShape = null;
     VoxelShape cachedCollisionShape = null;
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
-    public PartContainer(MultiPartBlockEntity blockEntity) {
+    public PartContainer(MultipartBlockEntity blockEntity) {
         assert blockEntity != null : "The given blockEntity was null!";
         this.blockEntity = blockEntity;
     }
@@ -163,14 +162,14 @@ public class PartContainer implements MultiPartContainer {
     }
 
     @Override
-    public IPartOffer offerNewPart(Function<MultiPartHolder, AbstractPart> creator) {
+    public PartOffer offerNewPart(MultiPartCreator creator) {
         PartHolder holder = new PartHolder(this, creator);
         if (!canAdd(holder)) {
             return null;
         }
-        return new IPartOffer() {
+        return new PartOffer() {
             @Override
-            public MultiPartHolder getHolder() {
+            public MultipartHolder getHolder() {
                 return holder;
             }
 
@@ -183,7 +182,7 @@ public class PartContainer implements MultiPartContainer {
     }
 
     @Override
-    public MultiPartHolder addNewPart(Function<MultiPartHolder, AbstractPart> creator) {
+    public MultipartHolder addNewPart(MultiPartCreator creator) {
         PartHolder holder = new PartHolder(this, creator);
         if (!canAdd(holder)) {
             return null;
@@ -192,7 +191,7 @@ public class PartContainer implements MultiPartContainer {
         return holder;
     }
 
-    private boolean canAdd(PartHolder offered) {
+    boolean canAdd(PartHolder offered) {
         VoxelShape currentShape = getCurrentShape();
         for (PartHolder holder : parts) {
             AbstractPart part = holder.part;
@@ -246,6 +245,7 @@ public class PartContainer implements MultiPartContainer {
         sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
             holder.writeCreation(buffer, ctx);
         });
+        blockEntity.world().updateNeighbors(getMultiPartPos(), blockEntity.getCachedState().getBlock());
     }
 
     private void readAddPart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
@@ -279,6 +279,7 @@ public class PartContainer implements MultiPartContainer {
                             buffer.writeByte(index);
                         });
                         recalculateShape();
+                        blockEntity.world().updateNeighbors(getMultiPartPos(), blockEntity.getCachedState().getBlock());
                     }
                 }
                 return true;
@@ -321,7 +322,7 @@ public class PartContainer implements MultiPartContainer {
                 cachedCollisionShape = VoxelShapes.union(cachedCollisionShape, holder.part.getCollisionShape());
             }
             if (parts.isEmpty()) {
-                cachedCollisionShape = MultiPartBlock.MISSING_PARTS_SHAPE;
+                cachedCollisionShape = MultipartBlock.MISSING_PARTS_SHAPE;
             }
         }
         return cachedCollisionShape;
@@ -402,7 +403,7 @@ public class PartContainer implements MultiPartContainer {
     }
 
     @Override
-    public MultiPartEventBus getEventBus() {
+    public MultipartEventBus getEventBus() {
         return eventBus;
     }
 

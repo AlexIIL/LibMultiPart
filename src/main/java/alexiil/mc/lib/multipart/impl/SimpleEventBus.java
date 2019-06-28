@@ -12,22 +12,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
-import alexiil.mc.lib.multipart.api.MultiPartContainer;
-import alexiil.mc.lib.multipart.api.MultiPartEventBus;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
+import alexiil.mc.lib.multipart.api.MultipartEventBus;
 import alexiil.mc.lib.multipart.api.event.EventListener;
-import alexiil.mc.lib.multipart.api.event.MultiPartEvent;
+import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.multipart.api.event.PartListenerAdded;
 import alexiil.mc.lib.multipart.api.event.PartListenerRemoved;
 
 /** A simple, dumb, {@link ArrayList} based approach for storing event listeners. */
-public class SimpleEventBus implements MultiPartEventBus {
+public class SimpleEventBus implements MultipartEventBus {
 
     private static final SingleListener<?>[] EMPTY_LISTENER_ARRAY = new SingleListener[0];
 
     private final PartContainer container;
     private final List<SingleListener<?>> listeners = new ArrayList<>();
 
-    /** Used for iterating over the listeners in {@link #fireEvent(MultiPartEvent)}. */
+    /** Used for iterating over the listeners in {@link #fireEvent(MultipartEvent)}. */
     private SingleListener<?>[] packedListeners = EMPTY_LISTENER_ARRAY;
 
     private int eventCallLevel = 0;
@@ -41,12 +41,12 @@ public class SimpleEventBus implements MultiPartEventBus {
     }
 
     @Override
-    public MultiPartContainer getContainer() {
+    public MultipartContainer getContainer() {
         return container;
     }
 
     @Override
-    public boolean fireEvent(MultiPartEvent event) {
+    public boolean fireEvent(MultipartEvent event) {
         boolean anyHandled = false;
         assert eventCallLevel >= 0;
         try {
@@ -77,7 +77,7 @@ public class SimpleEventBus implements MultiPartEventBus {
     }
 
     @Override
-    public <E extends MultiPartEvent> void addListener(Object key, Class<E> clazz, EventListener<E> listener) {
+    public <E extends MultipartEvent> void addListener(Object key, Class<E> clazz, EventListener<E> listener) {
         SingleListener<E> single = new SingleListener<>(key, clazz, listener);
         listeners.add(single);
         if (eventCallLevel > 0) {
@@ -90,12 +90,12 @@ public class SimpleEventBus implements MultiPartEventBus {
         packedListeners = listeners.toArray(new SingleListener[0]);
     }
 
-    protected <E extends MultiPartEvent> void fireListenerAddEvent(SingleListener<E> single) {
+    protected <E extends MultipartEvent> void fireListenerAddEvent(SingleListener<E> single) {
         container.onListenerAdded(single);
         fireEvent(new PartListenerAdded<>(single.key, single.clazz, single.listener));
     }
 
-    protected <E extends MultiPartEvent> void fireListenerRemoveEvent(SingleListener<E> single) {
+    protected <E extends MultipartEvent> void fireListenerRemoveEvent(SingleListener<E> single) {
         container.onListenerRemoved(single);
         fireEvent(new PartListenerRemoved<>(single.key, single.clazz, single.listener));
     }
@@ -170,7 +170,7 @@ public class SimpleEventBus implements MultiPartEventBus {
     }
 
     @Override
-    public <E extends MultiPartEvent> List<ListenerInfo<? extends E>> getListeners(Class<E> clazz) {
+    public <E extends MultipartEvent> List<ListenerInfo<? extends E>> getListeners(Class<E> clazz) {
         List<ListenerInfo<? extends E>> list = new ArrayList<>();
         for (SingleListener<?> single : listeners) {
             if (single.clazz.isAssignableFrom(clazz)) {
@@ -185,7 +185,7 @@ public class SimpleEventBus implements MultiPartEventBus {
         return Collections.unmodifiableList(listeners);
     }
 
-    static class SingleListener<E extends MultiPartEvent> implements ListenerInfo<E> {
+    static class SingleListener<E extends MultipartEvent> implements ListenerInfo<E> {
 
         final Object key;
         final Class<E> clazz;
@@ -212,7 +212,7 @@ public class SimpleEventBus implements MultiPartEventBus {
             return listener;
         }
 
-        boolean onEvent(MultiPartEvent event) {
+        boolean onEvent(MultipartEvent event) {
             if (clazz.isInstance(event)) {
                 listener.onEvent(clazz.cast(event));
                 return true;

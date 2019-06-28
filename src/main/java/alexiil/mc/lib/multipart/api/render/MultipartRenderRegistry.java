@@ -14,8 +14,8 @@ import javax.annotation.Nullable;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 
-public final class MultiPartRenderRegistry {
-    private MultiPartRenderRegistry() {}
+public final class MultipartRenderRegistry {
+    private MultipartRenderRegistry() {}
 
     private static final Map<Class<? extends PartModelKey>, PartModelBaker<?>> bakers = new HashMap<>();
     private static final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers = new HashMap<>();

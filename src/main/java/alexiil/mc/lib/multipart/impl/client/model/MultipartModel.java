@@ -29,17 +29,17 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.ExtendedBlockView;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.render.MultiPartRenderRegistry;
+import alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry;
 import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.api.render.PartRenderContext;
-import alexiil.mc.lib.multipart.impl.MultiPartBlockEntity;
+import alexiil.mc.lib.multipart.impl.MultipartBlockEntity;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
-public class MultiPartModel implements BakedModel, FabricBakedModel {
+public class MultipartModel implements BakedModel, FabricBakedModel {
 
     // BakedModel
 
@@ -90,8 +90,8 @@ public class MultiPartModel implements BakedModel, FabricBakedModel {
         Random> randomSupplier, RenderContext context) {
 
         BlockEntity be = blockView.getBlockEntity(pos);
-        if (be instanceof MultiPartBlockEntity) {
-            PartContainer container = ((MultiPartBlockEntity) be).getContainer();
+        if (be instanceof MultipartBlockEntity) {
+            PartContainer container = ((MultipartBlockEntity) be).getContainer();
 
             MinecraftClient mc = MinecraftClient.getInstance();
             if (
@@ -124,7 +124,7 @@ public class MultiPartModel implements BakedModel, FabricBakedModel {
 
     private static <K extends PartModelKey> void emitQuads(PartModelKey key, Class<K> clazz,
         PartRenderContext context) {
-        PartModelBaker<? super K> baker = MultiPartRenderRegistry.getBaker(clazz);
+        PartModelBaker<? super K> baker = MultipartRenderRegistry.getBaker(clazz);
         if (baker != null) {
             baker.emitQuads(clazz.cast(key), context);
         }

@@ -19,9 +19,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Tickable;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
+import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
 import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartTickEvent;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
@@ -33,22 +35,22 @@ import alexiil.mc.lib.net.ParentNetIdSingle;
 import alexiil.mc.lib.net.impl.ActiveMinecraftConnection;
 import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 
-public class MultiPartBlockEntity extends BlockEntity implements Tickable, IUnloadableBlockEntity {
+public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnloadableBlockEntity {
 
-    static final ParentNetIdSingle<MultiPartBlockEntity> NET_KEY;
+    static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
     static {
-        NET_KEY = McNetworkStack.BLOCK_ENTITY.subType(MultiPartBlockEntity.class, "libmultipart:container");
+        NET_KEY = McNetworkStack.BLOCK_ENTITY.subType(MultipartBlockEntity.class, "libmultipart:container");
     }
 
     PartContainer container;
 
-    public MultiPartBlockEntity() {
+    public MultipartBlockEntity() {
         super(LibMultiPart.BLOCK_ENTITY);
         container = new PartContainer(this);
     }
 
-    MultiPartBlockEntity(PartContainer from) {
+    MultipartBlockEntity(PartContainer from) {
         super(LibMultiPart.BLOCK_ENTITY);
         this.container = from;
         container.blockEntity = this;
@@ -172,5 +174,9 @@ public class MultiPartBlockEntity extends BlockEntity implements Tickable, IUnlo
 
     void addAllAttributes(AttributeList<?> list) {
         container.addAllAttributes(list);
+    }
+
+    public void onNeighbourUpdate(BlockPos otherPos) {
+        container.fireEvent(new NeighbourUpdateEvent(otherPos));
     }
 }

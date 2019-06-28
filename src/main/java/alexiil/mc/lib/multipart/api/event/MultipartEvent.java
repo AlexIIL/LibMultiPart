@@ -7,9 +7,10 @@
  */
 package alexiil.mc.lib.multipart.api.event;
 
-import alexiil.mc.lib.multipart.api.MultiPartContainer;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
 
-@FunctionalInterface
-public interface MultiPartEventExternalListener<E extends MultiPartEvent> {
-    void onEvent(MultiPartContainer container, E event);
+/** The base class for all events that take place in a {@link MultipartContainer}. Most event classes are shortened to
+ * just "Part[EventName]" rather than "MultiPartEvent[EventName]" */
+public abstract class MultipartEvent {
+
 }

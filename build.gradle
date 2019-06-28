@@ -14,14 +14,11 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.1.0+build.54"
+version = "0.1.0+build.63"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
     newLine = false;
-    style {
-        // java = 'BLOCK_COMMENT'
-    }
 }
 
 minecraft {
@@ -91,6 +88,7 @@ publishing {
             version project.version
 
             artifact (jar) {
+                classifier ""
                 builtBy remapJar
             }
         }

@@ -1,0 +1,21 @@
+{
+    "parent": "block/block",
+    "elements": [
+        {
+            "from": [2, 2, 2],
+            "to": [14, 14, 14],
+            "faces": {
+                "down": {"texture": "#tex"},
+                "up": {"texture": "#tex"},
+                "north": {"texture": "#tex"},
+                "south": {"texture": "#tex"},
+                "west": {"texture": "#tex"},
+                "east": {"texture": "#tex"}
+            }
+        }
+    ],
+    "textures": {
+        "particle": "simple_pipes:block/cannot_find_master",
+        "tex": "libmultipart:block/cannot_find_master"
+    }
+}

@@ -7,28 +7,27 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
-import java.util.function.Function;
-
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Identifier;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.MultiPartContainer;
-import alexiil.mc.lib.multipart.api.MultiPartHolder;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
+import alexiil.mc.lib.multipart.api.MultipartHolder;
 import alexiil.mc.lib.multipart.api.PartDefinition;
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.IMsgWriteCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.NetByteBuf;
 
-public final class PartHolder implements MultiPartHolder {
+public final class PartHolder implements MultipartHolder {
 
     public final PartContainer container;
     public final AbstractPart part;
 
-    public PartHolder(PartContainer container, Function<MultiPartHolder, AbstractPart> creator) {
+    public PartHolder(PartContainer container, MultiPartCreator creator) {
         this.container = container;
-        this.part = creator.apply(this);
+        this.part = creator.create(this);
     }
 
     public PartHolder(PartContainer container, CompoundTag tag) {
@@ -72,7 +71,7 @@ public final class PartHolder implements MultiPartHolder {
     }
 
     @Override
-    public MultiPartContainer getContainer() {
+    public MultipartContainer getContainer() {
         return container;
     }
 

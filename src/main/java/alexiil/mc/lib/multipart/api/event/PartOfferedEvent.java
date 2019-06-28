@@ -7,14 +7,13 @@
  */
 package alexiil.mc.lib.multipart.api.event;
 
-import java.util.function.Function;
-
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.MultiPartContainer;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
 
-/** Fired whenever an {@link AbstractPart} is {@link MultiPartContainer#offerNewPart(Function) offered} or
- * {@link MultiPartContainer#addNewPart(Function) added} to a {@link MultiPartContainer}. */
-public final class PartOfferedEvent extends MultiPartEvent {
+/** Fired whenever an {@link AbstractPart} is {@link MultipartContainer#offerNewPart(MultiPartCreator) offered} or
+ * {@link MultipartContainer#addNewPart(MultiPartCreator) added} to a {@link MultipartContainer}. */
+public final class PartOfferedEvent extends MultipartEvent {
     public final AbstractPart part;
     private boolean isAllowed = true;
 

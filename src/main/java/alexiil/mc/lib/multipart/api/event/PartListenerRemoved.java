@@ -7,11 +7,11 @@
  */
 package alexiil.mc.lib.multipart.api.event;
 
-import alexiil.mc.lib.multipart.api.MultiPartEventBus;
+import alexiil.mc.lib.multipart.api.MultipartEventBus;
 
-/** Fired whenever {@link MultiPartEventBus#removeListeners(Object)} is called. This is fired once for every listener
+/** Fired whenever {@link MultipartEventBus#removeListeners(Object)} is called. This is fired once for every listener
  * that was removed, <em>after</em> it is actually removed. */
-public final class PartListenerRemoved<E extends MultiPartEvent> extends MultiPartEvent {
+public final class PartListenerRemoved<E extends MultipartEvent> extends MultipartEvent {
 
     public final Object key;
     public final Class<E> eventClass;

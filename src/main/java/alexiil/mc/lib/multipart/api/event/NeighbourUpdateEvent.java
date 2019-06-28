@@ -7,12 +7,13 @@
  */
 package alexiil.mc.lib.multipart.api.event;
 
-import alexiil.mc.lib.multipart.api.AbstractPart;
+import net.minecraft.util.math.BlockPos;
 
-public final class PartRemovedEvent extends MultipartEvent {
-    public final AbstractPart removed;
+/** Fired when a neighbouring block was updated. */
+public class NeighbourUpdateEvent extends MultipartEvent {
+    public final BlockPos pos;
 
-    public PartRemovedEvent(AbstractPart removed) {
-        this.removed = removed;
+    public NeighbourUpdateEvent(BlockPos pos) {
+        this.pos = pos;
     }
 }

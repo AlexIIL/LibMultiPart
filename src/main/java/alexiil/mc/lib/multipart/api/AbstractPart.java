@@ -7,8 +7,6 @@
  */
 package alexiil.mc.lib.multipart.api;
 
-import java.util.function.Function;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -25,6 +23,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
 import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.PartContainer;
@@ -48,9 +47,9 @@ public abstract class AbstractPart {
     }
 
     public final PartDefinition definition;
-    public final MultiPartHolder holder;
+    public final MultipartHolder holder;
 
-    public AbstractPart(PartDefinition definition, MultiPartHolder holder) {
+    public AbstractPart(PartDefinition definition, MultipartHolder holder) {
         this.definition = definition;
         this.holder = holder;
     }
@@ -60,7 +59,7 @@ public abstract class AbstractPart {
     }
 
     /** Writes the payload that will be passed into
-     * {@link PartDefinition#loadFromBuffer(MultiPartHolder, NetByteBuf, IMsgReadCtx)} on the client. (This is called on
+     * {@link PartDefinition#loadFromBuffer(MultipartHolder, NetByteBuf, IMsgReadCtx)} on the client. (This is called on
      * the server and sent to the client). Note that this will be called *instead* of write and read payload.
      * 
      * @param ctx TODO */
@@ -76,14 +75,14 @@ public abstract class AbstractPart {
         ctx.assertClientSide();
     }
 
-    /** Called whenever this part was added to the {@link MultiPartContainer}, either in {@link BlockEntity#validate()}
+    /** Called whenever this part was added to the {@link MultipartContainer}, either in {@link BlockEntity#validate()}
      * or when it is manually added by an item.
      * <p>
-     * Register event handlers (as methods) with {@link MultiPartEventBus#addListener(Object, Class, EventListener)}.
+     * Register event handlers (as methods) with {@link MultipartEventBus#addListener(Object, Class, EventListener)}.
      * 
      * @param bus The event bus to register with. This is shorthand for
      *            <code>holder.getContainer().getEventBus()</code> */
-    public void onAdded(MultiPartEventBus bus) {
+    public void onAdded(MultipartEventBus bus) {
         // Nothing registers by default.
     }
 
@@ -98,8 +97,8 @@ public abstract class AbstractPart {
      * {@link #getShape()} of this part intersects with the {@link #getShape()} of the other part. However this is never
      * called if the shape of one of the parts is completely contained by the shape of the other part.
      * <p>
-     * This is called once for each part currently contained in a {@link MultiPartContainer} in
-     * {@link MultiPartContainer#offerNewPart(Function)}. */
+     * This is called once for each part currently contained in a {@link MultipartContainer} in
+     * {@link MultipartContainer#offerNewPart(MultiPartCreator)}. */
     public boolean canOverlapWith(AbstractPart other) {
         return false;
     }
