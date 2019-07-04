@@ -7,6 +7,10 @@
  */
 package alexiil.mc.lib.multipart.api;
 
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -15,6 +19,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -23,7 +28,7 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
-import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.PartContainer;
@@ -33,6 +38,8 @@ import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.ParentNetIdSingle;
+
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 /** The base class for every part in a multipart block. */
 public abstract class AbstractPart {
@@ -48,6 +55,12 @@ public abstract class AbstractPart {
 
     public final PartDefinition definition;
     public final MultipartHolder holder;
+
+    /** Every {@link AbstractPart} that this part requires. (This implies that removing any of the dependent parts will
+     * also remove this part).
+     * <p>
+     * The default value is null, which represents an empty set. */
+    Set<AbstractPart> dependentParts;
 
     public AbstractPart(PartDefinition definition, MultipartHolder holder) {
         this.definition = definition;
@@ -90,6 +103,27 @@ public abstract class AbstractPart {
         // Nothing to do by default
     }
 
+    protected void addDependentPart(AbstractPart required) {
+        if (required == null || required == this) {
+            return;
+        }
+        boolean fullChecks = false;
+        assert fullChecks = true;
+        if (fullChecks) {
+
+        }
+        if (dependentParts == null) {
+            dependentParts = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+        }
+        if (dependentParts.add(required)) {
+
+        }
+    }
+
+    protected void removeDependentPart() {
+
+    }
+
     /** @return The {@link VoxelShape} to use for calculating if this pluggable overlaps with another pluggable. */
     public abstract VoxelShape getShape();
 
@@ -98,7 +132,7 @@ public abstract class AbstractPart {
      * called if the shape of one of the parts is completely contained by the shape of the other part.
      * <p>
      * This is called once for each part currently contained in a {@link MultipartContainer} in
-     * {@link MultipartContainer#offerNewPart(MultiPartCreator)}. */
+     * {@link MultipartContainer#offerNewPart(MultipartCreator)}. */
     public boolean canOverlapWith(AbstractPart other) {
         return false;
     }
@@ -150,5 +184,6 @@ public abstract class AbstractPart {
         return false;
     }
 
+    @Nullable
     public abstract PartModelKey getModelKey();
 }

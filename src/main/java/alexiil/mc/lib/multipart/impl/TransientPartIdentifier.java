@@ -7,24 +7,46 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.util.SystemUtil;
+
 import alexiil.mc.lib.multipart.api.AbstractPart;
+
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 public class TransientPartIdentifier {
     public final AbstractPart part;
     public final @Nullable Object subPart;
 
+    public final Set<AbstractPart> additional;
+
     public TransientPartIdentifier(AbstractPart part) {
         this.part = part;
         this.subPart = null;
+        PartHolder holder = (PartHolder) part.holder;
+        Set<PartHolder> set = holder.container.getAllRemoved(holder);
+        if (set.size() <= 1) {
+            this.additional = Collections.emptySet();
+        } else {
+            this.additional = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+            for (PartHolder h : set) {
+                if (h.part != part) {
+                    additional.add(h.part);
+                }
+            }
+        }
     }
 
     public TransientPartIdentifier(AbstractPart part, Object subPart) {
         this.part = part;
         this.subPart = subPart;
+        // Subparts don't work with the multi-break system
+        this.additional = Collections.emptySet();
     }
 
     @Override

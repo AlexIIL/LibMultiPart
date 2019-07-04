@@ -10,7 +10,7 @@ package alexiil.mc.lib.multipart.api.event;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 
 /** The base class for all events that take place in a {@link MultipartContainer}. Most event classes are shortened to
- * just "Part[EventName]" rather than "MultiPartEvent[EventName]" */
+ * just "Part[EventName]" rather than "MultipartEvent[EventName]" */
 public abstract class MultipartEvent {
 
 }

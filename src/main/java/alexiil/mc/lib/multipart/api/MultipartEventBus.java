@@ -9,6 +9,7 @@ package alexiil.mc.lib.multipart.api;
 
 import java.util.List;
 
+import alexiil.mc.lib.multipart.api.event.ContextlessEvent;
 import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.multipart.api.event.MultipartEventExternalListener;
@@ -33,7 +34,37 @@ public interface MultipartEventBus {
      * @throws NullPointerException if any of the arguments are null. */
     <E extends MultipartEvent> void addListener(Object key, Class<E> clazz, EventListener<E> listener);
 
-    /** @see #addListener(Object, Class, EventListener) */
+    /** Adds a listener for a specified {@link MultipartEvent} that also implements {@link ContextlessEvent} with a
+     * {@link Runnable}.
+     * <p>
+     * This makes only one guarantee for event listener ordering: all listeners added for the same key will be called in
+     * the order that they are registered.
+     * 
+     * @param key The identifier for the listener, compared with identity equality (==) and <strong>not</strong> object
+     *            equality. Multiple listeners can be added with the same key. If the caller is an {@link AbstractPart},
+     *            and contained within this event bus's {@link #getContainer()} then it is strongly recommended that the
+     *            {@link AbstractPart} is re-used, because when that part is removed from the {@link MultipartContainer}
+     *            {@link #removeListeners(Object)} will be called with that part.
+     * @param clazz The type of event to listen to.
+     * @throws NullPointerException if any of the arguments are null. */
+    default <E extends MultipartEvent & ContextlessEvent> void addContextlessListener(Object key, Class<E> clazz,
+        Runnable listener) {
+        addListener(key, clazz, new ContextlessListener<>(listener));
+    }
+
+    /** Adds a listener for a specified {@link MultipartEvent} (and all of it's subclasses), but also passes the
+     * {@link MultipartContainer} that the event was fired from ito the event handler.
+     * <p>
+     * This makes only one guarantee for event listener ordering: all listeners added for the same key will be called in
+     * the order that they are registered.
+     * 
+     * @param key The identifier for the listener, compared with identity equality (==) and <strong>not</strong> object
+     *            equality. Multiple listeners can be added with the same key. If the caller is an {@link AbstractPart},
+     *            and contained within this event bus's {@link #getContainer()} then it is strongly recommended that the
+     *            {@link AbstractPart} is re-used, because when that part is removed from the {@link MultipartContainer}
+     *            {@link #removeListeners(Object)} will be called with that part.
+     * @param clazz The type of event to listen to.
+     * @throws NullPointerException if any of the arguments are null. */
     default <E extends MultipartEvent> void addExternalListener(Object key, Class<E> clazz,
         MultipartEventExternalListener<E> listener) {
         final MultipartContainer container = getContainer();
@@ -80,6 +111,27 @@ public interface MultipartEventBus {
         EventListener<E> getListener();
     }
 
+    /** An {@link EventListener} for a {@link ContextlessEvent} that is invoked with a {@link Runnable}. */
+    public static final class ContextlessListener<E extends MultipartEvent & ContextlessEvent>
+        implements EventListener<E> {
+
+        public final Runnable listener;
+
+        public ContextlessListener(Runnable listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onEvent(E event) {
+            listener.run();
+        }
+
+        @Override
+        public String toString() {
+            return "{Runnable: " + listener + "}";
+        }
+    }
+
     public static final class ExternalListener<E extends MultipartEvent> implements EventListener<E> {
         public final MultipartContainer container;
         public final MultipartEventExternalListener<E> listener;
@@ -92,6 +144,11 @@ public interface MultipartEventBus {
         @Override
         public void onEvent(E event) {
             listener.onEvent(container, event);
+        }
+
+        @Override
+        public String toString() {
+            return "{External: " + listener + "}";
         }
     }
 }

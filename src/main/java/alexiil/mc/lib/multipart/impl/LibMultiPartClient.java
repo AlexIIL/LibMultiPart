@@ -50,8 +50,8 @@ public class LibMultiPartClient implements ClientModInitializer {
 
     private static UnbakedModel getModelForVariant(ModelIdentifier id) {
         if (LibMultiPart.NAMESPACE.equals(id.getNamespace())) {
-            if ("libmultipart:container#".equals(id.toString())) {
-                return new PreBakedModel(new MultipartModel());
+            if ("container".equals(id.getPath())) {
+                return new PreBakedModel(MultipartModel.INSTANCE);
             }
             LibMultiPart.LOGGER.warn("[client.model] Unknown model variant request: " + id);
             return null;

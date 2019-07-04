@@ -8,16 +8,21 @@
 package alexiil.mc.lib.multipart.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.util.BooleanBiFunction;
+import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -33,6 +38,12 @@ import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
 import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
 import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
+import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
 import alexiil.mc.lib.net.IMsgReadCtx;
@@ -46,12 +57,17 @@ import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdDuel;
 import alexiil.mc.lib.net.ParentNetIdSingle;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
 public class PartContainer implements MultipartContainer {
 
     static final ParentNetIdSingle<PartContainer> NET_KEY;
     static final NetIdDataK<PartContainer> NET_ID_INITIAL_RENDER_DATA;
     static final NetIdDataK<PartContainer> NET_ID_ADD_PART;
     static final NetIdDataK<PartContainer> NET_ID_REMOVE_PART;
+    static final NetIdDataK<PartContainer> NET_ID_REMOVE_PART_MULTI;
     static final NetIdSignalK<PartContainer> NET_SIGNAL_REDRAW;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
@@ -72,6 +88,7 @@ public class PartContainer implements MultipartContainer {
         );
         NET_ID_ADD_PART = NET_KEY.idData("add_part").setReceiver(PartContainer::readAddPart);
         NET_ID_REMOVE_PART = NET_KEY.idData("remove_part").setReceiver(PartContainer::readRemovePart);
+        NET_ID_REMOVE_PART_MULTI = NET_KEY.idData("remove_part_multi").setReceiver(PartContainer::readRemovePartMulti);
         NET_ID_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").setReadWrite(
             PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData
         );
@@ -112,11 +129,14 @@ public class PartContainer implements MultipartContainer {
     }
 
     public final SimpleEventBus eventBus = new SimpleEventBus(this);
+    public final SimplePropertyContainer properties = new SimplePropertyContainer(this);
     public final List<PartHolder> parts = new ArrayList<>();
 
     MultipartBlockEntity blockEntity;
     VoxelShape cachedShape = null;
     VoxelShape cachedCollisionShape = null;
+    boolean havePropertiesChanged = false;
+    boolean hasTicked = false;
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
@@ -125,20 +145,20 @@ public class PartContainer implements MultipartContainer {
         this.blockEntity = blockEntity;
     }
 
-    // MultiPartContainer
+    // MultipartContainer
 
     @Override
-    public World getMultiPartWorld() {
+    public World getMultipartWorld() {
         return blockEntity.getWorld();
     }
 
     @Override
-    public BlockPos getMultiPartPos() {
+    public BlockPos getMultipartPos() {
         return blockEntity.getPos();
     }
 
     @Override
-    public BlockEntity getMultiPartBlockEntity() {
+    public BlockEntity getMultipartBlockEntity() {
         return blockEntity;
     }
 
@@ -149,7 +169,7 @@ public class PartContainer implements MultipartContainer {
 
     @Override
     public BlockEntity getNeighbourBlockEntity(Direction dir) {
-        return getMultiPartWorld().getBlockEntity(getMultiPartPos().offset(dir));
+        return getMultipartWorld().getBlockEntity(getMultipartPos().offset(dir));
     }
 
     @Override
@@ -162,7 +182,7 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
-    public PartOffer offerNewPart(MultiPartCreator creator) {
+    public PartOffer offerNewPart(MultipartCreator creator) {
         PartHolder holder = new PartHolder(this, creator);
         if (!canAdd(holder)) {
             return null;
@@ -182,7 +202,7 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
-    public MultipartHolder addNewPart(MultiPartCreator creator) {
+    public MultipartHolder addNewPart(MultipartCreator creator) {
         PartHolder holder = new PartHolder(this, creator);
         if (!canAdd(holder)) {
             return null;
@@ -245,7 +265,7 @@ public class PartContainer implements MultipartContainer {
         sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
             holder.writeCreation(buffer, ctx);
         });
-        blockEntity.world().updateNeighbors(getMultiPartPos(), blockEntity.getCachedState().getBlock());
+        blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
     }
 
     private void readAddPart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
@@ -261,31 +281,97 @@ public class PartContainer implements MultipartContainer {
 
     @Override
     public boolean removePart(AbstractPart part) {
-        for (int i = 0; i < parts.size(); i++) {
-            PartHolder holder = parts.get(i);
-            if (holder.part == part) {
-                if (blockEntity.isServerWorld()) {
-                    holder.part.onRemoved();
-                    parts.remove(i);
-                    eventBus.removeListeners(part);
-                    final int index = i;
-                    eventBus.fireEvent(new PartRemovedEvent(part));
-                    part.onRemoved();
-                    if (parts.isEmpty()) {
-                        // TODO: Waterlogging!
-                        blockEntity.world().setBlockState(getMultiPartPos(), Blocks.AIR.getDefaultState());
-                    } else {
-                        sendNetworkUpdate(this, NET_ID_REMOVE_PART, (p, buffer, ctx) -> {
-                            buffer.writeByte(index);
-                        });
-                        recalculateShape();
-                        blockEntity.world().updateNeighbors(getMultiPartPos(), blockEntity.getCachedState().getBlock());
-                    }
-                }
-                return true;
-            }
+        PartHolder holder = (PartHolder) part.holder;
+        int index = parts.indexOf(holder);
+        if (index < 0) {
+            return false;
         }
-        return false;
+        if (!blockEntity.isServerWorld()) {
+            return true;
+        }
+
+        if (holder.inverseRequiredParts == null) {
+            removeSingle(index);
+            return true;
+        }
+
+        // Full removal
+        Set<PartHolder> toRemove = getAllRemoved(holder);
+
+        IntList indexList = new IntArrayList();
+        for (PartHolder p : toRemove) {
+            indexList.add(parts.indexOf(p));
+        }
+
+        int[] indices = indexList.toIntArray();
+        Arrays.sort(indices);
+        assert indices.length > 0;
+        assert indices[0] >= 0;
+        if (indices.length == 1) {
+            removeSingle(indices[0]);
+            return true;
+        }
+        ArrayUtil.reverse(indices);
+        removeMultiple(indices);
+        return true;
+    }
+
+    /** @return Every {@link PartHolder} that will be removed if the given part holder was removed. */
+    public Set<PartHolder> getAllRemoved(PartHolder holder) {
+        Set<PartHolder> toRemove = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+        Set<PartHolder> openSet = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+        openSet.add(holder);
+
+        int iterationCount = 0;
+        int maxIterationCount = parts.size();
+        while (!openSet.isEmpty()) {
+            Iterator<PartHolder> iter = openSet.iterator();
+            PartHolder next = iter.next();
+            iter.remove();
+            if (!toRemove.add(next)) {
+                continue;
+            }
+            if (iterationCount++ > maxIterationCount) {
+                LibMultiPart.LOGGER.warn(
+                    "Tried to remove " + iterationCount + " parts, but we only have " + maxIterationCount + " parts!"
+                );
+                break;
+            }
+            if (next.inverseRequiredParts == null) {
+                continue;
+            }
+            openSet.addAll(next.inverseRequiredParts);
+        }
+        return toRemove;
+    }
+
+    private void removeSingle(int index) {
+        PartHolder removed = parts.remove(index);
+        assert removed != null;
+        removed.clearRequiredParts();
+        if (!parts.isEmpty()) {
+            sendNetworkUpdate(this, NET_ID_REMOVE_PART, (p, buffer, ctx) -> {
+                buffer.writeByte(index);
+            });
+        }
+
+        // Now inform everything else that it was removed
+        eventBus.removeListeners(removed.part);
+        removed.part.onRemoved();
+        properties.clearValues(removed.part);
+        eventBus.fireEvent(new PartRemovedEvent(removed.part));
+
+        postRemovePart();
+    }
+
+    private void postRemovePart() {
+        if (parts.isEmpty()) {
+            // TODO: Waterlogging!
+            blockEntity.world().setBlockState(getMultipartPos(), Blocks.AIR.getDefaultState());
+        } else {
+            recalculateShape();
+            blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
+        }
     }
 
     private void readRemovePart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
@@ -296,11 +382,63 @@ public class PartContainer implements MultipartContainer {
             throw new InvalidInputDataException("Invalid pluggable index " + index + " - we've probably got desynced!");
         }
         PartHolder removed = parts.remove(index);
-        eventBus.fireEvent(new PartRemovedEvent(removed.part));
         eventBus.removeListeners(removed.part);
         removed.part.onRemoved();
+        properties.clearValues(removed.part);
+        eventBus.fireEvent(new PartRemovedEvent(removed.part));
         recalculateShape();
         redrawIfChanged();
+    }
+
+    private void removeMultiple(int[] indices) {
+        PartHolder[] holders = new PartHolder[indices.length];
+
+        for (int i = 0; i < indices.length; i++) {
+            int partIndex = indices[i];
+            holders[i] = parts.remove(partIndex);
+            holders[i].clearRequiredParts();
+        }
+        if (!isClientWorld()) {
+            sendNetworkUpdate(this, NET_ID_REMOVE_PART_MULTI, (p, buffer, ctx) -> {
+                buffer.writeVarInt(indices.length);
+                for (int i : indices) {
+                    buffer.writeByte(i);
+                }
+            });
+        }
+
+        for (PartHolder holder : holders) {
+            eventBus.removeListeners(holder.part);
+        }
+
+        for (PartHolder holder : holders) {
+            holder.part.onRemoved();
+        }
+
+        for (PartHolder holder : holders) {
+            properties.clearValues(holder.part);
+        }
+
+        for (PartHolder holder : holders) {
+            fireEvent(new PartRemovedEvent(holder.part));
+        }
+
+        if (isClientWorld()) {
+            recalculateShape();
+            redrawIfChanged();
+        } else {
+            postRemovePart();
+        }
+    }
+
+    private void readRemovePartMulti(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+        ctx.assertClientSide();
+        int count = buffer.readVarInt();
+        int[] indices = new int[count];
+        for (int i = 0; i < count; i++) {
+            indices[i] = buffer.readUnsignedByte();
+        }
+        removeMultiple(indices);
     }
 
     @Override
@@ -321,7 +459,7 @@ public class PartContainer implements MultipartContainer {
             for (PartHolder holder : parts) {
                 cachedCollisionShape = VoxelShapes.union(cachedCollisionShape, holder.part.getCollisionShape());
             }
-            if (parts.isEmpty()) {
+            if (cachedCollisionShape.isEmpty()) {
                 cachedCollisionShape = MultipartBlock.MISSING_PARTS_SHAPE;
             }
         }
@@ -407,6 +545,11 @@ public class PartContainer implements MultipartContainer {
         return eventBus;
     }
 
+    @Override
+    public MultipartPropertyContainer getProperties() {
+        return properties;
+    }
+
     // Internals
 
     void fromTag(CompoundTag tag) {
@@ -442,13 +585,32 @@ public class PartContainer implements MultipartContainer {
         eventBus.fireEvent(PartContainerState.INVALIDATE);
     }
 
+    void tick() {
+        eventBus.fireEvent(PartTickEvent.INSTANCE);
+        if (havePropertiesChanged) {
+            havePropertiesChanged = false;
+            final BlockState oldState = getMultipartWorld().getBlockState(getMultipartPos());
+            BlockState state = oldState.with(
+                MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE)
+            );
+            state = state.with(MultipartBlock.LUMINANCE, properties.getValue(MultipartProperties.LIGHT_VALUE));
+            if (state != oldState) {
+                getMultipartWorld().setBlockState(getMultipartPos(), state);
+            } else {
+                getMultipartWorld().updateNeighbors(getMultipartPos(), LibMultiPart.BLOCK);
+            }
+        }
+
+        hasTicked = true;
+    }
+
     void onListenerAdded(SingleListener<?> single) {
         // This was removed because minecraft doesn't seem to like removing a block entity while it's being ticked.
 
         // if (single.clazz == PartTickEvent.class && !(blockEntity instanceof Tickable)) {
         // World world = blockEntity.world();
-        // if (world.getBlockEntity(getMultiPartPos()) == blockEntity) {
-        // world.setBlockEntity(getMultiPartPos(), new MultiPartBlockEntity.Ticking(this));
+        // if (world.getBlockEntity(getMultipartPos()) == blockEntity) {
+        // world.setBlockEntity(getMultipartPos(), new MultipartBlockEntity.Ticking(this));
         // LibMultiPart.LOGGER.info("Switching " + getMultiPartPos() + " from non-ticking to ticking.");
         // } else {
         // LibMultiPart.LOGGER.info("Failed to switch " + getMultiPartPos() + " from non-ticking to ticking!");
@@ -458,6 +620,40 @@ public class PartContainer implements MultipartContainer {
 
     void onListenerRemoved(SingleListener<?> single) {
         // Nothing needs to happen quite yet
+    }
+
+    <T> void onPropertyChanged(MultipartProperty<T> property, T old, T current) {
+
+        if (!hasTicked) {
+            // This can happen when loading
+            havePropertiesChanged = true;
+            return;
+        }
+
+        if (property == MultipartProperties.CAN_EMIT_REDSTONE) {
+            BlockState state = getMultipartWorld().getBlockState(getMultipartPos());
+            state = state.with(MultipartBlock.EMITS_REDSTONE, (Boolean) current);
+            getMultipartWorld().setBlockState(getMultipartPos(), state);
+            return;
+        }
+
+        if (property == MultipartProperties.LIGHT_VALUE) {
+            BlockState state = getMultipartWorld().getBlockState(getMultipartPos());
+            state = state.with(MultipartBlock.LUMINANCE, (Integer) current);
+            getMultipartWorld().setBlockState(getMultipartPos(), state);
+            return;
+        }
+
+        if (property instanceof RedstonePowerProperty) {
+            getMultipartWorld().updateNeighbors(getMultipartPos(), LibMultiPart.BLOCK);
+
+            if (property instanceof StrongRedstonePowerProperty) {
+                for (Direction dir : Direction.values()) {
+                    getMultipartWorld().updateNeighbors(getMultipartPos().offset(dir), LibMultiPart.BLOCK);
+                }
+            }
+            return;
+        }
     }
 
     void addAllAttributes(AttributeList<?> list) {

@@ -32,21 +32,21 @@ public abstract class PartContainerState extends MultipartEvent {
     PartContainerState() {}
 
     /** Fired in {@link BlockEntity#invalidate()} */
-    public static final class Invalidate extends PartContainerState {
+    public static final class Invalidate extends PartContainerState implements ContextlessEvent {
         Invalidate() {}
     }
 
     /** Fired in {@link BlockEntity#validate()} */
-    public static final class Validate extends PartContainerState {
+    public static final class Validate extends PartContainerState implements ContextlessEvent {
         Validate() {}
     }
 
-    public static final class ChunkUnload extends PartContainerState {
+    public static final class ChunkUnload extends PartContainerState implements ContextlessEvent {
         ChunkUnload() {}
     }
 
     /** Fired in {@link Block#onBlockRemoved(BlockState, World, BlockPos, BlockState, boolean)} */
-    public static final class Remove extends PartContainerState {
+    public static final class Remove extends PartContainerState implements ContextlessEvent {
         Remove() {}
     }
 }

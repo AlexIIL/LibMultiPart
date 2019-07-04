@@ -25,7 +25,6 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
 import alexiil.mc.lib.multipart.api.event.PartContainerState;
-import alexiil.mc.lib.multipart.api.event.PartTickEvent;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetIdDataK;
@@ -169,7 +168,7 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
 
     @Override
     public void tick() {
-        container.fireEvent(PartTickEvent.INSTANCE);
+        container.tick();
     }
 
     void addAllAttributes(AttributeList<?> list) {

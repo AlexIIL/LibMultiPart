@@ -12,6 +12,8 @@ import javax.annotation.Nullable;
 import alexiil.mc.lib.multipart.api.AbstractPart;
 
 public interface PartBreakContext {
+
+    /** @return The part that is being broken. This might not be the same as the part that is being rendered! */
     AbstractPart getPart();
 
     @Nullable

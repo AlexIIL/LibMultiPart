@@ -12,7 +12,7 @@ import javax.annotation.Nullable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.MultipartContainer.PartOffer;
 import alexiil.mc.lib.multipart.impl.MultipartUtilImpl;
 
@@ -31,7 +31,7 @@ public final class MultipartUtil {
     /** Offers the given {@link AbstractPart} into the block at the given position. This may return a non-null
      * {@link PartOffer} if */
     @Nullable
-    public static PartOffer offerNewPart(World world, BlockPos pos, MultiPartCreator creator) {
+    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
         return MultipartUtilImpl.offerNewPart(world, pos, creator);
     }
 }

@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.1.0+build.63"
+version = "0.1.0+build.85"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -32,8 +32,8 @@ dependencies {
     //Fabric api
     modCompile "net.fabricmc.fabric-api:fabric-api:0.3.0+build.175"
 
-    modCompile "alexiil.mc.lib:libblockattributes-core:0.4.3+build.5"
-    modCompile ("alexiil.mc.lib:libnetworkstack:0.1.1+build.3") { transitive = false }
+    modCompile "alexiil.mc.lib:libblockattributes-core:0.4.7"
+    modCompile ("alexiil.mc.lib:libnetworkstack:0.1.1+build.34") { transitive = false }
 
     // Misc
     compile "com.google.code.findbugs:jsr305:3.0.1"
@@ -91,6 +91,10 @@ publishing {
                 classifier ""
                 builtBy remapJar
             }
+            pom {
+                developers { developer { id = "AlexIIL" } }
+                dependencies { clear(); }
+            }
         }
         publishRemapSrcJar(MavenPublication) {
             groupId "alexiil.mc.lib"
@@ -100,6 +104,10 @@ publishing {
             artifact (sourcesJar) {
                 classifier "sources"
                 builtBy remapSourcesJar
+            }
+            pom {
+                developers { developer { id = "AlexIIL" } }
+                dependencies { clear(); }
             }
         }
     }

@@ -19,7 +19,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 
-import alexiil.mc.lib.multipart.api.MultipartContainer.MultiPartCreator;
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.MultipartContainer.PartOffer;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
 import alexiil.mc.lib.multipart.api.MultipartUtil;
@@ -38,7 +38,7 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    public static PartOffer offerNewPart(World world, BlockPos pos, MultiPartCreator creator) {
+    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
 
         // See if there's an existing multipart that we can add to
         PartContainer existing = get(world, pos);
@@ -54,7 +54,7 @@ public final class MultipartUtilImpl {
         BlockState state = world.getBlockState(pos);
         if (state.getBlock() instanceof NativeMultipart) {
             NativeMultipart nativeBlock = (NativeMultipart) state.getBlock();
-            List<MultiPartCreator> conversions = nativeBlock.getMultiPartConversion(world, pos, state);
+            List<MultipartCreator> conversions = nativeBlock.getMultipartConversion(world, pos, state);
             if (conversions == null) {
                 return null;
             }
@@ -94,8 +94,8 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    private static PartOffer offerAdder(World world, BlockPos pos, List<MultiPartCreator> existing,
-        MultiPartCreator creatorB) {
+    private static PartOffer offerAdder(World world, BlockPos pos, List<MultipartCreator> existing,
+        MultipartCreator creatorB) {
 
         MultipartBlockEntity be = new MultipartBlockEntity();
         be.setWorld(world);
@@ -103,7 +103,7 @@ public final class MultipartUtilImpl {
         PartContainer container = new PartContainer(be);
 
         List<PartHolder> existingHolders = new ArrayList<>();
-        for (MultiPartCreator creator : existing) {
+        for (MultipartCreator creator : existing) {
             PartHolder holder = new PartHolder(container, creator);
             existingHolders.add(holder);
 

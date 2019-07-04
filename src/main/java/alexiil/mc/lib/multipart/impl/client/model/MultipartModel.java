@@ -39,7 +39,8 @@ import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
-public class MultipartModel implements BakedModel, FabricBakedModel {
+public enum MultipartModel implements BakedModel, FabricBakedModel {
+    INSTANCE;
 
     // BakedModel
 
@@ -95,8 +96,8 @@ public class MultipartModel implements BakedModel, FabricBakedModel {
 
             MinecraftClient mc = MinecraftClient.getInstance();
             if (
-                mc.isOnThread()
-                && ((IWorldRendererMixin) mc.worldRenderer).libmultipart_isRenderingPartiallyBrokenBlocks()
+                mc.isOnThread() && ((IWorldRendererMixin) mc.worldRenderer)
+                    .libmultipart_isRenderingPartiallyBrokenBlocks()
             ) {
                 IClientPlayerInteractionManagerMixin interactionManager
                     = (IClientPlayerInteractionManagerMixin) mc.interactionManager;
@@ -109,7 +110,15 @@ public class MultipartModel implements BakedModel, FabricBakedModel {
                         BreakingPartRenderContext partContext = new BreakingPartRenderContext(
                             context, part, identifier.subPart
                         );
-                        emitQuads(modelKey, modelKey.getClass(), partContext);
+                        if (modelKey != null) {
+                            emitQuads(modelKey, modelKey.getClass(), partContext);
+                        }
+                        for (AbstractPart additional : identifier.additional) {
+                            PartModelKey key2 = additional.getModelKey();
+                            if (key2 != null) {
+                                emitQuads(key2, key2.getClass(), partContext);
+                            }
+                        }
                         return;
                     }
                 }

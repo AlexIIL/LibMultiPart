@@ -24,6 +24,7 @@ import net.minecraft.world.dimension.DimensionType;
 import alexiil.mc.lib.attributes.Attribute;
 import alexiil.mc.lib.attributes.Attributes;
 import alexiil.mc.lib.multipart.api.event.MultipartEvent;
+import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdSignalK;
@@ -35,18 +36,18 @@ public interface MultipartContainer {
 
     // Outside object interaction
 
-    World getMultiPartWorld();
+    World getMultipartWorld();
 
-    BlockPos getMultiPartPos();
+    BlockPos getMultipartPos();
 
-    BlockEntity getMultiPartBlockEntity();
+    BlockEntity getMultipartBlockEntity();
 
     default DimensionType getDimension() {
-        return getMultiPartWorld().dimension.getType();
+        return getMultipartWorld().dimension.getType();
     }
 
     default boolean isClientWorld() {
-        return getMultiPartWorld().isClient;
+        return getMultipartWorld().isClient;
     }
 
     /** @return true if the player should be able to interact with this container in GUI form. Implementors should
@@ -70,7 +71,7 @@ public interface MultipartContainer {
         return list;
     }
 
-    default <P extends AbstractPart> List<P> getParts(Class<P> clazz) {
+    default <P> List<P> getParts(Class<P> clazz) {
         List<P> list = new ArrayList<>();
         for (AbstractPart part : getAllParts()) {
             if (clazz.isInstance(part)) {
@@ -80,7 +81,7 @@ public interface MultipartContainer {
         return list;
     }
 
-    default <P extends AbstractPart> List<P> getParts(Class<P> clazz, Predicate<P> filter) {
+    default <P> List<P> getParts(Class<P> clazz, Predicate<P> filter) {
         List<P> list = new ArrayList<>();
         for (AbstractPart part : getAllParts()) {
             if (clazz.isInstance(part)) {
@@ -94,10 +95,10 @@ public interface MultipartContainer {
     }
 
     @Nullable
-    PartOffer offerNewPart(MultiPartCreator creator);
+    PartOffer offerNewPart(MultipartCreator creator);
 
     @Nullable
-    default MultipartHolder addNewPart(MultiPartCreator creator) {
+    default MultipartHolder addNewPart(MultipartCreator creator) {
         PartOffer offer = offerNewPart(creator);
         if (offer == null) {
             return null;
@@ -110,12 +111,12 @@ public interface MultipartContainer {
      *         <p>
      *         Note that this will never actually add a part to the container, so it is safe to be called on the client
      *         side. */
-    default boolean testNewPart(MultiPartCreator creator) {
+    default boolean testNewPart(MultipartCreator creator) {
         return offerNewPart(creator) != null;
     }
 
     @FunctionalInterface
-    public interface MultiPartCreator {
+    public interface MultipartCreator {
         AbstractPart create(MultipartHolder holder);
     }
 
@@ -123,7 +124,7 @@ public interface MultipartContainer {
         MultipartHolder getHolder();
 
         /** Adds the part to the holder, throwing an exception if anything about the container changed in the time
-         * between calling {@link MultipartContainer#offerNewPart(MultiPartCreator)} and {@link #apply()}. */
+         * between calling {@link MultipartContainer#offerNewPart(MultipartCreator)} and {@link #apply()}. */
         void apply();
     }
 
@@ -149,10 +150,10 @@ public interface MultipartContainer {
     // Networking
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this
-     * {@link #getMultiPartBlockEntity()}. */
+     * {@link #getMultipartBlockEntity()}. */
     <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId);
 
-    /** Sends the given {@link NetIdDataK} to every player currently watching this {@link #getMultiPartBlockEntity()},
+    /** Sends the given {@link NetIdDataK} to every player currently watching this {@link #getMultipartBlockEntity()},
      * with a custom {@link IMsgDataWriterK}. */
     <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer);
 
@@ -168,6 +169,10 @@ public interface MultipartContainer {
     default boolean fireEvent(MultipartEvent event) {
         return getEventBus().fireEvent(event);
     }
+
+    // Properties
+
+    MultipartPropertyContainer getProperties();
 
     // Rendering
 

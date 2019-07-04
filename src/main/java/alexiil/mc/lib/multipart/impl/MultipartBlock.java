@@ -16,9 +16,13 @@ import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.state.StateFactory.Builder;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.IntegerProperty;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -26,6 +30,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BoundingBox;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -36,10 +41,16 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties;
+import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
-public class MultipartBlock extends Block implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>,
-    AttributeProvider {
+public class MultipartBlock extends Block
+    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider {
+
+    public static final IntegerProperty LUMINANCE = IntegerProperty.create("luminance", 0, 15);
+    public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.create("emits_redstone");
 
     public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
         // X
@@ -55,6 +66,13 @@ public class MultipartBlock extends Block implements BlockEntityProvider, IBlock
 
     public MultipartBlock(Settings settings) {
         super(settings);
+        setDefaultState(getDefaultState().with(LUMINANCE, 0).with(EMITS_REDSTONE, false));
+    }
+
+    @Override
+    protected void appendProperties(Builder<Block, BlockState> builder) {
+        super.appendProperties(builder);
+        builder.add(LUMINANCE, EMITS_REDSTONE);
     }
 
     @Override
@@ -135,6 +153,16 @@ public class MultipartBlock extends Block implements BlockEntityProvider, IBlock
     }
 
     @Override
+    public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+        super.onEntityCollision(state, world, pos, entity);
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
+            container.container.fireEvent(new PartEventEntityCollide(entity));
+        }
+    }
+
+    @Override
     @Environment(EnvType.CLIENT)
     public ItemStack getPickStack(BlockView view, BlockPos pos, BlockState state) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -146,6 +174,40 @@ public class MultipartBlock extends Block implements BlockEntityProvider, IBlock
             }
         }
         return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean emitsRedstonePower(BlockState state) {
+        return state.get(EMITS_REDSTONE);
+    }
+
+    @Override
+    public int getStrongRedstonePower(BlockState state, BlockView view, BlockPos pos, Direction oppositeFace) {
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            return ((MultipartBlockEntity) be).container.getProperties().getValue(
+                MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite())
+            );
+        }
+        return 0;
+    }
+
+    @Override
+    public int getWeakRedstonePower(BlockState state, BlockView view, BlockPos pos, Direction oppositeFace) {
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartPropertyContainer properties = ((MultipartBlockEntity) be).container.getProperties();
+            return Math.max(
+                properties.getValue(MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite())), //
+                properties.getValue(MultipartProperties.getWeakRedstonePower(oppositeFace.getOpposite()))
+            );
+        }
+        return 0;
+    }
+
+    @Override
+    public int getLuminance(BlockState state) {
+        return state.get(LUMINANCE);
     }
 
     // IBlockMultipart
@@ -198,6 +260,9 @@ public class MultipartBlock extends Block implements BlockEntityProvider, IBlock
 
         DefaultedList<ItemStack> drops = DefaultedList.create();
         subpart.part.addDrops(drops);
+        for (AbstractPart additional : subpart.additional) {
+            additional.addDrops(drops);
+        }
         ItemScatterer.spawn(world, pos, drops);
     }
 

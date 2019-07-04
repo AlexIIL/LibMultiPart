@@ -20,15 +20,15 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
     public void render(MultipartBlockEntity be, double x, double y, double z, float partialTicks, int breakProgress) {
         for (PartHolder holder : be.getContainer().parts) {
             AbstractPart part = holder.part;
-            renderPart(part, part.getClass(), partialTicks, breakProgress);
+            renderPart(part, part.getClass(), x, y, z, partialTicks, breakProgress);
         }
     }
 
-    static <P extends AbstractPart> void renderPart(AbstractPart part, Class<P> clazz, float partialTicks,
-        int breakProgress) {
+    static <P extends AbstractPart> void renderPart(AbstractPart part, Class<P> clazz, double x, double y, double z,
+        float partialTicks, int breakProgress) {
         PartRenderer<? super P> renderer = MultipartRenderRegistry.getRenderer(clazz);
         if (renderer != null) {
-            renderer.render(clazz.cast(part), partialTicks, breakProgress);
+            renderer.render(clazz.cast(part), x, y, z, partialTicks, breakProgress);
         }
     }
 }
