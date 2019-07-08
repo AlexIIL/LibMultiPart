@@ -48,7 +48,7 @@ public class SimplePropertyContainer implements MultipartPropertyContainer {
         if (value == null) {
             value = property.defaultValue;
         }
-        InternalContainer<?> ic = properties.get(key);
+        InternalContainer<?> ic = properties.get(property);
         if (ic == null) {
             if (Objects.equals(value, property.defaultValue)) {
                 return;
