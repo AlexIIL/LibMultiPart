@@ -37,6 +37,9 @@ import alexiil.mc.lib.net.IMsgWriteCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetIdDataK;
+import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
+import alexiil.mc.lib.net.NetIdSignalK;
+import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdSingle;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
@@ -86,6 +89,17 @@ public abstract class AbstractPart {
 
     public void readRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
         ctx.assertClientSide();
+    }
+
+    /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart. */
+    public final <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
+        holder.getContainer().sendNetworkUpdate(obj, netId);
+    }
+
+    /** Sends the given {@link NetIdDataK} to every player currently watching this multipart, with a custom
+     * {@link IMsgDataWriterK}. */
+    public final <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer) {
+        holder.getContainer().sendNetworkUpdate(obj, netId, writer);
     }
 
     /** Called whenever this part was added to the {@link MultipartContainer}, either in {@link BlockEntity#validate()}

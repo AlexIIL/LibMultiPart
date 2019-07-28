@@ -10,6 +10,8 @@ package alexiil.mc.lib.multipart.api;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Identifier;
 
@@ -20,7 +22,7 @@ import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetObjectCache;
 
 /** Contains the definition for an {@link AbstractPart}. Used for saving and loading, and syncing server -> client. */
-public final class PartDefinition {
+public class PartDefinition {
     public static final Map<Identifier, PartDefinition> PARTS = new HashMap<>();
     public static final NetObjectCache<PartDefinition> ID_NET_CACHE;
 
@@ -32,16 +34,27 @@ public final class PartDefinition {
 
     public final Identifier identifier;
 
-    public final IPartNetLoader loader;
-    public final IPartNbtReader reader;
+    private final IPartNetLoader loader;
+    private final IPartNbtReader reader;
 
     public PartDefinition(Identifier identifier, IPartNbtReader reader, IPartNetLoader loader) {
+        Preconditions.checkNotNull(reader, "reader");
+        Preconditions.checkNotNull(loader, "loader");
         this.identifier = identifier;
         this.reader = reader;
         this.loader = loader;
     }
 
-    public void register(Identifier... oldNames) {
+    /** Protected constructor for use by subclasses that override both
+     * {@link #readFromNbt(MultipartHolder, CompoundTag)} and
+     * {@link #loadFromBuffer(MultipartHolder, NetByteBuf, IMsgReadCtx)}. */
+    protected PartDefinition(Identifier identifier) {
+        this.identifier = identifier;
+        this.reader = null;
+        this.loader = null;
+    }
+
+    public final void register(Identifier... oldNames) {
         PARTS.put(identifier, this);
         for (Identifier oldName : oldNames) {
             PARTS.put(oldName, this);
@@ -49,11 +62,17 @@ public final class PartDefinition {
     }
 
     public AbstractPart readFromNbt(MultipartHolder holder, CompoundTag nbt) {
+        if (reader == null) {
+            throw new IllegalStateException(getClass() + " needs to override readFromNbt(...)!");
+        }
         return reader.readFromNbt(this, holder, nbt);
     }
 
     public AbstractPart loadFromBuffer(MultipartHolder holder, NetByteBuf buffer, IMsgReadCtx ctx)
         throws InvalidInputDataException {
+        if (loader == null) {
+            throw new IllegalStateException(getClass() + " needs to override loadFromBuffer(...)!");
+        }
         return loader.loadFromBuffer(this, holder, buffer, ctx);
     }
 
