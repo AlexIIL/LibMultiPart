@@ -7,9 +7,12 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.util.Iterator;
 import java.util.Set;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.SystemUtil;
 
@@ -26,9 +29,10 @@ import alexiil.mc.lib.net.NetByteBuf;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 public final class PartHolder implements MultipartHolder {
-
     public final PartContainer container;
     public final AbstractPart part;
+
+    long uniqueId = NOT_ADDED_UNIQUE_ID;
 
     /** Every {@link PartHolder} that this requires to be present in the {@link MultipartContainer}. */
     Set<PartHolder> requiredParts;
@@ -37,15 +41,24 @@ public final class PartHolder implements MultipartHolder {
      * PartHolder that contains this in {@link #requiredParts}. */
     Set<PartHolder> inverseRequiredParts;
 
-    public PartHolder(PartContainer container, MultipartCreator creator) {
+    /** Identical to {@link #requiredParts}, but instead contains the position and uid of every {@link PartHolder} that
+     * is not currently loaded. */
+    Set<PosPartId> unloadedRequiredParts;
+
+    /** Identical to {@link #inverseRequiredParts}, but instead contains the position and uid of every
+     * {@link PartHolder} that is not currently loaded. */
+    Set<PosPartId> unloadedInverseRequiredParts;
+
+    PartHolder(PartContainer container, MultipartCreator creator) {
         this.container = container;
         this.part = creator.create(this);
     }
 
-    public PartHolder(PartContainer container, CompoundTag tag) {
+    PartHolder(PartContainer container, CompoundTag tag) {
         this.container = container;
         String id = tag.getString("id");
         PartDefinition def = PartDefinition.PARTS.get(Identifier.ofNullable(id));
+        uniqueId = tag.getLong("uid");
         if (def == null) {
             // The container shouldn't add this part
             part = null;
@@ -54,20 +67,86 @@ public final class PartHolder implements MultipartHolder {
             );
         } else {
             part = def.readFromNbt(this, tag.getCompound("data"));
+            LibMultiPart.LOGGER.info("  PartHolder.fromTag( " + uniqueId + ", " + part.getClass() + " ) {");
+
+            Tag reqltag = tag.getTag("req");
+            if (reqltag instanceof ListTag) {
+                ListTag reql = (ListTag) reqltag;
+                for (int i = 0; i < reql.size(); i++) {
+                    CompoundTag posPartTag = reql.getCompoundTag(i);
+                    LibMultiPart.LOGGER.info("    Required ( tag = " + posPartTag + " )");
+                    if (!PosPartId.isValid(posPartTag)) {
+                        LibMultiPart.LOGGER.info("      -- not valid!");
+                        continue;
+                    }
+                    if (unloadedRequiredParts == null) {
+                        unloadedRequiredParts = identityHashSet();
+                    }
+                    unloadedRequiredParts.add(new PosPartId(posPartTag));
+                }
+            }
+
+            Tag invreqltag = tag.getTag("invReq");
+            if (invreqltag instanceof ListTag) {
+                ListTag invreql = (ListTag) invreqltag;
+                for (int i = 0; i < invreql.size(); i++) {
+                    CompoundTag posPartTag = invreql.getCompoundTag(i);
+                    LibMultiPart.LOGGER.info("    InvReq ( tag = " + posPartTag + " )");
+                    if (!PosPartId.isValid(posPartTag)) {
+                        LibMultiPart.LOGGER.info("      -- not valid!");
+                        continue;
+                    }
+                    if (unloadedInverseRequiredParts == null) {
+                        unloadedInverseRequiredParts = identityHashSet();
+                    }
+                    unloadedInverseRequiredParts.add(new PosPartId(posPartTag));
+                }
+            }
         }
+
+        LibMultiPart.LOGGER.info("  }");
     }
 
-    public CompoundTag toTag() {
+    CompoundTag toTag() {
         CompoundTag nbt = new CompoundTag();
         if (part != null) {
+            nbt.putLong("uid", uniqueId);
             nbt.putString("id", part.definition.identifier.toString());
             nbt.put("data", part.toTag());
+            ListTag reql = new ListTag();
+            if (requiredParts != null) {
+                for (PartHolder req : requiredParts) {
+                    reql.add(new PosPartId(req).toTag());
+                }
+            }
+            if (unloadedRequiredParts != null) {
+                for (PosPartId req : unloadedRequiredParts) {
+                    reql.add(req.toTag());
+                }
+            }
+            if (!reql.isEmpty()) {
+                nbt.put("req", reql);
+            }
+            ListTag invReql = new ListTag();
+            if (inverseRequiredParts != null) {
+                for (PartHolder req : inverseRequiredParts) {
+                    invReql.add(new PosPartId(req).toTag());
+                }
+            }
+            if (unloadedInverseRequiredParts != null) {
+                for (PosPartId req : unloadedInverseRequiredParts) {
+                    invReql.add(req.toTag());
+                }
+            }
+            if (!invReql.isEmpty()) {
+                nbt.put("invReq", invReql);
+            }
         }
         return nbt;
     }
 
-    public PartHolder(PartContainer container, NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
-
+    PartHolder(PartContainer container, NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+        uniqueId = buffer.readLong();
         this.container = container;
         Identifier identifier = buffer.readIdentifierSafe();
         PartDefinition def = PartDefinition.PARTS.get(identifier);
@@ -77,9 +156,14 @@ public final class PartHolder implements MultipartHolder {
         part = def.loadFromBuffer(this, buffer, ctx);
     }
 
-    public void writeCreation(NetByteBuf buffer, IMsgWriteCtx ctx) {
+    void writeCreation(NetByteBuf buffer, IMsgWriteCtx ctx) {
+        buffer.writeLong(uniqueId);
         buffer.writeIdentifier(part.definition.identifier);
         part.writeCreationData(buffer, ctx);
+    }
+
+    static <T> ObjectOpenCustomHashSet<T> identityHashSet() {
+        return new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
     }
 
     @Override
@@ -98,8 +182,15 @@ public final class PartHolder implements MultipartHolder {
     }
 
     @Override
-    public int getPartIndex() {
-        return container.parts.indexOf(this);
+    public long getUniqueId() {
+        return uniqueId;
+    }
+
+    @Override
+    public boolean isPresent() {
+        boolean hasUid = uniqueId != NOT_ADDED_UNIQUE_ID;
+        assert container.parts.contains(this) == hasUid;
+        return hasUid;
     }
 
     @Override
@@ -119,21 +210,38 @@ public final class PartHolder implements MultipartHolder {
     /** Internal method for adding a required part.
      * 
      * @return True if this changed anything, false otherwise. */
-    private boolean addRequiredPart0(PartHolder req) {
+    boolean addRequiredPart0(PartHolder req) {
         if (req == null || req == this) {
             return false;
         }
 
-        assert container == req.container;
         assert container.parts.contains(this);
-        assert container.parts.contains(req);
+        assert req.container.parts.contains(req);
 
+        if (unloadedRequiredParts != null) {
+            unloadedRequiredParts.remove(new PosPartId(req));
+            if (unloadedRequiredParts.isEmpty()) {
+                unloadedRequiredParts = null;
+            }
+        }
         if (requiredParts == null) {
-            requiredParts = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+            requiredParts = identityHashSet();
         }
         if (requiredParts.add(req)) {
+            if (req.unloadedInverseRequiredParts != null) {
+                Iterator<PosPartId> iterator = req.unloadedInverseRequiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PosPartId id = iterator.next();
+                    if (id.isFor(this)) {
+                        iterator.remove();
+                    }
+                }
+                if (req.unloadedInverseRequiredParts.isEmpty()) {
+                    req.unloadedInverseRequiredParts = null;
+                }
+            }
             if (req.inverseRequiredParts == null) {
-                req.inverseRequiredParts = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+                req.inverseRequiredParts = identityHashSet();
             }
             boolean otherAdded = req.inverseRequiredParts.add(this);
             assert otherAdded : "We added but the other part didn't?";
@@ -145,8 +253,17 @@ public final class PartHolder implements MultipartHolder {
     /** Internal method for removing a required part.
      * 
      * @return True if this changed anything, false otherwise. */
-    private boolean removeRequiredPart0(PartHolder req) {
-        if (req == null || req == this || requiredParts == null) {
+    boolean removeRequiredPart0(PartHolder req) {
+        if (req == null || req == this) {
+            return false;
+        }
+        if (unloadedRequiredParts != null) {
+            unloadedRequiredParts.remove(new PosPartId(req));
+            if (unloadedRequiredParts.isEmpty()) {
+                unloadedRequiredParts = null;
+            }
+        }
+        if (requiredParts == null) {
             return false;
         }
         if (requiredParts.remove(req)) {
@@ -165,6 +282,7 @@ public final class PartHolder implements MultipartHolder {
     }
 
     public void clearRequiredParts() {
+        unloadedRequiredParts = null;
         if (requiredParts == null) {
             return;
         }

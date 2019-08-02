@@ -24,7 +24,6 @@ import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
-import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetIdDataK;
@@ -58,7 +57,9 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
     @Override
     public void fromTag(CompoundTag tag) {
         super.fromTag(tag);
-        container.fromTag(tag.getCompound("container"));
+        if (tag.containsKey("container")) {
+            container.fromTag(tag.getCompound("container"));
+        }
     }
 
     @Override
@@ -98,11 +99,11 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
 
     @Override
     public void onChunkUnload() {
-        container.fireEvent(PartContainerState.CHUNK_UNLOAD);
+        container.onChunkUnload();
     }
 
     public void onRemoved() {
-        container.fireEvent(PartContainerState.REMOVE);
+        container.onRemoved();
     }
 
     public PartContainer getContainer() {

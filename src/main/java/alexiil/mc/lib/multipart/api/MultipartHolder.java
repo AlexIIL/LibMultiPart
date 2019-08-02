@@ -10,6 +10,8 @@ package alexiil.mc.lib.multipart.api;
 /** Wrapper interface for an {@link AbstractPart} in a {@link MultipartContainer}. */
 public interface MultipartHolder {
 
+    public static final long NOT_ADDED_UNIQUE_ID = Long.MIN_VALUE;
+
     MultipartContainer getContainer();
 
     AbstractPart getPart();
@@ -17,16 +19,12 @@ public interface MultipartHolder {
     /** Removes this {@link #getPart()} from the container. */
     void remove();
 
-    /** @return The current index of this holder in {@link #getContainer()}.{@link MultipartContainer#getAllParts()
-     *         getAllParts()} */
-    default int getPartIndex() {
-        return getContainer().getAllParts().indexOf(getPart());
-    }
+    /** @return The (container-only) unique ID for this part holder, or {@link #NOT_ADDED_UNIQUE_ID} if this hasn't been
+     *         added to it's container. */
+    long getUniqueId();
 
     /** @return True if this holder is contained in it's {@link #getContainer()}, false otherwise. */
-    default boolean isPresent() {
-        return getPartIndex() >= 0;
-    }
+    boolean isPresent();
 
     /** Makes this {@link AbstractPart} depend on another part. */
     void addRequiredPart(AbstractPart other);

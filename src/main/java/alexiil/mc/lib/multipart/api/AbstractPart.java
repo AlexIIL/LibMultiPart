@@ -19,7 +19,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
-import net.minecraft.util.SystemUtil;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -41,8 +40,6 @@ import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdSingle;
-
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 /** The base class for every part in a multipart block. */
 public abstract class AbstractPart {
@@ -117,25 +114,12 @@ public abstract class AbstractPart {
         // Nothing to do by default
     }
 
-    protected void addDependentPart(AbstractPart required) {
-        if (required == null || required == this) {
-            return;
-        }
-        boolean fullChecks = false;
-        assert fullChecks = true;
-        if (fullChecks) {
-
-        }
-        if (dependentParts == null) {
-            dependentParts = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
-        }
-        if (dependentParts.add(required)) {
-
-        }
+    protected final void addRequiredPart(AbstractPart required) {
+        holder.addRequiredPart(required);
     }
 
-    protected void removeDependentPart() {
-
+    protected final void removeRequiredPart(AbstractPart required) {
+        holder.removeRequiredPart(required);
     }
 
     /** @return The {@link VoxelShape} to use for calculating if this pluggable overlaps with another pluggable. */

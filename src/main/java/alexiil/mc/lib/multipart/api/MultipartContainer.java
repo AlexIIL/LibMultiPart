@@ -94,6 +94,11 @@ public interface MultipartContainer {
         return list;
     }
 
+    /** @return The part that has the given {@link MultipartHolder#getUniqueId() container-only unique ID}, or null if
+     *         no parts have that unique id. */
+    @Nullable
+    AbstractPart getPart(long uniqueId);
+
     @Nullable
     PartOffer offerNewPart(MultipartCreator creator);
 

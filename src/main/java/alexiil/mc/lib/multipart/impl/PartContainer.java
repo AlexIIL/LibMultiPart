@@ -9,8 +9,13 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -59,6 +64,8 @@ import alexiil.mc.lib.net.ParentNetIdSingle;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 public class PartContainer implements MultipartContainer {
@@ -130,13 +137,18 @@ public class PartContainer implements MultipartContainer {
 
     public final SimpleEventBus eventBus = new SimpleEventBus(this);
     public final SimplePropertyContainer properties = new SimplePropertyContainer(this);
+
     public final List<PartHolder> parts = new ArrayList<>();
+    final Long2ObjectMap<PartHolder> partsByUid = new Long2ObjectOpenHashMap<>();
 
     MultipartBlockEntity blockEntity;
     VoxelShape cachedShape = null;
     VoxelShape cachedCollisionShape = null;
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
+
+    /** The next {@link PartHolder#uniqueId} to use. Incremented by one after every added part. */
+    long nextId = 1;
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
@@ -179,6 +191,13 @@ public class PartContainer implements MultipartContainer {
             list.add(holder.part);
         }
         return list;
+    }
+
+    @Override
+    public AbstractPart getPart(long uniqueId) {
+        PartHolder holder = partsByUid.get(uniqueId);
+        assert (holder == null) == (getAllParts(p -> p.holder.getUniqueId() == uniqueId).isEmpty());
+        return holder == null ? null : holder.part;
     }
 
     @Override
@@ -258,7 +277,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     void addPartInternal(PartHolder holder) {
+        assert holder.uniqueId == MultipartHolder.NOT_ADDED_UNIQUE_ID;
+        holder.uniqueId = nextId++;
         parts.add(holder);
+        partsByUid.put(holder.uniqueId, holder);
         holder.part.onAdded(eventBus);
         recalculateShape();
         eventBus.fireEvent(new PartAddedEvent(holder.part));
@@ -273,6 +295,7 @@ public class PartContainer implements MultipartContainer {
         PartHolder holder = new PartHolder(this, buffer, ctx);
         assert holder.part != null;
         parts.add(holder);
+        partsByUid.put(holder.uniqueId, holder);
         holder.part.onAdded(eventBus);
         eventBus.fireEvent(new PartAddedEvent(holder.part));
         recalculateShape();
@@ -298,32 +321,31 @@ public class PartContainer implements MultipartContainer {
         // Full removal
         Set<PartHolder> toRemove = getAllRemoved(holder);
 
-        IntList indexList = new IntArrayList();
+        Map<PartContainer, IntList> indexLists = new IdentityHashMap<>();
         for (PartHolder p : toRemove) {
-            indexList.add(parts.indexOf(p));
+            indexLists.computeIfAbsent(p.container, k -> new IntArrayList()).add(p.container.parts.indexOf(p));
         }
 
-        int[] indices = indexList.toIntArray();
-        Arrays.sort(indices);
-        assert indices.length > 0;
-        assert indices[0] >= 0;
-        if (indices.length == 1) {
-            removeSingle(indices[0]);
-            return true;
+        for (Entry<PartContainer, IntList> entry : indexLists.entrySet()) {
+            PartContainer c = entry.getKey();
+            int[] indices = entry.getValue().toIntArray();
+            if (indices.length == 1) {
+                c.removeSingle(indices[0]);
+            } else {
+                c.removeMultiple(indices);
+            }
         }
-        ArrayUtil.reverse(indices);
-        removeMultiple(indices);
         return true;
     }
 
     /** @return Every {@link PartHolder} that will be removed if the given part holder was removed. */
-    public Set<PartHolder> getAllRemoved(PartHolder holder) {
+    public static Set<PartHolder> getAllRemoved(PartHolder holder) {
         Set<PartHolder> toRemove = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
         Set<PartHolder> openSet = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
         openSet.add(holder);
 
         int iterationCount = 0;
-        int maxIterationCount = parts.size();
+        final int maxIterationCount = 10_000;
         while (!openSet.isEmpty()) {
             Iterator<PartHolder> iter = openSet.iterator();
             PartHolder next = iter.next();
@@ -333,7 +355,7 @@ public class PartContainer implements MultipartContainer {
             }
             if (iterationCount++ > maxIterationCount) {
                 LibMultiPart.LOGGER.warn(
-                    "Tried to remove " + iterationCount + " parts, but we only have " + maxIterationCount + " parts!"
+                    "Tried to remove " + iterationCount + " parts, which seems a little excessive!"
                 );
                 break;
             }
@@ -348,6 +370,7 @@ public class PartContainer implements MultipartContainer {
     private void removeSingle(int index) {
         PartHolder removed = parts.remove(index);
         assert removed != null;
+        partsByUid.remove(removed.uniqueId);
         removed.clearRequiredParts();
         if (!parts.isEmpty()) {
             sendNetworkUpdate(this, NET_ID_REMOVE_PART, (p, buffer, ctx) -> {
@@ -381,7 +404,9 @@ public class PartContainer implements MultipartContainer {
         if (index >= parts.size()) {
             throw new InvalidInputDataException("Invalid pluggable index " + index + " - we've probably got desynced!");
         }
+
         PartHolder removed = parts.remove(index);
+        partsByUid.remove(removed.uniqueId);
         eventBus.removeListeners(removed.part);
         removed.part.onRemoved();
         properties.clearValues(removed.part);
@@ -391,12 +416,16 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void removeMultiple(int[] indices) {
+        Arrays.sort(indices);
+        ArrayUtil.reverse(indices);
+
         PartHolder[] holders = new PartHolder[indices.length];
 
         for (int i = 0; i < indices.length; i++) {
             int partIndex = indices[i];
-            holders[i] = parts.remove(partIndex);
-            holders[i].clearRequiredParts();
+            PartHolder holder = holders[i] = parts.remove(partIndex);
+            holder.clearRequiredParts();
+            partsByUid.remove(holder.uniqueId);
         }
         if (!isClientWorld()) {
             sendNetworkUpdate(this, NET_ID_REMOVE_PART_MULTI, (p, buffer, ctx) -> {
@@ -553,14 +582,71 @@ public class PartContainer implements MultipartContainer {
     // Internals
 
     void fromTag(CompoundTag tag) {
+        LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
+        nextId = Long.MIN_VALUE;
+        boolean areIdsValid = true;
         ListTag allPartsTag = tag.getList("parts", new CompoundTag().getType());
         for (int i = 0; i < allPartsTag.size(); i++) {
             CompoundTag partTag = allPartsTag.getCompoundTag(i);
             PartHolder holder = new PartHolder(this, partTag);
             if (holder.part != null) {
                 parts.add(holder);
+                if (!areIdsValid) {
+                    continue;
+                }
+                nextId = Math.max(nextId, holder.uniqueId);
+                PartHolder prev = partsByUid.put(holder.uniqueId, holder);
+                if (prev != null) {
+                    // Two parts with the same UID
+                    areIdsValid = false;
+                    partsByUid.clear();
+                }
             }
         }
+        if (parts.isEmpty()) {
+            nextId = 0;
+            LibMultiPart.LOGGER.info("  parts is empty => nextId ← 0");
+        } else if (areIdsValid) {
+            nextId++;
+            LibMultiPart.LOGGER.info("  parts are valid => nextId++ (nextId = " + nextId + ")");
+        } else {
+            // One part had duplicate ID's.
+            // This essentially means we read invalid data
+            // so instead of dropping one of them we'll
+            // reset the nextId to a random number and re-assign everything
+            // (However always start way above 0 to make it less
+            // likely to overlap with the previous - supposedly valid - values)
+            nextId = ((long) new Random().nextInt() & 0x7fff_ffff) << 6l;
+            LibMultiPart.LOGGER.info("  parts are NOT valid => nextId ← rand (nextId = " + nextId + ")");
+
+            for (PartHolder holder : parts) {
+                holder.uniqueId = nextId++;
+                partsByUid.put(holder.uniqueId, holder);
+            }
+        }
+
+        for (PartHolder holder : parts) {
+            if (holder.unloadedRequiredParts != null) {
+                Iterator<PosPartId> iterator = holder.unloadedRequiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PosPartId id = iterator.next();
+                    if (id.posEquals(blockEntity.getPos())) {
+                        PartHolder other = partsByUid.get(id.uid);
+                        if (other == null) {
+                            // TODO: How can we handle this?
+                            LibMultiPart.LOGGER.warn("Failed to resolve a part to part requirement! " + id);
+                        } else {
+                            holder.addRequiredPart0(other);
+                        }
+                        iterator.remove();
+                    }
+                }
+            }
+            // We don't need to go through unloadedInverseRequiredParts
+            // because they must have been linked above
+        }
+
+        LibMultiPart.LOGGER.info("}");
     }
 
     CompoundTag toTag() {
@@ -583,6 +669,137 @@ public class PartContainer implements MultipartContainer {
 
     void invalidate() {
         eventBus.fireEvent(PartContainerState.INVALIDATE);
+        delinkOtherBlockRequired();
+    }
+
+    void onChunkUnload() {
+        eventBus.fireEvent(PartContainerState.CHUNK_UNLOAD);
+        delinkOtherBlockRequired();
+    }
+
+    private void delinkOtherBlockRequired() {
+        for (PartHolder holder : parts) {
+            if (holder.requiredParts != null) {
+                Iterator<PartHolder> iterator = holder.requiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PartHolder req = iterator.next();
+                    if (req.getContainer() == this) {
+                        continue;
+                    }
+                    if (holder.unloadedRequiredParts == null) {
+                        holder.unloadedRequiredParts = PartHolder.identityHashSet();
+                    }
+                    holder.unloadedRequiredParts.add(new PosPartId(req));
+                    iterator.remove();
+
+                    assert req.inverseRequiredParts != null;
+
+                    if (req.unloadedInverseRequiredParts == null) {
+                        req.unloadedInverseRequiredParts = PartHolder.identityHashSet();
+                    }
+                    req.unloadedInverseRequiredParts.add(new PosPartId(holder));
+                    boolean didRemove = req.inverseRequiredParts.remove(holder);
+                    assert didRemove;
+                }
+            }
+            if (holder.inverseRequiredParts != null) {
+                Iterator<PartHolder> iterator = holder.inverseRequiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PartHolder req = iterator.next();
+                    if (req.getContainer() == this) {
+                        continue;
+                    }
+                    if (holder.unloadedInverseRequiredParts == null) {
+                        holder.unloadedInverseRequiredParts = PartHolder.identityHashSet();
+                    }
+                    holder.unloadedInverseRequiredParts.add(new PosPartId(req));
+                    iterator.remove();
+
+                    assert req.requiredParts != null;
+
+                    if (req.unloadedRequiredParts == null) {
+                        req.unloadedRequiredParts = PartHolder.identityHashSet();
+                    }
+                    req.unloadedRequiredParts.add(new PosPartId(holder));
+                    boolean didRemove = req.requiredParts.remove(holder);
+                    assert didRemove;
+                }
+            }
+        }
+    }
+
+    private void linkOtherBlockRequired() {
+        LibMultiPart.LOGGER.info("PartContainer.link_req( " + getMultipartPos() + " ) {");
+        Map<BlockPos, PartContainer> others = new HashMap<>();
+        World world = getMultipartWorld();
+        for (PartHolder holder : parts) {
+            LibMultiPart.LOGGER.info(" Holder " + holder.uniqueId + " " + holder.part.getClass());
+            if (holder.unloadedRequiredParts != null) {
+                Iterator<PosPartId> iterator = holder.unloadedRequiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PosPartId req = iterator.next();
+                    LibMultiPart.LOGGER.info("  Required " + req);
+                    if (!world.isBlockLoaded(req.pos)) {
+                        LibMultiPart.LOGGER.info("    -- not loaded.");
+                        continue;
+                    }
+                    iterator.remove();
+                    PartContainer other = others.computeIfAbsent(req.pos, pos -> MultipartUtilImpl.get(world, pos));
+                    if (other == null) {
+                        // TODO: Log an error
+                        LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        continue;
+                    }
+                    AbstractPart otherPart = other.getPart(req.uid);
+                    if (otherPart == null) {
+                        // TODO: Log an error
+                        LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        continue;
+                    }
+                    holder.addRequiredPart(otherPart);
+                }
+            }
+            if (holder.unloadedInverseRequiredParts != null) {
+                Iterator<PosPartId> iterator = holder.unloadedInverseRequiredParts.iterator();
+                while (iterator.hasNext()) {
+                    PosPartId invreq = iterator.next();
+                    LibMultiPart.LOGGER.info("  InvReq " + invreq);
+                    if (!world.isBlockLoaded(invreq.pos)) {
+                        LibMultiPart.LOGGER.info("    -- not loaded.");
+                        continue;
+                    }
+                    iterator.remove();
+                    PartContainer other = others.computeIfAbsent(invreq.pos, pos -> MultipartUtilImpl.get(world, pos));
+                    if (other == null) {
+                        // TODO: Log an error
+                        LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        continue;
+                    }
+                    AbstractPart otherPart = other.getPart(invreq.uid);
+                    if (otherPart == null) {
+                        // TODO: Log an error
+                        LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        continue;
+                    }
+                    otherPart.holder.addRequiredPart(holder.part);
+                }
+            }
+            // Also: should removing a part force-load other blocks?
+            // that seems like a reasonable idea...
+        }
+        LibMultiPart.LOGGER.info("}");
+    }
+
+    void onRemoved() {
+        eventBus.fireEvent(PartContainerState.REMOVE);
+        // for (PartHolder holder : parts) {
+        // for (PartHolder inv : holder.inverseRequiredParts) {
+        // if (inv.container == this) {
+        // continue;
+        // }
+        // inv.remove();
+        // }
+        // }
     }
 
     void tick() {
@@ -601,7 +818,10 @@ public class PartContainer implements MultipartContainer {
             }
         }
 
-        hasTicked = true;
+        if (!hasTicked) {
+            hasTicked = true;
+            linkOtherBlockRequired();
+        }
     }
 
     void onListenerAdded(SingleListener<?> single) {
