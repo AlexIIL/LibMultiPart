@@ -24,6 +24,7 @@ import net.minecraft.world.dimension.DimensionType;
 import alexiil.mc.lib.attributes.Attribute;
 import alexiil.mc.lib.attributes.Attributes;
 import alexiil.mc.lib.multipart.api.event.MultipartEvent;
+import alexiil.mc.lib.multipart.api.event.PartTickEvent;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
@@ -99,9 +100,18 @@ public interface MultipartContainer {
     @Nullable
     AbstractPart getPart(long uniqueId);
 
+    /** Offers a new part to this container. Note that this can be called on the client as well as the server, however
+     * the client <em>cannot</em> add the resulting part offer to this container.
+     * 
+     * @param creator The creator which can create the actual part.
+     * @return either null (if the offered part was refused) or an offer object which lets you either add it via
+     *         {@link PartOffer#apply()}, or do nothing */
     @Nullable
     PartOffer offerNewPart(MultipartCreator creator);
 
+    /** Shorter form of {@link #offerNewPart(MultipartCreator)} followed by adding the offer if it was allowed.
+     * 
+     * @return The holder for the part if it was added, or null if it was not. */
     @Nullable
     default MultipartHolder addNewPart(MultipartCreator creator) {
         PartOffer offer = offerNewPart(creator);
@@ -174,6 +184,10 @@ public interface MultipartContainer {
     default boolean fireEvent(MultipartEvent event) {
         return getEventBus().fireEvent(event);
     }
+
+    /** @return True if {@link PartTickEvent} has been fired yet, or false if it hasn't. This is useful in cases where a
+     *         part might need to do world-dependent calculations in {@link AbstractPart#onAdded(MultipartEventBus)} */
+    boolean hasTicked();
 
     // Properties
 

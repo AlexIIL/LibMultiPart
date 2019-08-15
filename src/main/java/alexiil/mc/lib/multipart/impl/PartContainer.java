@@ -552,6 +552,9 @@ public class PartContainer implements MultipartContainer {
         for (int i = 0; i < count; i++) {
             PartHolder holder = new PartHolder(this, buffer, ctx);
             parts.add(holder);
+            partsByUid.put(holder.uniqueId, holder);
+        }
+        for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
         }
         validate();
@@ -572,6 +575,11 @@ public class PartContainer implements MultipartContainer {
     @Override
     public MultipartEventBus getEventBus() {
         return eventBus;
+    }
+
+    @Override
+    public boolean hasTicked() {
+        return hasTicked;
     }
 
     @Override

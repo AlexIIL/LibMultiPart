@@ -7,6 +7,9 @@
  */
 package alexiil.mc.lib.multipart.api;
 
+import alexiil.mc.lib.multipart.api.MultipartEventBus.ListenerInfo;
+import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+
 /** Wrapper interface for an {@link AbstractPart} in a {@link MultipartContainer}. */
 public interface MultipartHolder {
 
@@ -31,4 +34,23 @@ public interface MultipartHolder {
 
     /** Removes the requirement this has for the given part. (This inverts {@link #addRequiredPart(AbstractPart)} */
     void removeRequiredPart(AbstractPart other);
+
+    /** If {@link MultipartContainer#hasTicked()} returns true then this will just call the runnable directly, and
+     * return. Otherwise this will add an event listener for the {@link PartTickEvent}, and remove it when it is first
+     * ran. Enqueue's a {@link Runnable} to be run on the first {@link PartTickEvent} */
+    default void enqueueFirstTickTask(Runnable runnable) {
+        if (getContainer().hasTicked()) {
+            runnable.run();
+        } else {
+            MultipartEventBus eventBus = getContainer().getEventBus();
+            ListenerInfo<?>[] infos = new ListenerInfo<?>[1];
+            infos[0] = eventBus.addContextlessListener(getPart(), PartTickEvent.class, () -> {
+                if (infos[0] != null) {
+                    runnable.run();
+                    infos[0].remove();
+                    infos[0] = null;
+                }
+            });
+        }
+    }
 }

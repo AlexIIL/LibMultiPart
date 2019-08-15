@@ -32,7 +32,7 @@ public interface MultipartEventBus {
      *            {@link #removeListeners(Object)} will be called with that part.
      * @param clazz The type of event to listen to.
      * @throws NullPointerException if any of the arguments are null. */
-    <E extends MultipartEvent> void addListener(Object key, Class<E> clazz, EventListener<E> listener);
+    <E extends MultipartEvent> ListenerInfo<E> addListener(Object key, Class<E> clazz, EventListener<E> listener);
 
     /** Adds a listener for a specified {@link MultipartEvent} that also implements {@link ContextlessEvent} with a
      * {@link Runnable}.
@@ -47,9 +47,9 @@ public interface MultipartEventBus {
      *            {@link #removeListeners(Object)} will be called with that part.
      * @param clazz The type of event to listen to.
      * @throws NullPointerException if any of the arguments are null. */
-    default <E extends MultipartEvent & ContextlessEvent> void addContextlessListener(Object key, Class<E> clazz,
-        Runnable listener) {
-        addListener(key, clazz, new ContextlessListener<>(listener));
+    default <E extends MultipartEvent & ContextlessEvent> ListenerInfo<E> addContextlessListener(Object key, Class<
+        E> clazz, Runnable listener) {
+        return addListener(key, clazz, new ContextlessListener<>(listener));
     }
 
     /** Adds a listener for a specified {@link MultipartEvent} (and all of it's subclasses), but also passes the
@@ -65,10 +65,10 @@ public interface MultipartEventBus {
      *            {@link #removeListeners(Object)} will be called with that part.
      * @param clazz The type of event to listen to.
      * @throws NullPointerException if any of the arguments are null. */
-    default <E extends MultipartEvent> void addExternalListener(Object key, Class<E> clazz,
+    default <E extends MultipartEvent> ListenerInfo<E> addExternalListener(Object key, Class<E> clazz,
         MultipartEventExternalListener<E> listener) {
         final MultipartContainer container = getContainer();
-        addListener(key, clazz, new ExternalListener<>(container, listener));
+        return addListener(key, clazz, new ExternalListener<>(container, listener));
     }
 
     /** Fires the given event to all currently registered listeners.
@@ -109,6 +109,9 @@ public interface MultipartEventBus {
         Class<E> getListenerClass();
 
         EventListener<E> getListener();
+
+        /** Removes this listener. */
+        void remove();
     }
 
     /** An {@link EventListener} for a {@link ContextlessEvent} that is invoked with a {@link Runnable}. */

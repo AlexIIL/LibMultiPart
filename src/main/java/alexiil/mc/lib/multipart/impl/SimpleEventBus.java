@@ -77,7 +77,8 @@ public class SimpleEventBus implements MultipartEventBus {
     }
 
     @Override
-    public <E extends MultipartEvent> void addListener(Object key, Class<E> clazz, EventListener<E> listener) {
+    public <E extends MultipartEvent> ListenerInfo<E> addListener(Object key, Class<E> clazz, EventListener<
+        E> listener) {
         SingleListener<E> single = new SingleListener<>(key, clazz, listener);
         listeners.add(single);
         if (eventCallLevel > 0) {
@@ -88,6 +89,7 @@ public class SimpleEventBus implements MultipartEventBus {
             fireListenerAddEvent(single);
         }
         packedListeners = listeners.toArray(new SingleListener[0]);
+        return single;
     }
 
     protected <E extends MultipartEvent> void fireListenerAddEvent(SingleListener<E> single) {
@@ -129,17 +131,21 @@ public class SimpleEventBus implements MultipartEventBus {
             if (single.key == key) {
                 iter.remove();
                 removedAny = true;
-                if (eventCallLevel > 0) {
-                    listenersChanged.add(single);
-                    listenerChangedToAdd.add(false);
-                    didListenersChange = true;
-                } else {
-                    fireListenerRemoveEvent(single);
-                }
+                onRemoveListener(single);
             }
         }
         if (removedAny) {
             packedListeners = listeners.toArray(new SingleListener[0]);
+        }
+    }
+
+    private void onRemoveListener(SingleListener<?> single) {
+        if (eventCallLevel > 0) {
+            listenersChanged.add(single);
+            listenerChangedToAdd.add(false);
+            didListenersChange = true;
+        } else {
+            fireListenerRemoveEvent(single);
         }
     }
 
@@ -185,7 +191,7 @@ public class SimpleEventBus implements MultipartEventBus {
         return Collections.unmodifiableList(listeners);
     }
 
-    static class SingleListener<E extends MultipartEvent> implements ListenerInfo<E> {
+    class SingleListener<E extends MultipartEvent> implements ListenerInfo<E> {
 
         final Object key;
         final Class<E> clazz;
@@ -210,6 +216,13 @@ public class SimpleEventBus implements MultipartEventBus {
         @Override
         public EventListener<E> getListener() {
             return listener;
+        }
+
+        @Override
+        public void remove() {
+            listeners.remove(this);
+            onRemoveListener(this);
+            packedListeners = listeners.toArray(new SingleListener[0]);
         }
 
         boolean onEvent(MultipartEvent event) {

@@ -7,8 +7,6 @@
  */
 package alexiil.mc.lib.multipart.api;
 
-import java.util.Set;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.block.Block;
@@ -55,12 +53,6 @@ public abstract class AbstractPart {
 
     public final PartDefinition definition;
     public final MultipartHolder holder;
-
-    /** Every {@link AbstractPart} that this part requires. (This implies that removing any of the dependent parts will
-     * also remove this part).
-     * <p>
-     * The default value is null, which represents an empty set. */
-    Set<AbstractPart> dependentParts;
 
     public AbstractPart(PartDefinition definition, MultipartHolder holder) {
         this.definition = definition;
