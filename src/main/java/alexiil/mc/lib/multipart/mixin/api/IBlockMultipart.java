@@ -36,7 +36,7 @@ public interface IBlockMultipart<T> {
     void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player, T subpart);
 
     /** Called instead of {@link World#clearBlockState(BlockPos, boolean)} in
-     * {@link ServerPlayerInteractionManager#destroyBlock} */
+     * {@link ServerPlayerInteractionManager#tryBreakBlock} */
     boolean clearBlockState(World world, BlockPos pos, T subpart);
 
     /** Multipart version of {@link Block#onBroken(IWorld, BlockPos, BlockState)} */

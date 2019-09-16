@@ -25,13 +25,13 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
-import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdSingle;
 import alexiil.mc.lib.net.impl.ActiveMinecraftConnection;
 import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
+import alexiil.mc.lib.net.impl.McNetworkStack;
 
 public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnloadableBlockEntity {
 

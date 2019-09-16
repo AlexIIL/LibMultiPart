@@ -26,6 +26,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.SystemUtil;
 import net.minecraft.util.math.BlockPos;
@@ -282,11 +283,12 @@ public class PartContainer implements MultipartContainer {
         parts.add(holder);
         partsByUid.put(holder.uniqueId, holder);
         holder.part.onAdded(eventBus);
-        recalculateShape();
-        eventBus.fireEvent(new PartAddedEvent(holder.part));
+        // Send the new part information *now* because other parts have a chance to send network packets
         sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
             holder.writeCreation(buffer, ctx);
         });
+        recalculateShape();
+        eventBus.fireEvent(new PartAddedEvent(holder.part));
         blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
     }
 
@@ -389,8 +391,7 @@ public class PartContainer implements MultipartContainer {
 
     private void postRemovePart() {
         if (parts.isEmpty()) {
-            // TODO: Waterlogging!
-            blockEntity.world().setBlockState(getMultipartPos(), Blocks.AIR.getDefaultState());
+            blockEntity.world().clearBlockState(getMultipartPos(), false);
         } else {
             recalculateShape();
             blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
@@ -525,7 +526,10 @@ public class PartContainer implements MultipartContainer {
         }
         partModelKeys = list;
         if (isClientWorld()) {
-            blockEntity.world().scheduleBlockRender(blockEntity.getPos());
+            // Just to make the world always re-render even though our state hasn't changed
+            blockEntity.world().scheduleBlockRender(
+                blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState()
+            );
         } else {
             sendNetworkUpdate(this, NET_SIGNAL_REDRAW);
         }
@@ -819,6 +823,10 @@ public class PartContainer implements MultipartContainer {
                 MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE)
             );
             state = state.with(MultipartBlock.LUMINANCE, properties.getValue(MultipartProperties.LIGHT_VALUE));
+            boolean allowWater = properties.getValue(MultipartProperties.CAN_BE_WATERLOGGED);
+            if (!allowWater && oldState.get(Properties.WATERLOGGED)) {
+                state = state.with(Properties.WATERLOGGED, false);
+            }
             if (state != oldState) {
                 getMultipartWorld().setBlockState(getMultipartPos(), state);
             } else {
@@ -868,6 +876,18 @@ public class PartContainer implements MultipartContainer {
         if (property == MultipartProperties.LIGHT_VALUE) {
             BlockState state = getMultipartWorld().getBlockState(getMultipartPos());
             state = state.with(MultipartBlock.LUMINANCE, (Integer) current);
+            getMultipartWorld().setBlockState(getMultipartPos(), state);
+            return;
+        }
+
+        if (property == MultipartProperties.CAN_BE_WATERLOGGED) {
+            BlockState state = getMultipartWorld().getBlockState(getMultipartPos());
+            boolean val = Boolean.TRUE.equals(current);
+            boolean stateV = state.get(Properties.WATERLOGGED);
+            if (val || !stateV) {
+                return;
+            }
+            state = state.with(Properties.WATERLOGGED, Boolean.FALSE);
             getMultipartWorld().setBlockState(getMultipartPos(), state);
             return;
         }

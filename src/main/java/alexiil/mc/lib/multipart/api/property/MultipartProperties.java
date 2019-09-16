@@ -26,6 +26,9 @@ public final class MultipartProperties {
     /** The return value from {@link Block#emitsRedstonePower(BlockState)} */
     public static final MultipartProperty<Boolean> CAN_EMIT_REDSTONE;
 
+    /** The return value from {@link Block#emitsRedstonePower(BlockState)} */
+    public static final MultipartProperty<Boolean> CAN_BE_WATERLOGGED;
+
     private static final Map<Direction, StrongRedstonePowerProperty> STRONG_REDSTONE_POWER;
     private static final Map<Direction, WeakRedstonePowerProperty> WEAK_REDSTONE_POWER;
 
@@ -40,6 +43,7 @@ public final class MultipartProperties {
     static {
         LIGHT_VALUE = new IntegerBoundProperty("LIGHT_VALUE", 0, 15, 0);
         CAN_EMIT_REDSTONE = new PreferedBooleanProperty("EMITS_REDSTONE", false);
+        CAN_BE_WATERLOGGED = new PreferedBooleanProperty("WATERLOGGABLE", true);
         STRONG_REDSTONE_POWER = new EnumMap<>(Direction.class);
         WEAK_REDSTONE_POWER = new EnumMap<>(Direction.class);
         for (Direction dir : Direction.values()) {

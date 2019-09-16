@@ -14,22 +14,27 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.state.StateFactory.Builder;
 import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.IntegerProperty;
+import net.minecraft.state.property.IntProperty;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BoundingBox;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
@@ -47,10 +52,10 @@ import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
-    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider {
+    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider, Waterloggable {
 
-    public static final IntegerProperty LUMINANCE = IntegerProperty.create("luminance", 0, 15);
-    public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.create("emits_redstone");
+    public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
+    public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
     public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
         // X
@@ -66,13 +71,24 @@ public class MultipartBlock extends Block
 
     public MultipartBlock(Settings settings) {
         super(settings);
-        setDefaultState(getDefaultState().with(LUMINANCE, 0).with(EMITS_REDSTONE, false));
+        setDefaultState(
+            getDefaultState()//
+                .with(LUMINANCE, 0)//
+                .with(EMITS_REDSTONE, false)//
+                .with(Properties.WATERLOGGED, false)//
+        );
     }
+
+    // ###############
+    //
+    // Misc
+    //
+    // ###############
 
     @Override
     protected void appendProperties(Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(LUMINANCE, EMITS_REDSTONE);
+        builder.add(LUMINANCE, EMITS_REDSTONE, Properties.WATERLOGGED);
     }
 
     @Override
@@ -83,6 +99,11 @@ public class MultipartBlock extends Block
     @Override
     public BlockRenderLayer getRenderLayer() {
         return BlockRenderLayer.CUTOUT;
+    }
+
+    @Override
+    public int getLuminance(BlockState state) {
+        return state.get(LUMINANCE);
     }
 
     @Override
@@ -176,6 +197,12 @@ public class MultipartBlock extends Block
         return ItemStack.EMPTY;
     }
 
+    // ###############
+    //
+    // Redstone
+    //
+    // ###############
+
     @Override
     public boolean emitsRedstonePower(BlockState state) {
         return state.get(EMITS_REDSTONE);
@@ -205,12 +232,42 @@ public class MultipartBlock extends Block
         return 0;
     }
 
+    // ###############
+    //
+    // Waterloggable
+    //
+    // ###############
+
     @Override
-    public int getLuminance(BlockState state) {
-        return state.get(LUMINANCE);
+    public boolean canFillWithFluid(BlockView view, BlockPos pos, BlockState state, Fluid fluid) {
+        if (fluid != Fluids.WATER) {
+            return false;
+        }
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            return ((MultipartBlockEntity) be).container.properties.getValue(MultipartProperties.CAN_BE_WATERLOGGED);
+        }
+        return true;
     }
 
+    @Override
+    public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluid) {
+        if (!canFillWithFluid(world, pos, state, fluid.getFluid())) {
+            return false;
+        }
+        return Waterloggable.super.tryFillWithFluid(world, pos, state, fluid);
+    }
+
+    @Override
+    public FluidState getFluidState(BlockState state) {
+        return state.get(Properties.WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+    }
+
+    // ###############
+    //
     // IBlockMultipart
+    //
+    // ###############
 
     @Override
     public Class<TransientPartIdentifier> getKeyClass() {
@@ -258,7 +315,7 @@ public class MultipartBlock extends Block
     public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be,
         ItemStack stack, TransientPartIdentifier subpart) {
 
-        DefaultedList<ItemStack> drops = DefaultedList.create();
+        DefaultedList<ItemStack> drops = DefaultedList.of();
         subpart.part.addDrops(drops);
         for (AbstractPart additional : subpart.additional) {
             additional.addDrops(drops);
@@ -282,7 +339,7 @@ public class MultipartBlock extends Block
                 // TODO: Allow for parts made up of sub-parts!
 
                 VoxelShape shape = part.getDynamicShape(partialTicks);
-                for (BoundingBox box : shape.getBoundingBoxes()) {
+                for (Box box : shape.getBoundingBoxes()) {
                     if (box.expand(0.01).contains(vec)) {
                         return new TransientPartIdentifier(part);
                     }

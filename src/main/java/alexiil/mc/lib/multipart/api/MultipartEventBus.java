@@ -52,6 +52,37 @@ public interface MultipartEventBus {
         return addListener(key, clazz, new ContextlessListener<>(listener));
     }
 
+    /** Adds a listener for a specified {@link MultipartEvent} that also implements {@link ContextlessEvent} with a
+     * {@link Runnable}.
+     * <p>
+     * This makes only one guarantee for event listener ordering: all listeners added for the same key will be called in
+     * the order that they are registered.
+     * <p>
+     * After the event has been fired once the listener will be removed, which means that the given listener will only
+     * be called once (at most).
+     * 
+     * @param key The identifier for the listener, compared with identity equality (==) and <strong>not</strong> object
+     *            equality. Multiple listeners can be added with the same key. If the caller is an {@link AbstractPart},
+     *            and contained within this event bus's {@link #getContainer()} then it is strongly recommended that the
+     *            {@link AbstractPart} is re-used, because when that part is removed from the {@link MultipartContainer}
+     *            {@link #removeListeners(Object)} will be called with that part.
+     * @param clazz The type of event to listen to.
+     * @throws NullPointerException if any of the arguments are null. */
+    default <E extends MultipartEvent & ContextlessEvent> ListenerInfo<E> addRunOnceListener(Object key, Class<E> clazz,
+        Runnable listener) {
+
+        ListenerInfo<?>[] ref = new ListenerInfo<?>[1];
+        ListenerInfo<E> info = addContextlessListener(key, clazz, () -> {
+            if (ref[0] != null) {
+                listener.run();
+                ref[0].remove();
+                ref[0] = null;
+            }
+        });
+        ref[0] = info;
+        return info;
+    }
+
     /** Adds a listener for a specified {@link MultipartEvent} (and all of it's subclasses), but also passes the
      * {@link MultipartContainer} that the event was fired from ito the event handler.
      * <p>
@@ -112,6 +143,11 @@ public interface MultipartEventBus {
 
         /** Removes this listener. */
         void remove();
+
+        /** @return True if this listener is still registered (and so will receive the appropriate events in the future)
+         *         or false if it is not. (Note that this info object itself will continue to return false if this is
+         *         ever removed, even if the same {@link #getListener()} object is re-registered). */
+        boolean isPresent();
     }
 
     /** An {@link EventListener} for a {@link ContextlessEvent} that is invoked with a {@link Runnable}. */

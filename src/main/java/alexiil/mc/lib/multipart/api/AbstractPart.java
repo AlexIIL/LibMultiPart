@@ -133,7 +133,7 @@ public abstract class AbstractPart {
         return getShape();
     }
 
-    /** @return The (potentially dynamic) shape to show on the client for the bounding boxes. */
+    /** @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. */
     public VoxelShape getDynamicShape(float partialTicks) {
         return getCollisionShape();
     }

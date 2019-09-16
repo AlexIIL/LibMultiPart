@@ -57,7 +57,7 @@ public final class PartHolder implements MultipartHolder {
     PartHolder(PartContainer container, CompoundTag tag) {
         this.container = container;
         String id = tag.getString("id");
-        PartDefinition def = PartDefinition.PARTS.get(Identifier.ofNullable(id));
+        PartDefinition def = PartDefinition.PARTS.get(Identifier.tryParse(id));
         uniqueId = tag.getLong("uid");
         if (def == null) {
             // The container shouldn't add this part

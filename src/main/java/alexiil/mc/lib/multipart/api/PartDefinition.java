@@ -17,9 +17,9 @@ import net.minecraft.util.Identifier;
 
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
-import alexiil.mc.lib.net.McNetworkStack;
 import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetObjectCache;
+import alexiil.mc.lib.net.impl.McNetworkStack;
 
 /** Contains the definition for an {@link AbstractPart}. Used for saving and loading, and syncing server -> client. */
 public class PartDefinition {

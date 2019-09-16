@@ -61,6 +61,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
             + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"),
         method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z")
     void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
+//        LibMultiPart.LOGGER.info("[client] onBlockBreakStart( " + pos + " " + state + " )");
         Block block = state.getBlock();
         if (block instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> blockMulti = (IBlockMultipart<?>) block;
@@ -76,6 +77,8 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         HitResult hit = MinecraftClient.getInstance().hitResult;
         T key = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         partKey = key;
+//        LibMultiPart.LOGGER.info("[client] hit = " + hit);
+//        LibMultiPart.LOGGER.info("[client] key = " + key);
         blockMulti.onBlockBreakStart(state, world, pos, player, key);
     }
 
@@ -89,6 +92,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
     void breakBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
         World world = client.world;
         BlockState state = world.getBlockState(pos);
+//        LibMultiPart.LOGGER.info("[client] breakBlock( " + pos + " " + state + " )");
         if (state.getBlock() instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> blockMulti = (IBlockMultipart<?>) state.getBlock();
             Boolean ret = breakBlock0(pos, blockMulti);
@@ -104,8 +108,10 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         HitResult hit = MinecraftClient.getInstance().hitResult;
         World world = client.world;
         BlockState state = world.getBlockState(pos);
+//        LibMultiPart.LOGGER.info("[client] hit = " + hit);
         T target = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         T previous;
+//        LibMultiPart.LOGGER.info("[client] target = " + target);
         if (partKey == null) {
             previous = target;
         } else if (blockMulti.getKeyClass().isInstance(partKey)) {
@@ -113,6 +119,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         } else {
             previous = target;
         }
+//        LibMultiPart.LOGGER.info("[client] previous = " + previous);
         partKey = null;
         if (target == null || !Objects.equals(previous, target)) {
             LibMultiPart.LOGGER.info("Different subpart keys: previous = " + previous + ", current = " + target);

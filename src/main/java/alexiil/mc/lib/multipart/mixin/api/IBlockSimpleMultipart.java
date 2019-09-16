@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BoundingBox;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -32,7 +32,7 @@ public interface IBlockSimpleMultipart<T> extends IBlockMultipart<T> {
 
         for (Entry<T, VoxelShape> entry : map.entrySet()) {
             VoxelShape shape = entry.getValue();
-            for (BoundingBox box : shape.getBoundingBoxes()) {
+            for (Box box : shape.getBoundingBoxes()) {
                 if (box.expand(0.01).contains(hitVec)) {
                     return entry.getKey();
                 }

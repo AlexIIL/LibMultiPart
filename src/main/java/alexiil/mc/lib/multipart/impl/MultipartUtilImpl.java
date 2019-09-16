@@ -14,7 +14,10 @@ import javax.annotation.Nullable;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
@@ -46,8 +49,9 @@ public final class MultipartUtilImpl {
             return existing;
         }
 
-        // Currently multiparts don't support fluids
-        if (world.getFluidState(pos).getFluid() != Fluids.EMPTY) {
+        Fluid fluid = world.getFluidState(pos).getFluid();
+        boolean hasWater = fluid == Fluids.WATER;
+        if (fluid != Fluids.WATER && fluid != Fluids.EMPTY) {
             return null;
         }
 
@@ -59,7 +63,7 @@ public final class MultipartUtilImpl {
                 return null;
             }
             if (!conversions.isEmpty()) {
-                PartOffer offer = offerAdder(world, pos, conversions, null);
+                PartOffer offer = offerAdder(world, pos, hasWater, conversions, null);
                 if (offer == null) {
                     return null;
                 }
@@ -74,13 +78,14 @@ public final class MultipartUtilImpl {
     public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
 
         // See if there's an existing multipart that we can add to
-        PartContainer existing = get(world, pos);
-        if (existing != null) {
-            return existing.offerNewPart(creator);
+        PartContainer currentContainer = get(world, pos);
+        if (currentContainer != null) {
+            return currentContainer.offerNewPart(creator);
         }
 
-        // Currently multiparts don't support fluids
-        if (world.getFluidState(pos).getFluid() != Fluids.EMPTY) {
+        Fluid fluid = world.getFluidState(pos).getFluid();
+        boolean hasWater = fluid == Fluids.WATER;
+        if (fluid != Fluids.WATER && fluid != Fluids.EMPTY) {
             return null;
         }
 
@@ -92,7 +97,7 @@ public final class MultipartUtilImpl {
                 return null;
             }
             if (!conversions.isEmpty()) {
-                return offerAdder(world, pos, conversions, creator);
+                return offerAdder(world, pos, hasWater, conversions, creator);
             }
         } else if (!state.isAir()) {
             return null;
@@ -116,7 +121,9 @@ public final class MultipartUtilImpl {
 
             @Override
             public void apply() {
-                world.setBlockState(pos, LibMultiPart.BLOCK.getDefaultState());
+                BlockState newState = LibMultiPart.BLOCK.getDefaultState();
+                newState = newState.with(Properties.WATERLOGGED, hasWater);
+                world.setBlockState(pos, newState);
                 MultipartBlockEntity newBe = (MultipartBlockEntity) world.getBlockEntity(pos);
                 assert newBe != null;
                 newBe.container = container;
@@ -127,7 +134,7 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    private static PartOffer offerAdder(World world, BlockPos pos, List<MultipartCreator> existing,
+    private static PartOffer offerAdder(World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing,
         MultipartCreator creatorB) {
 
         MultipartBlockEntity be = new MultipartBlockEntity();
@@ -175,7 +182,9 @@ public final class MultipartUtilImpl {
                 container.parts.clear();
 
                 // Actually place the new multipart
-                world.setBlockState(pos, LibMultiPart.BLOCK.getDefaultState());
+                BlockState newState = LibMultiPart.BLOCK.getDefaultState();
+                newState = newState.with(Properties.WATERLOGGED, hasWater);
+                world.setBlockState(pos, newState);
                 MultipartBlockEntity newBe = (MultipartBlockEntity) world.getBlockEntity(pos);
                 assert newBe != null;
                 newBe.container = container;

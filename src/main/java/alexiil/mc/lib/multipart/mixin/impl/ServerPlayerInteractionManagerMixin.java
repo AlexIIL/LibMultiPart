@@ -58,18 +58,21 @@ public class ServerPlayerInteractionManagerMixin {
 
     @Inject(method = "update()V", at = @At("RETURN"))
     void update(CallbackInfo ci) {
-        if (!field_14003) {
+        if (!field_14003 && multipartKey != null) {
+            // LibMultiPart.LOGGER.info("[server] Cleared multipartKey");
             multipartKey = null;
         }
     }
 
     @Redirect(
-        method = "method_14263(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)V",
+        method = "method_14263(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/server/network/packet/PlayerActionC2SPacket/Action;"
+            + "Lnet/minecraft/util/math/Direction;I)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
-            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"))
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"))
     void onBlockBreakStart(BlockState state, World w, BlockPos pos, PlayerEntity pl) {
+        // LibMultiPart.LOGGER.info("[server] onBlockBreakStart( " + pos + " " + state + " )");
         if (state.getBlock() instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
             onBlockBreakStart0(state, w, pos, pl, block);
@@ -83,18 +86,22 @@ public class ServerPlayerInteractionManagerMixin {
 
         Vec3d vec = sentHitVec;
         if (vec == null) {
+            // LibMultiPart.LOGGER.info("[server] vec was null!");
             // Guess the hit vec from the player's look vector
-            VoxelShape shape = state.getCollisionShape(w, pos);
+            VoxelShape shape = state.getOutlineShape(w, pos);
             BlockHitResult rayTrace = shape.rayTrace(
                 pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos
             );
+            // LibMultiPart.LOGGER.info("[server] rayTrace = " + rayTrace);
             if (rayTrace == null) {
                 // This shouldn't really happen... lets just fail.
                 return;
             }
             vec = rayTrace.getPos();
         }
+        // LibMultiPart.LOGGER.info("[server] vec = " + vec);
         T bestKey = block.getTargetedMultipart(state, w, pos, vec);
+        // LibMultiPart.LOGGER.info("[server] bestKey = " + bestKey);
 
         if (bestKey == null) {
             // TODO!
@@ -104,17 +111,25 @@ public class ServerPlayerInteractionManagerMixin {
         }
     }
 
-    @Inject(method = "destroyBlock(Lnet/minecraft/util/math/BlockPos;)Z", at = @At("HEAD"), cancellable = true)
+    @Inject(
+        method = "tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;"
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"),
+        cancellable = true)
     void destroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
+        // LibMultiPart.LOGGER.info("[server] destroyBlock( " + pos + " )");
         BlockState state = world.getBlockState(pos);
-
-        if (!field_14003) {
-            // Being broken by a creative player
+        // LibMultiPart.LOGGER.info("[server] multipartKey = " + multipartKey);
+        if (multipartKey == null) {
+            // We haven't actually started breaking yet?
             onBlockBreakStart(state, world, pos, player);
         }
 
         Block block = state.getBlock();
         if (block instanceof IBlockMultipart<?>) {
+            // LibMultiPart.LOGGER.info("[server] multipartKey = " + multipartKey);
             boolean ret = destroyBlock0(pos, state, (IBlockMultipart<?>) block);
             ci.setReturnValue(ret);
         }
@@ -125,44 +140,56 @@ public class ServerPlayerInteractionManagerMixin {
             return false;
         }
         if (!block.getKeyClass().isInstance(multipartKey)) {
+            // LibMultiPart.LOGGER.info("[server] wrong key class");
             return false;
         }
         T key = block.getKeyClass().cast(multipartKey);
+        BlockEntity be = world.getBlockEntity(pos);
         block.onBreak(world, pos, state, player, key);
         if (block.clearBlockState(world, pos, key)) {
+            // LibMultiPart.LOGGER.info("[server] was cleared!");
             block.onBroken(world, pos, state, key);
+            if (!player.isCreative()) {
+                ItemStack stack = player.getMainHandStack();
+                stack.postMine(world, state, pos, player);
+                block.afterBreak(world, player, pos, state, be, stack, key);
+            }
             return true;
         } else {
+            // LibMultiPart.LOGGER.info("[server] wasn't cleared!");
             return false;
         }
     }
 
-    @Redirect(
-        method = "tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/block/Block;afterBreak(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;"
-            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/block/entity/BlockEntity;"
-            + "Lnet/minecraft/item/ItemStack;)V"))
-    void afterBreak(Block block, World w, PlayerEntity pl, BlockPos pos, BlockState state, BlockEntity be,
-        ItemStack stack) {
-        if (
-            !(block instanceof IBlockMultipart<?>)
-            || !afterBreak0((IBlockMultipart<?>) block, w, pl, pos, state, be, stack)
-        ) {
-            block.afterBreak(w, pl, pos, state, be, stack);
-        }
-    }
+    // @Redirect(
+    // method = "tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
+    // at = @At(
+    // value = "INVOKE",
+    // target =
+    // "Lnet/minecraft/block/Block;afterBreak(Lnet/minecraft/world/World;Lnet/minecraft/entity/player/PlayerEntity;"
+    // + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/block/entity/BlockEntity;"
+    // + "Lnet/minecraft/item/ItemStack;)V"))
+    // void afterBreak(Block block, World w, PlayerEntity pl, BlockPos pos, BlockState state, BlockEntity be,
+    // ItemStack stack) {
+    // if (
+    // !(block instanceof IBlockMultipart<?>) || !afterBreak0(
+    // (IBlockMultipart<?>) block, w, pl, pos, state, be, stack
+    // )
+    // ) {
+    // block.afterBreak(w, pl, pos, state, be, stack);
+    // }
+    // }
 
-    private <T> boolean afterBreak0(IBlockMultipart<T> block, World w, PlayerEntity pl, BlockPos pos, BlockState state,
-        BlockEntity be, ItemStack stack) {
-        if (multipartKey == null) {
-            return false;
-        }
-        if (!block.getKeyClass().isInstance(multipartKey)) {
-            return false;
-        }
-        block.afterBreak(w, pl, pos, state, be, stack, block.getKeyClass().cast(multipartKey));
-        return true;
-    }
+    // private <T> boolean afterBreak0(IBlockMultipart<T> block, World w, PlayerEntity pl, BlockPos pos, BlockState
+    // state,
+    // BlockEntity be, ItemStack stack) {
+    // if (multipartKey == null) {
+    // return false;
+    // }
+    // if (!block.getKeyClass().isInstance(multipartKey)) {
+    // return false;
+    // }
+    // block.afterBreak(w, pl, pos, state, be, stack, block.getKeyClass().cast(multipartKey));
+    // return true;
+    // }
 }

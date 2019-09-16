@@ -19,6 +19,9 @@ import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.multipart.api.event.PartListenerAdded;
 import alexiil.mc.lib.multipart.api.event.PartListenerRemoved;
 
+import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
+import it.unimi.dsi.fastutil.booleans.BooleanList;
+
 /** A simple, dumb, {@link ArrayList} based approach for storing event listeners. */
 public class SimpleEventBus implements MultipartEventBus {
 
@@ -34,7 +37,7 @@ public class SimpleEventBus implements MultipartEventBus {
     private boolean didListenersChange = false;
 
     private final List<SingleListener<?>> listenersChanged = new ArrayList<>();
-    private final List<Boolean> listenerChangedToAdd = new ArrayList<>();
+    private final BooleanList listenerChangedToAdd = new BooleanArrayList();
 
     public SimpleEventBus(PartContainer container) {
         this.container = container;
@@ -57,21 +60,31 @@ public class SimpleEventBus implements MultipartEventBus {
         } finally {
             eventCallLevel--;
         }
-        assert eventCallLevel >= 0;
-        if (eventCallLevel == 0 && didListenersChange) {
+        assert eventCallLevel >= 0 : "Event call level was negative? (" + eventCallLevel + ")";
+        if (eventCallLevel > 0) {
+            return anyHandled;
+        }
+        while (didListenersChange) {
+
+            assert eventCallLevel == 0 : "Event call level was non-zero? (" + eventCallLevel + ")";
+
             packedListeners = listeners.toArray(new SingleListener[0]);
+
+            SingleListener<?>[] changed = listenersChanged.toArray(new SingleListener<?>[0]);
+            boolean[] changedToAdd = listenerChangedToAdd.toBooleanArray();
+
+            listenersChanged.clear();
+            listenerChangedToAdd.clear();
             didListenersChange = false;
-            for (int i = 0; i < listenersChanged.size(); i++) {
-                SingleListener<?> single = listenersChanged.get(i);
-                Boolean didAdd = listenerChangedToAdd.get(i);
-                if (didAdd) {
+
+            for (int i = 0; i < changed.length; i++) {
+                SingleListener<?> single = changed[i];
+                if (changedToAdd[i]) {
                     fireListenerAddEvent(single);
                 } else {
                     fireListenerRemoveEvent(single);
                 }
             }
-            listenerChangedToAdd.clear();
-            listenersChanged.clear();
         }
         return anyHandled;
     }
@@ -109,13 +122,7 @@ public class SimpleEventBus implements MultipartEventBus {
             SingleListener<?> single = iter.previous();
             iter.remove();
             removedAny = true;
-            if (eventCallLevel > 0) {
-                listenersChanged.add(single);
-                listenerChangedToAdd.add(false);
-                didListenersChange = true;
-            } else {
-                fireListenerRemoveEvent(single);
-            }
+            onRemoveListener(single);
         }
         if (removedAny) {
             packedListeners = listeners.toArray(new SingleListener[0]);
@@ -140,6 +147,7 @@ public class SimpleEventBus implements MultipartEventBus {
     }
 
     private void onRemoveListener(SingleListener<?> single) {
+        single.isPresent = false;
         if (eventCallLevel > 0) {
             listenersChanged.add(single);
             listenerChangedToAdd.add(false);
@@ -196,6 +204,7 @@ public class SimpleEventBus implements MultipartEventBus {
         final Object key;
         final Class<E> clazz;
         final EventListener<E> listener;
+        boolean isPresent = true;
 
         public SingleListener(Object key, Class<E> clazz, EventListener<E> listener) {
             this.key = key;
@@ -231,6 +240,11 @@ public class SimpleEventBus implements MultipartEventBus {
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public boolean isPresent() {
+            return isPresent;
         }
     }
 }
