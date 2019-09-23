@@ -33,10 +33,10 @@ dependencies {
     modApi "net.fabricmc.fabric-api:fabric-api:0.3.1+build.208"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
-    modApi ("alexiil.mc.lib:libnetworkstack:$libnetworkstack_version") { transitive = false }
+    modApi "alexiil.mc.lib:libnetworkstack:$libnetworkstack_version"
 
     include "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
-    include ("alexiil.mc.lib:libnetworkstack:$libnetworkstack_version") { transitive = false }
+    include "alexiil.mc.lib:libnetworkstack:$libnetworkstack_version"
 
     // Misc
     compile "com.google.code.findbugs:jsr305:3.0.1"
