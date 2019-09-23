@@ -29,7 +29,7 @@ public class TransientPartIdentifier {
         this.part = part;
         this.subPart = null;
         PartHolder holder = (PartHolder) part.holder;
-        Set<PartHolder> set = holder.container.getAllRemoved(holder);
+        Set<PartHolder> set = PartContainer.getAllRemoved(holder);
         if (set.size() <= 1) {
             this.additional = Collections.emptySet();
         } else {
