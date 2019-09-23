@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.2.4-SNAPSHOT'
+    id 'fabric-loom' version '0.2.5-SNAPSHOT'
     id 'net.minecrell.licenser' version '0.4.1'
 }
 
@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.1.1+build.10"
+version = "0.1.1+build.11"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -27,13 +27,16 @@ minecraft {
 dependencies {
     minecraft "com.mojang:minecraft:1.14.4"
     mappings "net.fabricmc:yarn:1.14.4+build.9"
-    modCompile "net.fabricmc:fabric-loader:0.4.8+build.159"
+    modApi "net.fabricmc:fabric-loader:0.4.8+build.159"
 
     //Fabric api
-    modCompile "net.fabricmc.fabric-api:fabric-api:0.3.1+build.208"
+    modApi "net.fabricmc.fabric-api:fabric-api:0.3.1+build.208"
 
-    modCompile "alexiil.mc.lib:libblockattributes-core:0.4.12"
-    modCompile ("alexiil.mc.lib:libnetworkstack:0.1.2+build.1") { transitive = false }
+    modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
+    modApi ("alexiil.mc.lib:libnetworkstack:$libnetworkstack_version") { transitive = false }
+
+    include "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
+    include ("alexiil.mc.lib:libnetworkstack:$libnetworkstack_version") { transitive = false }
 
     // Misc
     compile "com.google.code.findbugs:jsr305:3.0.1"
@@ -81,34 +84,28 @@ publishing {
             url System.getenv("MAVEN_DIR") ?: "$projectDir/build/maven"
         }
     }
-    publications {
-       publishRemapJar(MavenPublication) {
-            groupId "alexiil.mc.lib"
-            artifactId "libmultipart"
-            version project.version
-
-            artifact (jar) {
-                classifier ""
-                builtBy remapJar
-            }
-            pom {
-                developers { developer { id = "AlexIIL" } }
-                dependencies { clear(); }
-            }
-        }
-        publishRemapSrcJar(MavenPublication) {
-            groupId "alexiil.mc.lib"
-            artifactId "libmultipart"
-            version project.version
-
-            artifact (sourcesJar) {
-                classifier "sources"
-                builtBy remapSourcesJar
-            }
-            pom {
-                developers { developer { id = "AlexIIL" } }
-                dependencies { clear(); }
-            }
-        }
-    }
 }
+
+// #####################
+//
+// Extra jar section
+//
+// #####################
+
+apply from: "extra_jar_def.gradle"
+
+// Variables (that should be changed)
+ext.mainName = "libmultipart"
+ext.mavenGroupId = "alexiil.mc.lib";
+
+def allIncludes = [
+    "assets/libmultipart/icon.png"
+];
+
+def jarDeps = [ 
+    ["alexiil.mc.lib", "libblockattributes-core", "$libblockattributes_version"],
+    ["alexiil.mc.lib", "libnetworkstack", "$libnetworkstack_version"]
+];
+
+generateJar("base", ["**"], [], true, [], [], jarDeps);
+generateJar("all", allIncludes, [], false, [], ["base"], [], jarDeps);
