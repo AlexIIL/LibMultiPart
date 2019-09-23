@@ -15,9 +15,11 @@ import alexiil.mc.lib.multipart.api.render.PartRenderContext;
 public final class NormalPartRenderContext implements PartRenderContext {
 
     public final RenderContext ctx;
+    public final boolean shouldQuadsBeLit;
 
-    public NormalPartRenderContext(RenderContext ctx) {
+    public NormalPartRenderContext(RenderContext ctx, boolean shouldQuadsBeLit) {
         this.ctx = ctx;
+        this.shouldQuadsBeLit = shouldQuadsBeLit;
     }
 
     @Override
@@ -28,5 +30,10 @@ public final class NormalPartRenderContext implements PartRenderContext {
     @Override
     public PartBreakContext getBreakContext() {
         return null;
+    }
+
+    @Override
+    public boolean shouldQuadsBeLit() {
+        return shouldQuadsBeLit;
     }
 }

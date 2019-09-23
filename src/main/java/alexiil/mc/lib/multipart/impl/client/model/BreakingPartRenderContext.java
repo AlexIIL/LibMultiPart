@@ -16,12 +16,15 @@ import alexiil.mc.lib.multipart.api.render.PartRenderContext;
 public final class BreakingPartRenderContext implements PartRenderContext, PartBreakContext {
 
     public final RenderContext renderContext;
+    public final boolean shouldQuadsBeLit;
 
     public final AbstractPart breakPart;
     public final Object breakSubPart;
 
-    public BreakingPartRenderContext(RenderContext renderContext, AbstractPart breakPart, Object breakSubPart) {
+    public BreakingPartRenderContext(RenderContext renderContext, boolean shouldQuadsBeLit, AbstractPart breakPart,
+        Object breakSubPart) {
         this.renderContext = renderContext;
+        this.shouldQuadsBeLit = shouldQuadsBeLit;
         this.breakPart = breakPart;
         this.breakSubPart = breakSubPart;
     }
@@ -34,6 +37,11 @@ public final class BreakingPartRenderContext implements PartRenderContext, PartB
     @Override
     public PartBreakContext getBreakContext() {
         return this;
+    }
+
+    @Override
+    public boolean shouldQuadsBeLit() {
+        return shouldQuadsBeLit;
     }
 
     @Override

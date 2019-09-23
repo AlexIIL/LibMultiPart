@@ -108,7 +108,7 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
                         AbstractPart part = identifier.part;
                         PartModelKey modelKey = part.getModelKey();
                         BreakingPartRenderContext partContext = new BreakingPartRenderContext(
-                            context, part, identifier.subPart
+                            context, false, part, identifier.subPart
                         );
                         if (modelKey != null) {
                             emitQuads(modelKey, modelKey.getClass(), partContext);
@@ -124,7 +124,7 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
                 }
             }
 
-            PartRenderContext ctx = new NormalPartRenderContext(context);
+            PartRenderContext ctx = new NormalPartRenderContext(context, false);
             for (PartModelKey key : container.getPartModelKeys()) {
                 emitQuads(key, key.getClass(), ctx);
             }

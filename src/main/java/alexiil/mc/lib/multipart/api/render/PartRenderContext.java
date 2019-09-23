@@ -26,6 +26,10 @@ public interface PartRenderContext extends RenderContext {
     @Nullable
     PartBreakContext getBreakContext();
 
+    /** @return True if the quads emitted to this render context should be pre-lit according to their direction (for
+     *         block models) or not (for item models). */
+    boolean shouldQuadsBeLit();
+
     // RenderContext delegates
 
     @Override
