@@ -25,12 +25,6 @@ import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
 public class LibMultiPartClient implements ClientModInitializer {
 
-    public static final ModelIdentifier MODEL_CANNOT_FIND_MASTER;
-
-    static {
-        MODEL_CANNOT_FIND_MASTER = new ModelIdentifier("libmultipart:block/cannot_find_master#");
-    }
-
     @Override
     public void onInitializeClient() {
         LibMultiPart.isWorldClientPredicate = w -> w != null && w == MinecraftClient.getInstance().world;
@@ -45,7 +39,7 @@ public class LibMultiPartClient implements ClientModInitializer {
     }
 
     private static void requestModels(ResourceManager res, Consumer<ModelIdentifier> out) {
-        out.accept(MODEL_CANNOT_FIND_MASTER);
+
     }
 
     private static UnbakedModel getModelForVariant(ModelIdentifier id) {

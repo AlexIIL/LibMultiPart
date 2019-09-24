@@ -430,7 +430,7 @@ public class PartContainer implements MultipartContainer {
         }
         if (!isClientWorld()) {
             sendNetworkUpdate(this, NET_ID_REMOVE_PART_MULTI, (p, buffer, ctx) -> {
-                buffer.writeVarInt(indices.length);
+                buffer.writeByte(indices.length);
                 for (int i : indices) {
                     buffer.writeByte(i);
                 }
@@ -463,7 +463,7 @@ public class PartContainer implements MultipartContainer {
 
     private void readRemovePartMulti(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
         ctx.assertClientSide();
-        int count = buffer.readVarInt();
+        int count = buffer.readUnsignedByte();
         int[] indices = new int[count];
         for (int i = 0; i < count; i++) {
             indices[i] = buffer.readUnsignedByte();
