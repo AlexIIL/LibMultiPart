@@ -56,7 +56,7 @@ public class ServerPlayerInteractionManagerMixin {
     @Unique
     Vec3d sentHitVec;
 
-    @Inject(method = "update()V", at = @At("RETURN"))
+    @Inject(method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;update()V", at = @At("RETURN"))
     void update(CallbackInfo ci) {
         if (!field_14003 && multipartKey != null) {
             // LibMultiPart.LOGGER.info("[server] Cleared multipartKey");
@@ -65,7 +65,8 @@ public class ServerPlayerInteractionManagerMixin {
     }
 
     @Redirect(
-        method = "method_14263(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/server/network/packet/PlayerActionC2SPacket/Action;"
+        method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;method_14263("
+            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/server/network/packet/PlayerActionC2SPacket$Action;"
             + "Lnet/minecraft/util/math/Direction;I)V",
         at = @At(
             value = "INVOKE",
@@ -112,7 +113,7 @@ public class ServerPlayerInteractionManagerMixin {
     }
 
     @Inject(
-        method = "tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
+        method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;"

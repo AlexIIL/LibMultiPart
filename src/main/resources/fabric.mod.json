@@ -25,15 +25,17 @@
   ],
   "icon": "assets/libmultipart/icon.png",
   "authors": [ "AlexIIL" ],
-  "custom": { "modmenu:api": "true" },
+  "custom": { "modmenu:api": true },
   "__buildscript_diff": {
-    "base": {
-      "~custom": { "+modmenu:parent": "libmultipart_deps_container" }
-    },
+    "base": {},
     "all": {
       "+id": "libmultipart_deps_container",
+      "+name": "LibMultiPart (Dependency Container)",
       "+depends": {
         "libmultipart": ">=$version"
+      },
+      "~custom": {
+        "+modmenu:parent": "libmultipart"
       },
       "-entrypoints": "",
       "-mixins": ""
