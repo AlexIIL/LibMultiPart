@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.1.1+build.18"
+version = "0.1.1+build.21"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -33,27 +33,14 @@ dependencies {
     modApi "net.fabricmc.fabric-api:fabric-api:0.3.1+build.208"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
-    modApi "alexiil.mc.lib:libnetworkstack:$libnetworkstack_version"
+    modApi "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"
 
     include "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
-    include "alexiil.mc.lib:libnetworkstack:$libnetworkstack_version"
+    include "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"
 
     // Misc
     compile "com.google.code.findbugs:jsr305:3.0.1"
     testCompile "junit:junit:4.12"
-}
-
-processResources {
-    inputs.property "version", project.version
-
-    from(sourceSets.main.resources.srcDirs) {
-        include "fabric.mod.json"
-        expand "version": project.version
-    }
-
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "fabric.mod.json"
-    }
 }
 
 compileJava {
@@ -98,14 +85,20 @@ apply from: "extra_jar_def.gradle"
 ext.mainName = "libmultipart"
 ext.mavenGroupId = "alexiil.mc.lib";
 
+ext.extra_jar_def__fabric_mod_json_replacements = [
+  ["\$version", project.version],
+  ["\$libblockattributes_version", "$libblockattributes_version"],
+  ["\$libnetworkstack_version", "$libnetworkstack_version"]
+];
+
 def allIncludes = [
     "assets/libmultipart/icon.png"
 ];
 
 def jarDeps = [ 
     ["alexiil.mc.lib", "libblockattributes-core", "$libblockattributes_version"],
-    ["alexiil.mc.lib", "libnetworkstack", "$libnetworkstack_version"]
+    ["alexiil.mc.lib", "libnetworkstack-base", "$libnetworkstack_version"]
 ];
 
-generateJar("base", ["**"], [], true, [], [], jarDeps);
+generateJar("base", ["**"], [], true);
 generateJar("all", allIncludes, [], false, [], ["base"], [], jarDeps);

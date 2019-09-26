@@ -16,8 +16,8 @@
   "depends": {
     "fabricloader": ">=0.4.0",
     "fabric": "*",
-    "libblockattributes_core": ">=0.5.0-pre6",
-    "libnetworkstack": ">=0.1.1"
+    "libblockattributes_core": "*",
+    "libnetworkstack": "*"
   },
   "mixins": [
     "libmultipart.client.json",
@@ -26,6 +26,12 @@
   "icon": "assets/libmultipart/icon.png",
   "authors": [ "AlexIIL" ],
   "custom": { "modmenu:api": true },
+  "__buildscript_inherit": {
+    "~depends": {
+      "+libblockattributes_core": ">=$libblockattributes_version",
+      "+libnetworkstack": ">=$libnetworkstack_version"
+    }
+  },
   "__buildscript_diff": {
     "base": {},
     "all": {
