@@ -47,7 +47,7 @@ public class LibMultiPartClient implements ClientModInitializer {
             if ("container".equals(id.getPath())) {
                 return new PreBakedModel(MultipartModel.INSTANCE);
             }
-            LibMultiPart.LOGGER.warn("[client.model] Unknown model variant request: " + id);
+            // LibMultiPart.LOGGER.warn("[client.model] Unknown model variant request: " + id);
             return null;
         }
         return null;

@@ -25,6 +25,7 @@
   ],
   "icon": "assets/libmultipart/icon.png",
   "authors": [ "AlexIIL" ],
+  "license": "Mozilla Public License Version 2.0",
   "custom": { "modmenu:api": true },
   "__buildscript_inherit": {
     "~depends": {

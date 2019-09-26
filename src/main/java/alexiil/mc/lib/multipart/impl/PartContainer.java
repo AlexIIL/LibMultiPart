@@ -594,7 +594,9 @@ public class PartContainer implements MultipartContainer {
     // Internals
 
     void fromTag(CompoundTag tag) {
-        LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
+        }
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
         ListTag allPartsTag = tag.getList("parts", new CompoundTag().getType());
@@ -615,12 +617,17 @@ public class PartContainer implements MultipartContainer {
                 }
             }
         }
+
         if (parts.isEmpty()) {
             nextId = 0;
-            LibMultiPart.LOGGER.info("  parts is empty => nextId ← 0");
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info("  parts is empty => nextId ← 0");
+            }
         } else if (areIdsValid) {
             nextId++;
-            LibMultiPart.LOGGER.info("  parts are valid => nextId++ (nextId = " + nextId + ")");
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info("  parts are valid => nextId++ (nextId = " + nextId + ")");
+            }
         } else {
             // One part had duplicate ID's.
             // This essentially means we read invalid data
@@ -629,7 +636,10 @@ public class PartContainer implements MultipartContainer {
             // (However always start way above 0 to make it less
             // likely to overlap with the previous - supposedly valid - values)
             nextId = ((long) new Random().nextInt() & 0x7fff_ffff) << 6l;
-            LibMultiPart.LOGGER.info("  parts are NOT valid => nextId ← rand (nextId = " + nextId + ")");
+
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId ← rand (nextId = " + nextId + ")");
+            }
 
             for (PartHolder holder : parts) {
                 holder.uniqueId = nextId++;
@@ -658,7 +668,9 @@ public class PartContainer implements MultipartContainer {
             // because they must have been linked above
         }
 
-        LibMultiPart.LOGGER.info("}");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("}");
+        }
     }
 
     CompoundTag toTag() {
@@ -741,31 +753,47 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void linkOtherBlockRequired() {
-        LibMultiPart.LOGGER.info("PartContainer.link_req( " + getMultipartPos() + " ) {");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("PartContainer.link_req( " + getMultipartPos() + " ) {");
+        }
         Map<BlockPos, PartContainer> others = new HashMap<>();
         World world = getMultipartWorld();
         for (PartHolder holder : parts) {
-            LibMultiPart.LOGGER.info(" Holder " + holder.uniqueId + " " + holder.part.getClass());
+
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info(" Holder " + holder.uniqueId + " " + holder.part.getClass());
+            }
+
             if (holder.unloadedRequiredParts != null) {
                 Iterator<PosPartId> iterator = holder.unloadedRequiredParts.iterator();
                 while (iterator.hasNext()) {
                     PosPartId req = iterator.next();
-                    LibMultiPart.LOGGER.info("  Required " + req);
+                    if (LibMultiPart.DEBUG) {
+                        LibMultiPart.LOGGER.info("  Required " + req);
+                    }
                     if (!world.isBlockLoaded(req.pos)) {
-                        LibMultiPart.LOGGER.info("    -- not loaded.");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.info("    -- not loaded.");
+                        }
                         continue;
                     }
                     iterator.remove();
                     PartContainer other = others.computeIfAbsent(req.pos, pos -> MultipartUtilImpl.get(world, pos));
                     if (other == null) {
                         // TODO: Log an error
-                        LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        }
                         continue;
                     }
                     AbstractPart otherPart = other.getPart(req.uid);
                     if (otherPart == null) {
                         // TODO: Log an error
-                        LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        } else {
+                            LibMultiPart.LOGGER.warn("[PartContainer.linkOtherBlockRequired] Failed to find the required part " + req.uid + " in " + other.parts + "!");
+                        }
                         continue;
                     }
                     holder.addRequiredPart(otherPart);
@@ -775,22 +803,32 @@ public class PartContainer implements MultipartContainer {
                 Iterator<PosPartId> iterator = holder.unloadedInverseRequiredParts.iterator();
                 while (iterator.hasNext()) {
                     PosPartId invreq = iterator.next();
-                    LibMultiPart.LOGGER.info("  InvReq " + invreq);
+                    if (LibMultiPart.DEBUG) {
+                        LibMultiPart.LOGGER.info("  InvReq " + invreq);
+                    }
                     if (!world.isBlockLoaded(invreq.pos)) {
-                        LibMultiPart.LOGGER.info("    -- not loaded.");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.info("    -- not loaded.");
+                        }
                         continue;
                     }
                     iterator.remove();
                     PartContainer other = others.computeIfAbsent(invreq.pos, pos -> MultipartUtilImpl.get(world, pos));
                     if (other == null) {
                         // TODO: Log an error
-                        LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                        }
                         continue;
                     }
                     AbstractPart otherPart = other.getPart(invreq.uid);
                     if (otherPart == null) {
                         // TODO: Log an error
-                        LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                        } else {
+                            LibMultiPart.LOGGER.warn("[PartContainer.linkOtherBlockRequired] Failed to find the required part " + invreq.uid + " in " + other.parts + "!");
+                        }
                         continue;
                     }
                     otherPart.holder.addRequiredPart(holder.part);
@@ -799,7 +837,10 @@ public class PartContainer implements MultipartContainer {
             // Also: should removing a part force-load other blocks?
             // that seems like a reasonable idea...
         }
-        LibMultiPart.LOGGER.info("}");
+
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("}");
+        }
     }
 
     void onRemoved() {

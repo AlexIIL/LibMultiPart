@@ -27,7 +27,6 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
-import alexiil.mc.lib.multipart.impl.LibMultiPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 
@@ -122,7 +121,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
 //        LibMultiPart.LOGGER.info("[client] previous = " + previous);
         partKey = null;
         if (target == null || !Objects.equals(previous, target)) {
-            LibMultiPart.LOGGER.info("Different subpart keys: previous = " + previous + ", current = " + target);
+//            LibMultiPart.LOGGER.info("Different subpart keys: previous = " + previous + ", current = " + target);
             currentBreakingPos = new BlockPos(currentBreakingPos.getX(), -1, currentBreakingPos.getZ());
             return Boolean.FALSE;
         }

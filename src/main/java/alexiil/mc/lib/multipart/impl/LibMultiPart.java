@@ -32,6 +32,7 @@ public class LibMultiPart implements ModInitializer {
 
     public static final String NAMESPACE = "libmultipart";
     public static final Logger LOGGER = LogManager.getLogger(NAMESPACE);
+    public static final boolean DEBUG = Boolean.getBoolean("libmultipart.debug");
 
     public static final MultipartBlock BLOCK;
     public static final BlockEntityType<MultipartBlockEntity> BLOCK_ENTITY;
@@ -41,9 +42,20 @@ public class LibMultiPart implements ModInitializer {
     static FloatSupplier partialTickGetter = () -> 1;
 
     static {
+        if (DEBUG) {
+            LOGGER.info(
+                "Debugging enabled for LibMultiPart - you can disable it by adding '-Dlibmultipart.debug=false' to your launch args"
+            );
+        } else {
+            LOGGER.debug(
+                "Debugging not enabled for LibMultiPart - you can enable it by adding '-Dlibmultipart.debug=true' to your launch args"
+            );
+        }
+
         Material material = new Material.Builder(MaterialColor.BLACK).build();
         BLOCK = new MultipartBlock(
-            FabricBlockSettings.of(material).dropsNothing().breakByHand(true).hardness(0.5f).resistance(2.0f).dynamicBounds().build()
+            FabricBlockSettings.of(material).dropsNothing().breakByHand(true).hardness(0.5f).resistance(2.0f)
+                .dynamicBounds().build()
         );
 
         Set<Block> blocks = Collections.singleton(BLOCK);

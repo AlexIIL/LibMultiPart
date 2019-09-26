@@ -67,16 +67,22 @@ public final class PartHolder implements MultipartHolder {
             );
         } else {
             part = def.readFromNbt(this, tag.getCompound("data"));
-            LibMultiPart.LOGGER.info("  PartHolder.fromTag( " + uniqueId + ", " + part.getClass() + " ) {");
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info("  PartHolder.fromTag( " + uniqueId + ", " + part.getClass() + " ) {");
+            }
 
             Tag reqltag = tag.getTag("req");
             if (reqltag instanceof ListTag) {
                 ListTag reql = (ListTag) reqltag;
                 for (int i = 0; i < reql.size(); i++) {
                     CompoundTag posPartTag = reql.getCompoundTag(i);
-                    LibMultiPart.LOGGER.info("    Required ( tag = " + posPartTag + " )");
+                    if (LibMultiPart.DEBUG) {
+                        LibMultiPart.LOGGER.info("    Required ( tag = " + posPartTag + " )");
+                    }
                     if (!PosPartId.isValid(posPartTag)) {
-                        LibMultiPart.LOGGER.info("      -- not valid!");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.info("      -- not valid!");
+                        }
                         continue;
                     }
                     if (unloadedRequiredParts == null) {
@@ -91,9 +97,14 @@ public final class PartHolder implements MultipartHolder {
                 ListTag invreql = (ListTag) invreqltag;
                 for (int i = 0; i < invreql.size(); i++) {
                     CompoundTag posPartTag = invreql.getCompoundTag(i);
-                    LibMultiPart.LOGGER.info("    InvReq ( tag = " + posPartTag + " )");
+                    if (LibMultiPart.DEBUG) {
+                        LibMultiPart.LOGGER.info("    InvReq ( tag = " + posPartTag + " )");
+                    }
+
                     if (!PosPartId.isValid(posPartTag)) {
-                        LibMultiPart.LOGGER.info("      -- not valid!");
+                        if (LibMultiPart.DEBUG) {
+                            LibMultiPart.LOGGER.info("      -- not valid!");
+                        }
                         continue;
                     }
                     if (unloadedInverseRequiredParts == null) {
@@ -104,7 +115,9 @@ public final class PartHolder implements MultipartHolder {
             }
         }
 
-        LibMultiPart.LOGGER.info("  }");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("  }");
+        }
     }
 
     CompoundTag toTag() {
@@ -164,6 +177,11 @@ public final class PartHolder implements MultipartHolder {
 
     static <T> ObjectOpenCustomHashSet<T> identityHashSet() {
         return new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+    }
+
+    @Override
+    public String toString() {
+        return "{PartHolder uid = " + uniqueId + ", part = " + part + "}";
     }
 
     @Override

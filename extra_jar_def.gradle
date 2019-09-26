@@ -119,7 +119,7 @@ generateJar("items", itemsReq, [], false, [], ["core"]);
 */
 
 // ==========
-// Changelog 
+// Changelog
 // ==========
 
 // 2019/09/26 AlexIIL: Add everything (and this changelog)
