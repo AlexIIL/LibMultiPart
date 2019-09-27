@@ -125,5 +125,50 @@
  * <p>
  * <h2>Properties</h2>
  * <p>
- * Properties are w */
+ * Properties are the way to change how the multipart block as a whole works - for example you can make the block emit
+ * light, redstone, etc. Usage is simple: each multipart has a
+ * {@link alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer MultipartPropertyContainer}, which can be
+ * used to map a specific part to a value for any given property, via
+ * {@link alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer #setValue(Object, alexiil.mc.lib.multipart.api.property.MultipartProperty, Object)
+ * setValue}. The default properties are static final fields in
+ * {@link alexiil.mc.lib.multipart.api.property.MultipartProperties}. Changing the value of a property as a whole will
+ * fire a {@link alexiil.mc.lib.multipart.api.property.PartPropertyChangedEvent PartPropertyChangedEvent}.
+ * <p>
+ * <h2>Rendering</h2>
+ * <p>
+ * There are two types of renderers: static and dynamic. Both renderers are registered in
+ * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry MultipartRenderRegistry}. Static renderers are
+ * akin to normal block models, except you have to:
+ * <ol>
+ * <li>Return a custom {@link alexiil.mc.lib.multipart.api.render.PartModelKey PartModelKey} from
+ * {@link alexiil.mc.lib.multipart.api.AbstractPart #getModelKey() AbstractPart#getModelKey()}</li>
+ * <li>Register a handler for that <em>exact</em> class in
+ * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry# registerBaker(Class, alexiil.mc.lib.multipart.api.render.PartModelBaker)
+ * MultipartRenderRegistry#registerBaker()}</li>
+ * <li>Actually emit the quads in
+ * {@link alexiil.mc.lib.multipart.api.render.PartModelBaker#emitQuads(alexiil.mc.lib.multipart.api.render.PartModelKey, alexiil.mc.lib.multipart.api.render.PartRenderContext)
+ * PartModelBaker#emitQuads()}</li>
+ * </ol>
+ * <p>
+ * Dynamic rendering is slightly simpler, as you do not have to go through a
+ * {@link alexiil.mc.lib.multipart.api.render.PartModelKey model key object} in order to render your quads.
+ * <ol>
+ * <li>Register a handler for the <em>exact</em> {@link alexiil.mc.lib.multipart.api.AbstractPart AbstractPart} class
+ * that you want to render in
+ * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry#registerRenderer(Class, alexiil.mc.lib.multipart.api.render.PartRenderer)
+ * MultipartRenderRegistry#registerRenderer()}</li>
+ * <li>Emit the quads in
+ * {@link alexiil.mc.lib.multipart.api.render.PartRenderer#render(AbstractPart, double, double, double, float, int)
+ * PartRenderer#render()}.</li>
+ * </ol>
+ * <p>
+ * <h2>Converting normal blocks into parts</h2>
+ * <p>
+ * If you wish a custom {@link net.minecraft.block.Block Block} to be turned into a multipart block (when another
+ * multipart is placed) you need to implement {@link alexiil.mc.lib.multipart.api.NativeMultipart NativeMultipart}, and
+ * then return a non-null list.
+ * <p>
+ * You can initiate this change at any time by calling
+ * {@link alexiil.mc.lib.multipart.api.MultipartUtil#turnIntoMultipart(net.minecraft.world.World, net.minecraft.util.math.BlockPos)
+ * MultipartUtil#turnIntoMultipart()}. */
 package alexiil.mc.lib.multipart.api;
