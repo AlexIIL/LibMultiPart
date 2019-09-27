@@ -47,6 +47,18 @@
  * Every part has a container-only unique ID ({@link alexiil.mc.lib.multipart.api.MultipartHolder#getUniqueId()
  * MultipartHolder.getUniqueId()}) which can be used to store a reference to an exact part at a given position.
  * <p>
+ * <h2>Part Shapes</h2>
+ * <p>
+ * Every part has 3 shape methods that they can override: {@link alexiil.mc.lib.multipart.api.AbstractPart#getShape()
+ * getShape()}, {@link alexiil.mc.lib.multipart.api.AbstractPart#getCollisionShape() getCollisionShape()}, and
+ * {@link alexiil.mc.lib.multipart.api.AbstractPart#getDynamicShape(float) getDynamicShape()}. The first method
+ * (getShape) is abstract, and is used for detecting if two parts occupy the same space inside a block. The second
+ * method (getCollisionShape) is used for nearly everything else - calculating lighting, solidity logic, and collisions
+ * with entities. If this isn't overridden then it defaults to returning the main getShape(). The final method
+ * (getDynamicShape()) is used for ray-tracing and client-side bounding boxes. It has a partialTicks parameter, which
+ * allows the bounding box to follow the motion of a part. (For example a buildcraft engine, or a buildcraft pipe
+ * pulser).
+ * <p>
  * <h2>Accessing Parts</h2>
  * <p>
  * Individual parts can be accessed via the various container methods all named similar to "getPart" or "getAllParts".
