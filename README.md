@@ -15,9 +15,11 @@ repositories {
 }
 
 dependencies {
-    modCompile "alexiil.mc.lib:libmultipart:0.1.0"
+    modCompile "alexiil.mc.lib:libmultipart-all:0.1.0"
 }
 ```
+
+There are two modules availible: "libmultipart-all" and "libmultipart-base". The base module is *just* libmultipart, while libmultipart-all includes libmultipart-base and it's dependencies: libblockattributes-core and libnetworkstack-base.
 
 ## Getting Started
 
