@@ -104,17 +104,31 @@ public interface MultipartContainer {
      * the client <em>cannot</em> add the resulting part offer to this container.
      * 
      * @param creator The creator which can create the actual part.
+     * @param respectEntityBBs
      * @return either null (if the offered part was refused) or an offer object which lets you either add it via
      *         {@link PartOffer#apply()}, or do nothing */
     @Nullable
-    PartOffer offerNewPart(MultipartCreator creator);
+    PartOffer offerNewPart(MultipartCreator creator, boolean respectEntityBBs);
 
-    /** Shorter form of {@link #offerNewPart(MultipartCreator)} followed by adding the offer if it was allowed.
+    /** Offers a new part to this container. Note that this can be called on the client as well as the server, however
+     * the client <em>cannot</em> add the resulting part offer to this container.
+     *
+     * @param creator The creator which can create the actual part.
+     * @return either null (if the offered part was refused) or an offer object which lets you either add it via
+     *         {@link PartOffer#apply()}, or do nothing */
+    @Nullable
+    default PartOffer offerNewPart(MultipartCreator creator) {
+        return offerNewPart(creator, true);
+    }
+
+
+
+    /** Shorter form of {@link #offerNewPart(MultipartCreator, boolean)} followed by adding the offer if it was allowed.
      * 
      * @return The holder for the part if it was added, or null if it was not. */
     @Nullable
-    default MultipartHolder addNewPart(MultipartCreator creator) {
-        PartOffer offer = offerNewPart(creator);
+    default MultipartHolder addNewPart(MultipartCreator creator, boolean respectEntityBBs) {
+        PartOffer offer = offerNewPart(creator, true);
         if (offer == null) {
             return null;
         }
@@ -122,12 +136,24 @@ public interface MultipartContainer {
         return offer.getHolder();
     }
 
+    default MultipartHolder addNewPart(MultipartCreator creator) {
+        return addNewPart(creator, true);
+    }
+
+    /** @return True if the part could have been added to the container, false otherwise.
+     *         <p>
+     *         Note that this will never actually add a part to the container, so it is safe to be called on the client
+     *         side. */
+    default boolean testNewPart(MultipartCreator creator, boolean respectEntityBBs) {
+        return offerNewPart(creator, respectEntityBBs) != null;
+    }
+
     /** @return True if the part could have been added to the container, false otherwise.
      *         <p>
      *         Note that this will never actually add a part to the container, so it is safe to be called on the client
      *         side. */
     default boolean testNewPart(MultipartCreator creator) {
-        return offerNewPart(creator) != null;
+        return offerNewPart(creator, true) != null;
     }
 
     @FunctionalInterface
@@ -139,7 +165,7 @@ public interface MultipartContainer {
         MultipartHolder getHolder();
 
         /** Adds the part to the holder, throwing an exception if anything about the container changed in the time
-         * between calling {@link MultipartContainer#offerNewPart(MultipartCreator)} and {@link #apply()}. */
+         * between calling {@link MultipartContainer#offerNewPart(MultipartCreator, boolean)} and {@link #apply()}. */
         void apply();
     }
 

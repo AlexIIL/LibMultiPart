@@ -73,7 +73,7 @@
  * {@link alexiil.mc.lib.multipart.api.MultipartUtil#offerNewPart(net.minecraft.world.World, net.minecraft.util.math.BlockPos, alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator)
  * MultipartUtil.offerNewPart(World, BlockPos, MultipartContainer.MultipartCreator)}</li>
  * <li>To an existing MultipartContainer:
- * {@link alexiil.mc.lib.multipart.api.MultipartContainer#offerNewPart(alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator)
+ * {@link alexiil.mc.lib.multipart.api.MultipartContainer#offerNewPart(MultipartContainer.MultipartCreator, boolean)
  * MultipartContainer.offerNewpart(MultipartContainer.MultipartCreator)}</li>
  * </ol>
  * Both of these methods have the same basic behaviour: they will not affect the world/container unless

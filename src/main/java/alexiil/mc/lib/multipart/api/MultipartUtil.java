@@ -33,7 +33,14 @@ public final class MultipartUtil {
      * {@link PartOffer} if */
     @Nullable
     public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
-        return MultipartUtilImpl.offerNewPart(world, pos, creator);
+        return offerNewPart(world, pos, creator, true);
+    }
+
+    /** Offers the given {@link AbstractPart} into the block at the given position. This may return a non-null
+     * {@link PartOffer} if */
+    @Nullable
+    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator, boolean respectEntityBBs) {
+        return MultipartUtilImpl.offerNewPart(world, pos, creator, respectEntityBBs);
     }
 
     /** Turns an existing {@link NativeMultipart} block into a {@link BlockEntity} based {@link MultipartContainer}.

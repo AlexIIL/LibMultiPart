@@ -15,7 +15,6 @@ import javax.annotation.Nullable;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.fluid.Fluid;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -75,12 +74,12 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
+    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator, boolean respectEntityBBs) {
 
         // See if there's an existing multipart that we can add to
         PartContainer currentContainer = get(world, pos);
         if (currentContainer != null) {
-            return currentContainer.offerNewPart(creator);
+            return currentContainer.offerNewPart(creator, respectEntityBBs);
         }
 
         Fluid fluid = world.getFluidState(pos).getFluid();
@@ -110,7 +109,7 @@ public final class MultipartUtilImpl {
         PartHolder holder = new PartHolder(container, creator);
         VoxelShape collisionShape = holder.part.getCollisionShape();
 
-        if (!world.intersectsEntities(null, collisionShape)) {
+        if (respectEntityBBs && (!collisionShape.isEmpty()) && !world.intersectsEntities(null, collisionShape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
             return null;
         }
         return new PartOffer() {
@@ -150,7 +149,7 @@ public final class MultipartUtilImpl {
             // Add the existing ones so that they can intercept the offered part
             container.parts.add(holder);
 
-            if (!world.intersectsEntities(null, holder.part.getCollisionShape())) {
+            if (!holder.part.getCollisionShape().isEmpty() && !world.intersectsEntities(null, holder.part.getCollisionShape().offset(pos.getX(), pos.getY(), pos.getZ()))) {
                 return null;
             }
         }
@@ -159,13 +158,13 @@ public final class MultipartUtilImpl {
         VoxelShape offeredShape = offeredHolder == null ? null : offeredHolder.part.getCollisionShape();
 
         if (offeredHolder != null) {
-            if (!world.intersectsEntities(null, offeredShape)) {
+            if (!offeredShape.isEmpty() && !world.intersectsEntities(null, offeredHolder.part.getCollisionShape().offset(pos.getX(), pos.getY(), pos.getZ()))) {
                 return null;
             }
 
             container.recalculateShape();
 
-            if (!container.canAdd(offeredHolder)) {
+            if (!container.canAdd(offeredHolder, true)) {
                 return null;
             }
         }
