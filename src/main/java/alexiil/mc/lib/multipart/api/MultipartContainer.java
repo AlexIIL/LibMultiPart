@@ -104,14 +104,14 @@ public interface MultipartContainer {
      * the client <em>cannot</em> add the resulting part offer to this container.
      * 
      * @param creator The creator which can create the actual part.
-     * @param respectEntityBBs
+     * @param respectEntityBBs whether to respect nearby entities bounding boxes, or not
      * @return either null (if the offered part was refused) or an offer object which lets you either add it via
      *         {@link PartOffer#apply()}, or do nothing */
     @Nullable
     PartOffer offerNewPart(MultipartCreator creator, boolean respectEntityBBs);
 
-    /** Offers a new part to this container. Note that this can be called on the client as well as the server, however
-     * the client <em>cannot</em> add the resulting part offer to this container.
+    /** Offers a new part to this container, respecting nearby entities' bounding boxes. Note that this can be called on
+     * the client as well as the server, however the client <em>cannot</em> add the resulting part offer to this container.
      *
      * @param creator The creator which can create the actual part.
      * @return either null (if the offered part was refused) or an offer object which lets you either add it via
@@ -128,7 +128,7 @@ public interface MultipartContainer {
      * @return The holder for the part if it was added, or null if it was not. */
     @Nullable
     default MultipartHolder addNewPart(MultipartCreator creator, boolean respectEntityBBs) {
-        PartOffer offer = offerNewPart(creator, true);
+        PartOffer offer = offerNewPart(creator, respectEntityBBs);
         if (offer == null) {
             return null;
         }
@@ -136,6 +136,9 @@ public interface MultipartContainer {
         return offer.getHolder();
     }
 
+    /** Shorter form of {@link #offerNewPart(MultipartCreator, boolean)} followed by adding the offer if it was allowed.
+     *
+     * @return The holder for the part if it was added, or null if it was not. */
     default MultipartHolder addNewPart(MultipartCreator creator) {
         return addNewPart(creator, true);
     }
