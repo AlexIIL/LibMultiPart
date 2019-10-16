@@ -204,7 +204,7 @@ public class PartContainer implements MultipartContainer {
     @Override
     public PartOffer offerNewPart(MultipartCreator creator, boolean respectEntityBBs) {
         PartHolder holder = new PartHolder(this, creator);
-        if (!canAdd(holder, true)) {
+        if (!canAdd(holder, respectEntityBBs)) {
             return null;
         }
         return new PartOffer() {
