@@ -202,9 +202,9 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
-    public PartOffer offerNewPart(MultipartCreator creator) {
+    public PartOffer offerNewPart(MultipartCreator creator, boolean respectEntityBBs) {
         PartHolder holder = new PartHolder(this, creator);
-        if (!canAdd(holder)) {
+        if (!canAdd(holder, respectEntityBBs)) {
             return null;
         }
         return new PartOffer() {
@@ -221,17 +221,19 @@ public class PartContainer implements MultipartContainer {
         };
     }
 
+
+
     @Override
     public MultipartHolder addNewPart(MultipartCreator creator) {
         PartHolder holder = new PartHolder(this, creator);
-        if (!canAdd(holder)) {
+        if (!canAdd(holder, true)) {
             return null;
         }
         addPartInternal(holder);
         return holder;
     }
 
-    boolean canAdd(PartHolder offered) {
+    boolean canAdd(PartHolder offered, boolean respectEntityBBs) {
         VoxelShape currentShape = getCurrentShape();
         for (PartHolder holder : parts) {
             AbstractPart part = holder.part;
@@ -268,6 +270,14 @@ public class PartContainer implements MultipartContainer {
 
             // Check with each part for overlaps
             if (!part.canOverlapWith(offered.part) || !offered.part.canOverlapWith(part)) {
+                return false;
+            }
+        }
+
+        if(respectEntityBBs) {
+            VoxelShape collisionShape = offered.getPart().getCollisionShape();
+            BlockPos pos = getMultipartPos();
+            if ((!collisionShape.isEmpty()) && !getMultipartWorld().intersectsEntities(null, collisionShape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
                 return false;
             }
         }

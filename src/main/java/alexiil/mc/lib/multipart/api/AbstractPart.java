@@ -122,7 +122,7 @@ public abstract class AbstractPart {
      * called if the shape of one of the parts is completely contained by the shape of the other part.
      * <p>
      * This is called once for each part currently contained in a {@link MultipartContainer} in
-     * {@link MultipartContainer#offerNewPart(MultipartCreator)}. */
+     * {@link MultipartContainer#offerNewPart(MultipartCreator, boolean)}. */
     public boolean canOverlapWith(AbstractPart other) {
         return false;
     }
