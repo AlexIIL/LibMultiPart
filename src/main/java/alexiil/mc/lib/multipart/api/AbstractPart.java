@@ -91,6 +91,19 @@ public abstract class AbstractPart {
         holder.getContainer().sendNetworkUpdate(obj, netId, writer);
     }
 
+    /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart,
+     * except for the given player. */
+    public final <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdTyped<T> netId) {
+        holder.getContainer().sendNetworkUpdateExcept(except, obj, netId);
+    }
+
+    /** Sends the given {@link NetIdDataK} to every player currently watching this multipart, with a custom
+     * {@link IMsgDataWriterK}, except for the given player. */
+    public final <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId,
+        IMsgDataWriterK<T> writer) {
+        holder.getContainer().sendNetworkUpdateExcept(except, obj, netId, writer);
+    }
+
     /** Called whenever this part was added to the {@link MultipartContainer}, either in {@link BlockEntity#validate()}
      * or when it is manually added by an item.
      * <p>
