@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import net.fabricmc.fabric.api.server.PlayerStream;
 
@@ -71,7 +72,7 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
 
     @Override
     public CompoundTag toInitialChunkDataTag() {
-        sendNetworkUpdate(container, PartContainer.NET_ID_INITIAL_RENDER_DATA);
+        sendNetworkUpdate(null, container, PartContainer.NET_ID_INITIAL_RENDER_DATA);
         return super.toInitialChunkDataTag();
     }
 
@@ -144,23 +145,29 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
     }
 
     /** Sends a network update update of the specified ID. */
-    final <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
+    final <T> void sendNetworkUpdate(@Nullable PlayerEntity except, T obj, NetIdTyped<T> netId) {
         if (isClientWorld()) {
             netId.send(getClientConnection(), obj);
         } else if (isServerWorld()) {
             for (PlayerEntity player : getPlayersWatching()) {
-                netId.send(getPlayerConnection(player), obj);
+                if (player != except) {
+                    netId.send(getPlayerConnection(player), obj);
+                }
             }
         }
     }
 
     /** Sends a network update update of the specified ID. */
-    final <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer) {
+    final <T> void sendNetworkUpdate(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
+        T> writer) {
+
         if (isClientWorld()) {
             netId.send(getClientConnection(), obj, writer);
         } else if (isServerWorld()) {
             for (PlayerEntity player : getPlayersWatching()) {
-                netId.send(getPlayerConnection(player), obj, writer);
+                if (player != except) {
+                    netId.send(getPlayerConnection(player), obj, writer);
+                }
             }
         }
     }

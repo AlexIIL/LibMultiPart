@@ -221,12 +221,10 @@ public class PartContainer implements MultipartContainer {
         };
     }
 
-
-
     @Override
-    public MultipartHolder addNewPart(MultipartCreator creator) {
+    public MultipartHolder addNewPart(MultipartCreator creator, boolean respectEntityBBs) {
         PartHolder holder = new PartHolder(this, creator);
-        if (!canAdd(holder, true)) {
+        if (!canAdd(holder, respectEntityBBs)) {
             return null;
         }
         addPartInternal(holder);
@@ -269,15 +267,16 @@ public class PartContainer implements MultipartContainer {
             }
 
             // Check with each part for overlaps
-            if (!part.canOverlapWith(offered.part) || !offered.part.canOverlapWith(part)) {
+            if (!part.canOverlapWith(offered.part) && !offered.part.canOverlapWith(part)) {
                 return false;
             }
         }
 
-        if(respectEntityBBs) {
-            VoxelShape collisionShape = offered.getPart().getCollisionShape();
+        VoxelShape collisionShape = offered.getPart().getCollisionShape();
+        if (respectEntityBBs && !collisionShape.isEmpty()) {
             BlockPos pos = getMultipartPos();
-            if ((!collisionShape.isEmpty()) && !getMultipartWorld().intersectsEntities(null, collisionShape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+            VoxelShape offsetShape = collisionShape.offset(pos.getX(), pos.getY(), pos.getZ());
+            if (!getMultipartWorld().intersectsEntities(null, offsetShape)) {
                 return false;
             }
         }
@@ -499,9 +498,6 @@ public class PartContainer implements MultipartContainer {
             for (PartHolder holder : parts) {
                 cachedCollisionShape = VoxelShapes.union(cachedCollisionShape, holder.part.getCollisionShape());
             }
-            if (cachedCollisionShape.isEmpty()) {
-                cachedCollisionShape = MultipartBlock.MISSING_PARTS_SHAPE;
-            }
         }
         return cachedCollisionShape;
     }
@@ -511,6 +507,9 @@ public class PartContainer implements MultipartContainer {
         VoxelShape shape = VoxelShapes.empty();
         for (PartHolder holder : parts) {
             shape = VoxelShapes.union(shape, holder.part.getDynamicShape(partialTicks));
+        }
+        if (shape.isEmpty()) {
+            shape = MultipartBlock.MISSING_PARTS_SHAPE;
         }
         return shape;
     }
@@ -577,13 +576,15 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
-    public <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
-        blockEntity.sendNetworkUpdate(obj, netId);
+    public <T> void sendNetworkUpdateExcept(PlayerEntity except, T obj, NetIdTyped<T> netId) {
+        blockEntity.sendNetworkUpdate(except, obj, netId);
     }
 
     @Override
-    public <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer) {
-        blockEntity.sendNetworkUpdate(obj, netId, writer);
+    public <T> void sendNetworkUpdateExcept(PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
+        T> writer) {
+
+        blockEntity.sendNetworkUpdate(except, obj, netId, writer);
     }
 
     @Override
@@ -802,7 +803,10 @@ public class PartContainer implements MultipartContainer {
                         if (LibMultiPart.DEBUG) {
                             LibMultiPart.LOGGER.warn("    -- didn't find uid!");
                         } else {
-                            LibMultiPart.LOGGER.warn("[PartContainer.linkOtherBlockRequired] Failed to find the required part " + req.uid + " in " + other.parts + "!");
+                            LibMultiPart.LOGGER.warn(
+                                "[PartContainer.linkOtherBlockRequired] Failed to find the required part " + req.uid
+                                    + " in " + other.parts + "!"
+                            );
                         }
                         continue;
                     }
@@ -837,7 +841,10 @@ public class PartContainer implements MultipartContainer {
                         if (LibMultiPart.DEBUG) {
                             LibMultiPart.LOGGER.warn("    -- didn't find uid!");
                         } else {
-                            LibMultiPart.LOGGER.warn("[PartContainer.linkOtherBlockRequired] Failed to find the required part " + invreq.uid + " in " + other.parts + "!");
+                            LibMultiPart.LOGGER.warn(
+                                "[PartContainer.linkOtherBlockRequired] Failed to find the required part " + invreq.uid
+                                    + " in " + other.parts + "!"
+                            );
                         }
                         continue;
                     }

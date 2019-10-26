@@ -195,11 +195,24 @@ public interface MultipartContainer {
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this
      * {@link #getMultipartBlockEntity()}. */
-    <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId);
+    default <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
+        sendNetworkUpdateExcept(null, obj, netId);
+    }
 
     /** Sends the given {@link NetIdDataK} to every player currently watching this {@link #getMultipartBlockEntity()},
      * with a custom {@link IMsgDataWriterK}. */
-    <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer);
+    default <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer) {
+        sendNetworkUpdateExcept(null, obj, netId, writer);
+    }
+
+    /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this
+     * {@link #getMultipartBlockEntity()}, except for the given player. */
+    <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdTyped<T> netId);
+
+    /** Sends the given {@link NetIdDataK} to every player currently watching this {@link #getMultipartBlockEntity()},
+     * with a custom {@link IMsgDataWriterK}, except for the given player. */
+    <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
+        T> writer);
 
     // Events
 
