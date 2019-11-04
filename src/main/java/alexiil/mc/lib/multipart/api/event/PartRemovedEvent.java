@@ -9,6 +9,7 @@ package alexiil.mc.lib.multipart.api.event;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 
+/** Fired after a part is removed from a container. The part that was removed will never receive this event! */
 public final class PartRemovedEvent extends MultipartEvent {
     public final AbstractPart removed;
 

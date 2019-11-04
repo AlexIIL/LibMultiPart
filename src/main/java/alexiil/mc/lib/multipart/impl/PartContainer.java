@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
 
@@ -192,6 +193,73 @@ public class PartContainer implements MultipartContainer {
             list.add(holder.part);
         }
         return list;
+    }
+
+    @Override
+    public List<AbstractPart> getAllParts(Predicate<AbstractPart> filter) {
+        List<AbstractPart> list = new ArrayList<>();
+        for (PartHolder holder : parts) {
+            if (filter.test(holder.part)) {
+                list.add(holder.part);
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public <P> List<P> getParts(Class<P> clazz) {
+        List<P> list = new ArrayList<>();
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+            if (clazz.isInstance(part)) {
+                list.add(clazz.cast(part));
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public <P> List<P> getParts(Class<P> clazz, Predicate<P> filter) {
+        List<P> list = new ArrayList<>();
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+            if (clazz.isInstance(part) && filter.test(clazz.cast(part))) {
+                list.add(clazz.cast(part));
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public AbstractPart getFirstPart(Predicate<AbstractPart> filter) {
+        for (PartHolder holder : parts) {
+            if (filter.test(holder.part)) {
+                return holder.part;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public <P> P getFirstPart(Class<P> clazz) {
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+            if (clazz.isInstance(part)) {
+                return clazz.cast(part);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public <P> P getFirstPart(Class<P> clazz, Predicate<P> filter) {
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+            if (clazz.isInstance(part) && filter.test(clazz.cast(part))) {
+                return clazz.cast(part);
+            }
+        }
+        return null;
     }
 
     @Override

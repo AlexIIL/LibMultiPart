@@ -10,7 +10,8 @@ package alexiil.mc.lib.multipart.api.event;
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 
-/** Fired whenever an {@link AbstractPart} is added to a {@link MultipartContainer}. */
+/** Fired whenever an {@link AbstractPart} is added to a {@link MultipartContainer}. Note that that part itself will
+ * *also* receive this event. */
 public final class PartAddedEvent extends MultipartEvent {
     public final AbstractPart part;
 

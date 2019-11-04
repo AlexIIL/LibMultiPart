@@ -95,6 +95,24 @@ public interface MultipartContainer {
         return list;
     }
 
+    @Nullable
+    default AbstractPart getFirstPart(Predicate<AbstractPart> filter) {
+        List<AbstractPart> parts = getAllParts(filter);
+        return parts.isEmpty() ? null : parts.get(0);
+    }
+
+    @Nullable
+    default <P> P getFirstPart(Class<P> clazz) {
+        List<P> parts = getParts(clazz);
+        return parts.isEmpty() ? null : parts.get(0);
+    }
+
+    @Nullable
+    default <P> P getFirstPart(Class<P> clazz, Predicate<P> filter) {
+        List<P> parts = getParts(clazz, filter);
+        return parts.isEmpty() ? null : parts.get(0);
+    }
+
     /** @return The part that has the given {@link MultipartHolder#getUniqueId() container-only unique ID}, or null if
      *         no parts have that unique id. */
     @Nullable

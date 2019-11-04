@@ -1,0 +1,5 @@
+Additions:
+
+* Added a 4 variants of MultipartContainer.getFirstPart().
+    * This takes 2 optional parameters: the class of the part,
+      and a predicate, and returns the first AbstractPart found that matches both.
