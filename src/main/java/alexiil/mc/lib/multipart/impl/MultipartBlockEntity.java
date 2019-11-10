@@ -13,6 +13,9 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.google.common.collect.ImmutableList;
+
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.server.PlayerStream;
 
 import net.minecraft.block.entity.BlockEntity;
@@ -25,6 +28,8 @@ import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
+import alexiil.mc.lib.multipart.api.render.PartModelKey;
+import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
@@ -34,7 +39,8 @@ import alexiil.mc.lib.net.impl.ActiveMinecraftConnection;
 import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 import alexiil.mc.lib.net.impl.McNetworkStack;
 
-public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnloadableBlockEntity {
+public class MultipartBlockEntity extends BlockEntity
+    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity {
 
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
@@ -170,6 +176,21 @@ public class MultipartBlockEntity extends BlockEntity implements Tickable, IUnlo
                 }
             }
         }
+    }
+
+    @Override
+    public PartModelData getRenderAttachmentData() {
+        ImmutableList.Builder<PartModelKey> list = ImmutableList.builder();
+        for (PartHolder holder : container.parts) {
+            PartModelKey key = holder.part.getModelKey();
+            if (key != null) {
+                list.add(key);
+            }
+        }
+        ImmutableList<PartModelKey> built = list.build();
+        // Refresh this, just to be on the safe side.
+        container.partModelKeys = built;
+        return new PartModelData(built);
     }
 
     // Events

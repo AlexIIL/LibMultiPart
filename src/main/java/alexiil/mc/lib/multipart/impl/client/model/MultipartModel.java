@@ -11,8 +11,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.Supplier;
 
+import com.google.common.collect.ImmutableList;
+
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -36,6 +39,7 @@ import alexiil.mc.lib.multipart.api.render.PartRenderContext;
 import alexiil.mc.lib.multipart.impl.MultipartBlockEntity;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
+import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
@@ -125,7 +129,14 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
             }
 
             PartRenderContext ctx = new NormalPartRenderContext(context, false);
-            for (PartModelKey key : container.getPartModelKeys()) {
+            ImmutableList<PartModelKey> keys = container.getPartModelKeys();
+            if (blockView instanceof RenderAttachedBlockView) {
+                Object data = ((RenderAttachedBlockView) blockView).getBlockEntityRenderAttachment(pos);
+                if (data instanceof PartModelData) {
+                    keys = ((PartModelData) data).keys;
+                }
+            }
+            for (PartModelKey key : keys) {
                 emitQuads(key, key.getClass(), ctx);
             }
         }
