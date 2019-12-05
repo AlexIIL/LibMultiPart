@@ -92,15 +92,13 @@ public class PartContainer implements MultipartContainer {
     }
 
     static {
-        NET_KEY = MultipartBlockEntity.NET_KEY.extractor(
-            PartContainer.class, "container", c -> c.blockEntity, b -> b.container
-        );
+        NET_KEY = MultipartBlockEntity.NET_KEY
+            .extractor(PartContainer.class, "container", c -> c.blockEntity, b -> b.container);
         NET_ID_ADD_PART = NET_KEY.idData("add_part").setReceiver(PartContainer::readAddPart);
         NET_ID_REMOVE_PART = NET_KEY.idData("remove_part").setReceiver(PartContainer::readRemovePart);
         NET_ID_REMOVE_PART_MULTI = NET_KEY.idData("remove_part_multi").setReceiver(PartContainer::readRemovePartMulti);
-        NET_ID_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").setReadWrite(
-            PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData
-        );
+        NET_ID_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data")
+            .setReadWrite(PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData);
         NET_SIGNAL_REDRAW = NET_KEY.idSignal("redraw").setReceiver(PartContainer::receiveRedraw);
         NET_KEY_PART = new ParentNetIdDuel<PartContainer, AbstractPart>(NET_KEY, "holder", AbstractPart.class) {
             @Override
@@ -148,6 +146,10 @@ public class PartContainer implements MultipartContainer {
     VoxelShape cachedCollisionShape = null;
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
+
+    /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
+     * that packet to only the player's who actually need it. */
+    boolean hasInitialisedFromRemote = false;
 
     /** The next {@link PartHolder#uniqueId} to use. Incremented by one after every added part. */
     long nextId = 1;
@@ -358,7 +360,8 @@ public class PartContainer implements MultipartContainer {
         assert holder.uniqueId == MultipartHolder.NOT_ADDED_UNIQUE_ID;
         holder.uniqueId = nextId++;
         parts.add(holder);
-        partsByUid.put(holder.uniqueId, holder);
+        PartHolder prev = partsByUid.put(holder.uniqueId, holder);
+        assert prev == null : "Already contained a part with the given ID";
         holder.part.onAdded(eventBus);
         // Send the new part information *now* because other parts have a chance to send network packets
         sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
@@ -374,7 +377,12 @@ public class PartContainer implements MultipartContainer {
         PartHolder holder = new PartHolder(this, buffer, ctx);
         assert holder.part != null;
         parts.add(holder);
-        partsByUid.put(holder.uniqueId, holder);
+        PartHolder prev = partsByUid.put(holder.uniqueId, holder);
+        if (prev != null) {
+            throw new InvalidInputDataException(
+                "Already contained a part with the uniqueId " + holder.uniqueId + "\n" + parts + "\n" + partsByUid
+            );
+        }
         holder.part.onAdded(eventBus);
         eventBus.fireEvent(new PartAddedEvent(holder.part));
         recalculateShape();
@@ -433,9 +441,8 @@ public class PartContainer implements MultipartContainer {
                 continue;
             }
             if (iterationCount++ > maxIterationCount) {
-                LibMultiPart.LOGGER.warn(
-                    "Tried to remove " + iterationCount + " parts, which seems a little excessive!"
-                );
+                LibMultiPart.LOGGER
+                    .warn("Tried to remove " + iterationCount + " parts, which seems a little excessive!");
                 break;
             }
             if (next.inverseRequiredParts == null) {
@@ -449,7 +456,8 @@ public class PartContainer implements MultipartContainer {
     private void removeSingle(int index) {
         PartHolder removed = parts.remove(index);
         assert removed != null;
-        partsByUid.remove(removed.uniqueId);
+        PartHolder removedById = partsByUid.remove(removed.uniqueId);
+        assert removedById == removed;
         removed.clearRequiredParts();
         if (!parts.isEmpty()) {
             sendNetworkUpdate(this, NET_ID_REMOVE_PART, (p, buffer, ctx) -> {
@@ -484,7 +492,9 @@ public class PartContainer implements MultipartContainer {
         }
 
         PartHolder removed = parts.remove(index);
-        partsByUid.remove(removed.uniqueId);
+        assert removed != null;
+        PartHolder removedById = partsByUid.remove(removed.uniqueId);
+        assert removedById == removed;
         eventBus.removeListeners(removed.part);
         removed.part.onRemoved();
         properties.clearValues(removed.part);
@@ -503,7 +513,8 @@ public class PartContainer implements MultipartContainer {
             int partIndex = indices[i];
             PartHolder holder = holders[i] = parts.remove(partIndex);
             holder.clearRequiredParts();
-            partsByUid.remove(holder.uniqueId);
+            PartHolder removedById = partsByUid.remove(holder.uniqueId);
+            assert removedById == holder;
         }
         if (!isClientWorld()) {
             sendNetworkUpdate(this, NET_ID_REMOVE_PART_MULTI, (p, buffer, ctx) -> {
@@ -604,9 +615,8 @@ public class PartContainer implements MultipartContainer {
         partModelKeys = list;
         if (isClientWorld()) {
             // Just to make the world always re-render even though our state hasn't changed
-            blockEntity.world().scheduleBlockRender(
-                blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState()
-            );
+            blockEntity.world()
+                .scheduleBlockRender(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
         } else {
             sendNetworkUpdate(this, NET_SIGNAL_REDRAW);
         }
@@ -622,6 +632,7 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void writeInitialRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {
+        ctx.assertServerSide();
         buffer.writeByte(parts.size());
         for (PartHolder holder : parts) {
             holder.writeCreation(buffer, ctx);
@@ -629,11 +640,19 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void readInitialRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+        ctx.assertClientSide();
+        if (hasInitialisedFromRemote) {
+            ctx.drop("Already initialised");
+            return;
+        }
+        hasInitialisedFromRemote = true;
+
         int count = buffer.readUnsignedByte();
         for (int i = 0; i < count; i++) {
             PartHolder holder = new PartHolder(this, buffer, ctx);
             parts.add(holder);
-            partsByUid.put(holder.uniqueId, holder);
+            PartHolder old = partsByUid.put(holder.uniqueId, holder);
+            assert old == null : "Already contained a part with the UID " + old.uniqueId + "!";
         }
         for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
@@ -649,8 +668,9 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
-    public <T> void sendNetworkUpdateExcept(PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
-        T> writer) {
+    public <T> void sendNetworkUpdateExcept(
+        PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
+    ) {
 
         blockEntity.sendNetworkUpdate(except, obj, netId, writer);
     }
@@ -945,9 +965,8 @@ public class PartContainer implements MultipartContainer {
         if (havePropertiesChanged) {
             havePropertiesChanged = false;
             final BlockState oldState = getMultipartWorld().getBlockState(getMultipartPos());
-            BlockState state = oldState.with(
-                MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE)
-            );
+            BlockState state = oldState
+                .with(MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE));
             state = state.with(MultipartBlock.LUMINANCE, properties.getValue(MultipartProperties.LIGHT_VALUE));
             boolean allowWater = properties.getValue(MultipartProperties.CAN_BE_WATERLOGGED);
             if (!allowWater && oldState.get(Properties.WATERLOGGED)) {

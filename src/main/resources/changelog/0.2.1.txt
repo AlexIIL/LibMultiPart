@@ -3,3 +3,19 @@ Additions:
 * Added a 4 variants of MultipartContainer.getFirstPart().
     * This takes 2 optional parameters: the class of the part,
       and a predicate, and returns the first AbstractPart found that matches both.
+* Added AbstractPart.onBreak and AbstractPart.onPlacedBy(player).
+* Added a system for subdivisble parts (parts made up of sub-objects) which can be broken individually
+    * This is intended for mods which add "fully divisible" blocks (such as break-every 4096th of a block)
+    * AbstractPart's which wish to use this should implement "SubdividedPart", and create a non-generic class
+      to hold the sub-part data.
+* [#8] Added a variant of MultipartUtil.get that takes a BlockView rather than a full World.
+
+Changes:
+
+* Mandated that this is for minecraft 1.14.4 *only* - this doesn't work with 1.15.
+* Changed the required LibNetworkStack version from 0.2.0 to 0.2.1.
+
+Bug Fixes:
+
+* Fixed multiparts not working correctly with more than 1 player.
+* Fixed multiparts not being placable in grass or other replacable materials.

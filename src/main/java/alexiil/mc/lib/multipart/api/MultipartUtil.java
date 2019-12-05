@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
@@ -24,13 +25,21 @@ public final class MultipartUtil {
 
     /** Checks to see if the block at the given position currently contains a full {@link MultipartContainer}. This does
      * not take into account {@link NativeMultipart}. */
+    // Left for binary compatibility
     @Nullable
     public static MultipartContainer get(World world, BlockPos pos) {
         return MultipartUtilImpl.get(world, pos);
     }
 
-    /** Offers the given {@link AbstractPart} into the block at the given position, respecting nearby entities' bounding boxes.
-     * This may return a non-nul {@link PartOffer} if */
+    /** Checks to see if the block at the given position currently contains a full {@link MultipartContainer}. This does
+     * not take into account {@link NativeMultipart}. */
+    @Nullable
+    public static MultipartContainer get(BlockView view, BlockPos pos) {
+        return MultipartUtilImpl.get(view, pos);
+    }
+
+    /** Offers the given {@link AbstractPart} into the block at the given position, respecting nearby entities' bounding
+     * boxes. This may return a non-null {@link PartOffer} if */
     @Nullable
     public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator) {
         return offerNewPart(world, pos, creator, true);

@@ -7,6 +7,8 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import javax.annotation.Nullable;
+
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 
@@ -46,9 +48,12 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.SubdividedPart;
 import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
+import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
+import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
@@ -124,7 +129,7 @@ public class MultipartBlock extends Block
 
             if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
                 Vec3d hitVec = MinecraftClient.getInstance().hitResult.getPos();
-                return getPartShape(state, (World) view, pos, hitVec);
+                return getPartOutlineShape(state, (World) view, pos, hitVec);
             }
 
             return container.container.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
@@ -152,8 +157,9 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public void neighborUpdate(BlockState state, World world, BlockPos thisPos, Block otherBlock, BlockPos otherPos,
-        boolean unknownBoolean) {
+    public void neighborUpdate(
+        BlockState state, World world, BlockPos thisPos, Block otherBlock, BlockPos otherPos, boolean unknownBoolean
+    ) {
         super.neighborUpdate(state, world, thisPos, otherBlock, otherPos, unknownBoolean);
         BlockEntity be = world.getBlockEntity(thisPos);
         if (be instanceof MultipartBlockEntity) {
@@ -163,8 +169,9 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public boolean activate(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand,
-        BlockHitResult hit) {
+    public boolean activate(
+        BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit
+    ) {
         boolean handled = super.activate(state, world, pos, player, hand, hit);
         TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hit.getPos());
         if (target != null) {
@@ -187,8 +194,8 @@ public class MultipartBlock extends Block
     @Environment(EnvType.CLIENT)
     public ItemStack getPickStack(BlockView view, BlockPos pos, BlockState state) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (view != null && view == mc.world) {
-            HitResult hit = mc.hitResult;
+        HitResult hit = mc.hitResult;
+        if (view != null && view == mc.world && hit != null) {
             TransientPartIdentifier target = getTargetedMultipart(state, (World) view, pos, hit.getPos());
             if (target != null) {
                 return target.part.getPickStack();
@@ -212,9 +219,8 @@ public class MultipartBlock extends Block
     public int getStrongRedstonePower(BlockState state, BlockView view, BlockPos pos, Direction oppositeFace) {
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
-            return ((MultipartBlockEntity) be).container.getProperties().getValue(
-                MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite())
-            );
+            return ((MultipartBlockEntity) be).container.getProperties()
+                .getValue(MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite()));
         }
         return 0;
     }
@@ -275,28 +281,48 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player,
-        TransientPartIdentifier subpart) {
+    public void onBlockBreakStart(
+        BlockState state, World world, BlockPos pos, PlayerEntity player, TransientPartIdentifier subpart
+    ) {
         onBlockBreakStart(state, world, pos, player);
     }
 
     @Override
-    public float calcBlockBreakingDelta(BlockState state, PlayerEntity player, BlockView view, BlockPos pos,
-        TransientPartIdentifier subpart) {
-
+    public float calcBlockBreakingDelta(
+        BlockState state, PlayerEntity player, BlockView view, BlockPos pos, TransientPartIdentifier subpart
+    ) {
         // TODO: More/less expensive depending on the part hit?
         return calcBlockBreakingDelta(state, player, view, pos);
     }
 
     @Override
-    public void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player,
-        TransientPartIdentifier subpart) {
+    public void onBreak(
+        World world, BlockPos pos, BlockState state, PlayerEntity player, TransientPartIdentifier subpart
+    ) {
+        if (subpart.extra instanceof IdSubPart<?>) {
+            if (onSubpartBreak(player, (IdSubPart<?>) subpart.extra)) {
+                return;
+            }
+        } else if (subpart.extra instanceof IdAdditional) {
+            for (AbstractPart part : ((IdAdditional) subpart.extra).additional) {
+                part.onBreak(player);
+            }
+        }
+        if (!subpart.part.onBreak(player)) {
+            onBreak(world, pos, state, player);
+        }
+    }
 
-        onBreak(world, pos, state, player);
+    private static <Sub> boolean onSubpartBreak(PlayerEntity player, IdSubPart<Sub> extra) {
+        return extra.part.onSubpartBreak(player, extra.subpart);
     }
 
     @Override
     public boolean clearBlockState(World world, BlockPos pos, TransientPartIdentifier subpart) {
+
+        if (subpart.extra instanceof IdSubPart<?>) {
+            return clearSubPart((IdSubPart<?>) subpart.extra);
+        }
 
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
@@ -306,21 +332,37 @@ public class MultipartBlock extends Block
         return world.clearBlockState(pos, false);
     }
 
+    private static <Sub> boolean clearSubPart(IdSubPart<Sub> extra) {
+        return extra.part.clearSubpart(extra.subpart);
+    }
+
     @Override
     public void onBroken(IWorld world, BlockPos pos, BlockState state, TransientPartIdentifier subpart) {
         onBroken(world, pos, state);
     }
 
     @Override
-    public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be,
-        ItemStack stack, TransientPartIdentifier subpart) {
+    public void afterBreak(
+        World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be, ItemStack stack,
+        TransientPartIdentifier subpart
+    ) {
 
         DefaultedList<ItemStack> drops = DefaultedList.of();
-        subpart.part.addDrops(drops);
-        for (AbstractPart additional : subpart.additional) {
-            additional.addDrops(drops);
+        if (subpart.extra instanceof IdSubPart<?>) {
+            afterSubpartBreak(player, stack, drops, (IdSubPart<?>) subpart.extra);
+        } else {
+            subpart.part.addDrops(drops);
+            for (AbstractPart additional : ((IdAdditional) subpart.extra).additional) {
+                additional.addDrops(drops);
+            }
         }
         ItemScatterer.spawn(world, pos, drops);
+    }
+
+    private static <Sub> void afterSubpartBreak(
+        PlayerEntity player, ItemStack tool, DefaultedList<ItemStack> drops, IdSubPart<Sub> extra
+    ) {
+        extra.part.afterSubpartBreak(player, tool, drops, extra.subpart);
     }
 
     @Override
@@ -336,7 +378,13 @@ public class MultipartBlock extends Block
             for (PartHolder holder : multi.container.parts) {
 
                 AbstractPart part = holder.getPart();
-                // TODO: Allow for parts made up of sub-parts!
+
+                if (part instanceof SubdividedPart<?>) {
+                    TransientPartIdentifier id = getTargetSubPart((SubdividedPart<?>) part, vec);
+                    if (id != null) {
+                        return id;
+                    }
+                }
 
                 VoxelShape shape = part.getDynamicShape(partialTicks);
                 for (Box box : shape.getBoundingBoxes()) {
@@ -350,12 +398,33 @@ public class MultipartBlock extends Block
         return null;
     }
 
+    @Nullable
+    private static <Sub> TransientPartIdentifier getTargetSubPart(SubdividedPart<Sub> part, Vec3d vec) {
+        Sub subpart = part.getTargetedSubpart(vec);
+        if (subpart != null) {
+            return new TransientPartIdentifier(part, subpart);
+        }
+        return null;
+    }
+
     @Override
-    public VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
+    public VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
         TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hitVec);
         if (target == null) {
             return VoxelShapes.empty();
         }
-        return target.part.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
+        float partialTicks = LibMultiPart.partialTickGetter.getAsFloat();
+        if (target.extra instanceof IdSubPart<?>) {
+            VoxelShape sub = getSubpartShape((IdSubPart<?>) target.extra, hitVec, partialTicks);
+            if (sub != null) {
+                return sub;
+            }
+        }
+        return target.part.getDynamicShape(partialTicks);
+    }
+
+    @Nullable
+    private static <S> VoxelShape getSubpartShape(IdSubPart<S> sub, Vec3d vec, float partialTicks) {
+        return sub.part.getSubpartDynamicShape(vec, sub.subpart, partialTicks);
     }
 }

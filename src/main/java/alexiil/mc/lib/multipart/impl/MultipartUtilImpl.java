@@ -19,6 +19,7 @@ import net.minecraft.fluid.Fluids;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.multipart.api.MultipartContainer;
@@ -33,7 +34,12 @@ public final class MultipartUtilImpl {
 
     @Nullable
     public static PartContainer get(World world, BlockPos pos) {
-        BlockEntity be = world.getBlockEntity(pos);
+        return get((BlockView) world, pos);
+    }
+
+    @Nullable
+    public static PartContainer get(BlockView view, BlockPos pos) {
+        BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             return ((MultipartBlockEntity) be).container;
         }
@@ -62,7 +68,7 @@ public final class MultipartUtilImpl {
                 return null;
             }
             if (!conversions.isEmpty()) {
-                PartOffer offer = offerAdder(world, pos, hasWater, conversions, null);
+                PartOffer offer = offerAdder(world, pos, hasWater, conversions, null, true);
                 if (offer == null) {
                     return null;
                 }
@@ -74,7 +80,9 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    public static PartOffer offerNewPart(World world, BlockPos pos, MultipartCreator creator, boolean respectEntityBBs) {
+    public static PartOffer offerNewPart(
+        World world, BlockPos pos, MultipartCreator creator, boolean respectEntityBBs
+    ) {
 
         // See if there's an existing multipart that we can add to
         PartContainer currentContainer = get(world, pos);
@@ -96,9 +104,9 @@ public final class MultipartUtilImpl {
                 return null;
             }
             if (!conversions.isEmpty()) {
-                return offerAdder(world, pos, hasWater, conversions, creator);
+                return offerAdder(world, pos, hasWater, conversions, creator, respectEntityBBs);
             }
-        } else if (!state.isAir()) {
+        } else if (!state.getMaterial().isReplaceable()) {
             return null;
         }
 
@@ -107,10 +115,12 @@ public final class MultipartUtilImpl {
         be.setPos(pos);
         PartContainer container = new PartContainer(be);
         PartHolder holder = new PartHolder(container, creator);
-        VoxelShape collisionShape = holder.part.getCollisionShape();
+        VoxelShape shape = holder.part.getCollisionShape();
 
-        if (respectEntityBBs && (!collisionShape.isEmpty()) && !world.intersectsEntities(null, collisionShape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
-            return null;
+        if (respectEntityBBs && !shape.isEmpty()) {
+            if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+                return null;
+            }
         }
         return new PartOffer() {
             @Override
@@ -133,8 +143,10 @@ public final class MultipartUtilImpl {
     }
 
     @Nullable
-    private static PartOffer offerAdder(World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing,
-        MultipartCreator creatorB) {
+    private static PartOffer offerAdder(
+        World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing, MultipartCreator creatorB,
+        boolean respectEntityBBs
+    ) {
 
         MultipartBlockEntity be = new MultipartBlockEntity();
         be.setWorld(world);
@@ -149,17 +161,22 @@ public final class MultipartUtilImpl {
             // Add the existing ones so that they can intercept the offered part
             container.parts.add(holder);
 
-            if (!holder.part.getCollisionShape().isEmpty() && !world.intersectsEntities(null, holder.part.getCollisionShape().offset(pos.getX(), pos.getY(), pos.getZ()))) {
-                return null;
+            VoxelShape shape = holder.part.getCollisionShape();
+            if (respectEntityBBs && !shape.isEmpty()) {
+                if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+                    return null;
+                }
             }
         }
 
         PartHolder offeredHolder = creatorB == null ? null : new PartHolder(container, creatorB);
-        VoxelShape offeredShape = offeredHolder == null ? null : offeredHolder.part.getCollisionShape();
 
         if (offeredHolder != null) {
-            if (!offeredShape.isEmpty() && !world.intersectsEntities(null, offeredHolder.part.getCollisionShape().offset(pos.getX(), pos.getY(), pos.getZ()))) {
-                return null;
+            VoxelShape shape = offeredHolder.part.getCollisionShape();
+            if (respectEntityBBs && !shape.isEmpty()) {
+                if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+                    return null;
+                }
             }
 
             container.recalculateShape();

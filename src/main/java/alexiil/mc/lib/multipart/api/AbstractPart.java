@@ -13,6 +13,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.DefaultedList;
@@ -46,9 +47,8 @@ public abstract class AbstractPart {
 
     static {
         NET_ID = PartContainer.NET_KEY_PART;
-        NET_RENDER_DATA = NET_ID.idData("render_data").setReadWrite(
-            AbstractPart::readRenderData, AbstractPart::writeRenderData
-        );
+        NET_RENDER_DATA
+            = NET_ID.idData("render_data").setReadWrite(AbstractPart::readRenderData, AbstractPart::writeRenderData);
     }
 
     public final PartDefinition definition;
@@ -99,8 +99,9 @@ public abstract class AbstractPart {
 
     /** Sends the given {@link NetIdDataK} to every player currently watching this multipart, with a custom
      * {@link IMsgDataWriterK}, except for the given player. */
-    public final <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId,
-        IMsgDataWriterK<T> writer) {
+    public final <T> void sendNetworkUpdateExcept(
+        @Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
+    ) {
         holder.getContainer().sendNetworkUpdateExcept(except, obj, netId, writer);
     }
 
@@ -117,6 +118,21 @@ public abstract class AbstractPart {
 
     public void onRemoved() {
         // Nothing to do by default
+    }
+
+    /** Open method, that's designed to be called from the {@link Item} that places this part into the world.
+     * <p>
+     * (Nothing calls this by default, as all parts are placed from a custom item). */
+    public void onPlacedBy(PlayerEntity player, Hand hand) {
+        // Nothing to do by default
+    }
+
+    /** Called instead of {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)}, to play the broken sound.
+     * 
+     * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)}from being
+     *         called afterwards, false otherwise. */
+    public boolean onBreak(PlayerEntity player) {
+        return false;
     }
 
     protected final void addRequiredPart(AbstractPart required) {

@@ -21,8 +21,9 @@ public final class BreakingPartRenderContext implements PartRenderContext, PartB
     public final AbstractPart breakPart;
     public final Object breakSubPart;
 
-    public BreakingPartRenderContext(RenderContext renderContext, boolean shouldQuadsBeLit, AbstractPart breakPart,
-        Object breakSubPart) {
+    public BreakingPartRenderContext(
+        RenderContext renderContext, boolean shouldQuadsBeLit, AbstractPart breakPart, Object breakSubPart
+    ) {
         this.renderContext = renderContext;
         this.shouldQuadsBeLit = shouldQuadsBeLit;
         this.breakPart = breakPart;

@@ -54,6 +54,10 @@ public class PartDefinition {
         this.loader = null;
     }
 
+    public final void register() {
+        PARTS.put(identifier, this);
+    }
+
     public final void register(Identifier... oldNames) {
         PARTS.put(identifier, this);
         for (Identifier oldName : oldNames) {

@@ -39,6 +39,8 @@ import alexiil.mc.lib.multipart.api.render.PartRenderContext;
 import alexiil.mc.lib.multipart.impl.MultipartBlockEntity;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
+import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
+import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
@@ -91,17 +93,18 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
     }
 
     @Override
-    public void emitBlockQuads(ExtendedBlockView blockView, BlockState state, BlockPos pos, Supplier<
-        Random> randomSupplier, RenderContext context) {
-
+    public void emitBlockQuads(
+        ExtendedBlockView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier,
+        RenderContext context
+    ) {
         BlockEntity be = blockView.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             PartContainer container = ((MultipartBlockEntity) be).getContainer();
 
             MinecraftClient mc = MinecraftClient.getInstance();
             if (
-                mc.isOnThread() && ((IWorldRendererMixin) mc.worldRenderer)
-                    .libmultipart_isRenderingPartiallyBrokenBlocks()
+                mc.isOnThread()
+                    && ((IWorldRendererMixin) mc.worldRenderer).libmultipart_isRenderingPartiallyBrokenBlocks()
             ) {
                 IClientPlayerInteractionManagerMixin interactionManager
                     = (IClientPlayerInteractionManagerMixin) mc.interactionManager;
@@ -111,16 +114,21 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
                         TransientPartIdentifier identifier = (TransientPartIdentifier) partKey;
                         AbstractPart part = identifier.part;
                         PartModelKey modelKey = part.getModelKey();
-                        BreakingPartRenderContext partContext = new BreakingPartRenderContext(
-                            context, false, part, identifier.subPart
-                        );
+                        Object subPart = null;
+                        if (identifier.extra instanceof IdSubPart<?>) {
+                            subPart = ((IdSubPart<?>) identifier.extra).subpart;
+                        }
+                        BreakingPartRenderContext partContext
+                            = new BreakingPartRenderContext(context, false, part, subPart);
                         if (modelKey != null) {
                             emitQuads(modelKey, modelKey.getClass(), partContext);
                         }
-                        for (AbstractPart additional : identifier.additional) {
-                            PartModelKey key2 = additional.getModelKey();
-                            if (key2 != null) {
-                                emitQuads(key2, key2.getClass(), partContext);
+                        if (identifier.extra instanceof IdAdditional) {
+                            for (AbstractPart additional : ((IdAdditional) identifier.extra).additional) {
+                                PartModelKey key2 = additional.getModelKey();
+                                if (key2 != null) {
+                                    emitQuads(key2, key2.getClass(), partContext);
+                                }
                             }
                         }
                         return;
@@ -142,8 +150,9 @@ public enum MultipartModel implements BakedModel, FabricBakedModel {
         }
     }
 
-    private static <K extends PartModelKey> void emitQuads(PartModelKey key, Class<K> clazz,
-        PartRenderContext context) {
+    private static <K extends PartModelKey> void emitQuads(
+        PartModelKey key, Class<K> clazz, PartRenderContext context
+    ) {
         PartModelBaker<? super K> baker = MultipartRenderRegistry.getBaker(clazz);
         if (baker != null) {
             baker.emitQuads(clazz.cast(key), context);

@@ -11,42 +11,37 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
 import net.minecraft.util.SystemUtil;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.SubdividedPart;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
-public class TransientPartIdentifier {
+public final class TransientPartIdentifier {
     public final AbstractPart part;
-    public final @Nullable Object subPart;
-
-    public final Set<AbstractPart> additional;
+    public final ExtraIdData extra;
 
     public TransientPartIdentifier(AbstractPart part) {
         this.part = part;
-        this.subPart = null;
         PartHolder holder = (PartHolder) part.holder;
-        Set<PartHolder> set = PartContainer.getAllRemoved(holder);
-        if (set.size() <= 1) {
-            this.additional = Collections.emptySet();
+        Set<PartHolder> parts = PartContainer.getAllRemoved(holder);
+        if (parts.size() <= 1) {
+            extra = new IdAdditional(Collections.emptySet());
         } else {
-            this.additional = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
-            for (PartHolder h : set) {
+            Set<AbstractPart> additional = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+            for (PartHolder h : parts) {
                 if (h.part != part) {
                     additional.add(h.part);
                 }
             }
+            extra = new IdAdditional(additional);
         }
     }
 
-    public TransientPartIdentifier(AbstractPart part, Object subPart) {
-        this.part = part;
-        this.subPart = subPart;
-        // Subparts don't work with the multi-break system
-        this.additional = Collections.emptySet();
+    public <Sub> TransientPartIdentifier(SubdividedPart<Sub> part, Sub subpart) {
+        this.part = (AbstractPart) part;
+        this.extra = new IdSubPart<>(part, subpart);
     }
 
     @Override
@@ -57,16 +52,38 @@ public class TransientPartIdentifier {
             return false;
         }
         TransientPartIdentifier other = (TransientPartIdentifier) obj;
-        return part == other.part && Objects.equals(subPart, other.subPart);
+        return part == other.part && Objects.equals(extra, other.extra);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(part, subPart);
+        return Objects.hash(part, extra);
     }
 
     @Override
     public String toString() {
-        return "TransientPartIdentifier{ part = " + part + ", subPart = " + subPart + " }";
+        return "TransientPartIdentifier{ part = " + part + ", extra = " + extra + " }";
+    }
+
+    public static abstract class ExtraIdData {
+        ExtraIdData() {}
+    }
+
+    public static final class IdSubPart<Sub> extends ExtraIdData {
+        public final SubdividedPart<Sub> part;
+        public final Sub subpart;
+
+        public IdSubPart(SubdividedPart<Sub> part, Sub subpart) {
+            this.part = part;
+            this.subpart = subpart;
+        }
+    }
+
+    public static final class IdAdditional extends ExtraIdData {
+        public final Set<AbstractPart> additional;
+
+        public IdAdditional(Set<AbstractPart> additional) {
+            this.additional = additional;
+        }
     }
 }

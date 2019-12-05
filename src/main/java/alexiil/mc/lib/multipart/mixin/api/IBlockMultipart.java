@@ -47,7 +47,7 @@ public interface IBlockMultipart<T> {
     void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity be,
         ItemStack stack, T subpart);
 
-    VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec);
+    VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec);
 
     @Nullable
     T getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d hitVec);

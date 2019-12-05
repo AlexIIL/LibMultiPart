@@ -42,7 +42,7 @@ public interface IBlockSimpleMultipart<T> extends IBlockMultipart<T> {
     }
 
     @Override
-    default VoxelShape getPartShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
+    default VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
         T targetted = getTargetedMultipart(state, world, pos, hitVec);
         if (targetted == null) {
             return VoxelShapes.empty();

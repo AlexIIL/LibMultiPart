@@ -14,10 +14,11 @@
     ]
   },
   "depends": {
+    "minecraft": "1.14.4",
     "fabricloader": ">=0.4.0",
     "fabric": "*",
     "libblockattributes_core": "*",
-    "libnetworkstack": "*"
+    "libnetworkstack": ">=0.2.1"
   },
   "mixins": [
     "libmultipart.client.json",
