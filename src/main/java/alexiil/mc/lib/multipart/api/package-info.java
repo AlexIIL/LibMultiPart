@@ -49,15 +49,17 @@
  * <p>
  * <h2>Part Shapes</h2>
  * <p>
- * Every part has 3 shape methods that they can override: {@link alexiil.mc.lib.multipart.api.AbstractPart#getShape()
- * getShape()}, {@link alexiil.mc.lib.multipart.api.AbstractPart#getCollisionShape() getCollisionShape()}, and
+ * Every part has 4 shape methods that they can override: {@link alexiil.mc.lib.multipart.api.AbstractPart#getShape()
+ * getShape()}, {@link alexiil.mc.lib.multipart.api.AbstractPart#getCollisionShape() getCollisionShape()},
+ * {@link alexiil.mc.lib.multipart.api.AbstractPart#getCullingShape() getCullingShape()}, and
  * {@link alexiil.mc.lib.multipart.api.AbstractPart#getDynamicShape(float) getDynamicShape()}. The first method
  * (getShape) is abstract, and is used for detecting if two parts occupy the same space inside a block. The second
- * method (getCollisionShape) is used for nearly everything else - calculating lighting, solidity logic, and collisions
- * with entities. If this isn't overridden then it defaults to returning the main getShape(). The final method
- * (getDynamicShape()) is used for ray-tracing and client-side bounding boxes. It has a partialTicks parameter, which
- * allows the bounding box to follow the motion of a part. (For example a buildcraft engine, or a buildcraft pipe
- * pulser).
+ * method (getCollisionShape) is used for nearly everything else - calculating solidity logic and collisions with
+ * entities. If this isn't overridden then it defaults to returning the main getShape(). The third method
+ * (getCullingShape) is used for calculating lighting and opaque sides. The final method (getDynamicShape()) is used for
+ * ray-tracing and client-side bounding boxes. It has a partialTicks parameter, which allows the bounding box to follow
+ * the motion of a part. (For example a buildcraft engine and the buildcraft pipe pulser move smoothly, and the boxes
+ * follow that motion).
  * <p>
  * <h2>Accessing Parts</h2>
  * <p>
@@ -116,10 +118,10 @@
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartContainerState.ChunkUnload PartContainerState.ChunkUnload}, which
  * is fired whenever the chunk containing the container is unloaded.</li>
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartContainerState.Invalidate PartContainerState.Invalidate}, which is
- * fired whenever the BlockEntity containing the parts is {@link net.minecraft.block.entity.BlockEntity#invalidate()
+ * fired whenever the BlockEntity containing the parts is {@link net.minecraft.block.entity.BlockEntity#markRemoved()
  * invalidated}.</li>
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartContainerState.Validate PartContainerState.Validate}, which is
- * fired whenever the BlockEntity containing the parts is {@link net.minecraft.block.entity.BlockEntity#validate()
+ * fired whenever the BlockEntity containing the parts is {@link net.minecraft.block.entity.BlockEntity#cancelRemoval()
  * validated}.</li>
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartContainerState.Remove PartContainerState.Remove}, which is fired
  * whenever the BlockEntity containing the parts is
@@ -148,15 +150,15 @@
  * <p>
  * <h2>Rendering</h2>
  * <p>
- * There are two types of renderers: static and dynamic. Both renderers are registered in
- * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry MultipartRenderRegistry}. Static renderers are
- * akin to normal block models, except you have to:
+ * There are two types of renderers: static and dynamic. Both renderers are by adding a listener to the relevant event
+ * class. Static renderers are akin to normal block models, except you have to:
  * <ol>
  * <li>Return a custom {@link alexiil.mc.lib.multipart.api.render.PartModelKey PartModelKey} from
  * {@link alexiil.mc.lib.multipart.api.AbstractPart #getModelKey() AbstractPart#getModelKey()}</li>
- * <li>Register a handler for that <em>exact</em> class in
- * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry# registerBaker(Class, alexiil.mc.lib.multipart.api.render.PartModelBaker)
- * MultipartRenderRegistry#registerBaker()}</li>
+ * <li>Add a listener to {@link alexiil.mc.lib.multipart.api.render.PartStaticModelRegisterEvent#EVENT
+ * PartStaticModelRegisterEvent.EVENT}, which registers a handler for that class (or any of it's superclasses) with
+ * {@link alexiil.mc.lib.multipart.api.render.PartStaticModelRegisterEvent.StaticModelRenderer#register(Class, alexiil.mc.lib.multipart.api.render.PartModelBaker)
+ * StaticModelRenderer#register(Class&lt;? super P&gt;, PartModelBaker&lt;P&gt;)}</li>
  * <li>Actually emit the quads in
  * {@link alexiil.mc.lib.multipart.api.render.PartModelBaker#emitQuads(alexiil.mc.lib.multipart.api.render.PartModelKey, alexiil.mc.lib.multipart.api.render.PartRenderContext)
  * PartModelBaker#emitQuads()}</li>
@@ -165,12 +167,12 @@
  * Dynamic rendering is slightly simpler, as you do not have to go through a
  * {@link alexiil.mc.lib.multipart.api.render.PartModelKey model key object} in order to render your quads.
  * <ol>
- * <li>Register a handler for the <em>exact</em> {@link alexiil.mc.lib.multipart.api.AbstractPart AbstractPart} class
- * that you want to render in
- * {@link alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry#registerRenderer(Class, alexiil.mc.lib.multipart.api.render.PartRenderer)
- * MultipartRenderRegistry#registerRenderer()}</li>
+ * <li>Add a listener to {@link alexiil.mc.lib.multipart.api.render.PartDynamicModelRegisterEvent#EVENT
+ * PartDynamicModelRegisterEvent.EVENT}, which registers a handler for that class (or any of it's superclasses) with
+ * {@link alexiil.mc.lib.multipart.api.render.PartDynamicModelRegisterEvent.DynamicModelRenderer#register(Class, alexiil.mc.lib.multipart.api.render.PartRenderer)
+ * DynamicModelRenderer#register(Class&lt;? super P&gt;, PartRenderer&lt;P&gt;)}</li>
  * <li>Emit the quads in
- * {@link alexiil.mc.lib.multipart.api.render.PartRenderer#render(AbstractPart, double, double, double, float, int)
+ * {@link alexiil.mc.lib.multipart.api.render.PartRenderer#render(AbstractPart, float, net.minecraft.client.util.math.MatrixStack, net.minecraft.client.render.VertexConsumerProvider, int, int)
  * PartRenderer#render()}.</li>
  * </ol>
  * <p>

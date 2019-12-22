@@ -111,8 +111,7 @@ public final class MultipartUtilImpl {
         }
 
         MultipartBlockEntity be = new MultipartBlockEntity();
-        be.setWorld(world);
-        be.setPos(pos);
+        be.setWorld(world, pos);
         PartContainer container = new PartContainer(be);
         PartHolder holder = new PartHolder(container, creator);
         VoxelShape shape = holder.part.getCollisionShape();
@@ -149,8 +148,7 @@ public final class MultipartUtilImpl {
     ) {
 
         MultipartBlockEntity be = new MultipartBlockEntity();
-        be.setWorld(world);
-        be.setPos(pos);
+        be.setWorld(world, pos);
         PartContainer container = new PartContainer(be);
 
         List<PartHolder> existingHolders = new ArrayList<>();

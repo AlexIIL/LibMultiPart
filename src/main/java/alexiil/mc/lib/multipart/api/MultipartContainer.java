@@ -129,7 +129,8 @@ public interface MultipartContainer {
     PartOffer offerNewPart(MultipartCreator creator, boolean respectEntityBBs);
 
     /** Offers a new part to this container, respecting nearby entities' bounding boxes. Note that this can be called on
-     * the client as well as the server, however the client <em>cannot</em> add the resulting part offer to this container.
+     * the client as well as the server, however the client <em>cannot</em> add the resulting part offer to this
+     * container.
      *
      * @param creator The creator which can create the actual part.
      * @return either null (if the offered part was refused) or an offer object which lets you either add it via
@@ -138,8 +139,6 @@ public interface MultipartContainer {
     default PartOffer offerNewPart(MultipartCreator creator) {
         return offerNewPart(creator, true);
     }
-
-
 
     /** Shorter form of {@link #offerNewPart(MultipartCreator, boolean)} followed by adding the offer if it was allowed.
      * 
@@ -202,8 +201,8 @@ public interface MultipartContainer {
     /** @return The current {@link VoxelShape} of every contained {@link AbstractPart#getCollisionShape()}. */
     VoxelShape getCollisionShape();
 
-    /** @return A complete {@link VoxelShape} of every contained {@link AbstractPart#getDynamicShape(float)} */
-    VoxelShape getDynamicShape(float partialTicks);
+    /** @return A complete {@link VoxelShape} of every contained {@link AbstractPart#getOutlineShape()} */
+    VoxelShape getOutlineShape();
 
     /** Recalculates {@link #getCurrentShape()} and {@link #getCollisionShape()}. {@link AbstractPart}'s should call
      * this when their own shape changes. */
@@ -229,8 +228,9 @@ public interface MultipartContainer {
 
     /** Sends the given {@link NetIdDataK} to every player currently watching this {@link #getMultipartBlockEntity()},
      * with a custom {@link IMsgDataWriterK}, except for the given player. */
-    <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
-        T> writer);
+    <T> void sendNetworkUpdateExcept(
+        @Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
+    );
 
     // Events
 
@@ -255,5 +255,8 @@ public interface MultipartContainer {
 
     // Rendering
 
+    /** Redraws this multipart, if any of it's parts return different {@link AbstractPart#getModelKey()}.
+     * <p>
+     * On the server this just sends a message to inform the client to check. */
     void redrawIfChanged();
 }

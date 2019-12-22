@@ -7,8 +7,14 @@
  */
 package alexiil.mc.lib.multipart.api.render;
 
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.util.math.MatrixStack;
+
 import alexiil.mc.lib.multipart.api.AbstractPart;
 
 public interface PartRenderer<P extends AbstractPart> {
-    void render(P part, double x, double y, double z, float partialTicks, int breakProgress);
+    void render(
+        P part, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
+        int breakProgress
+    );
 }

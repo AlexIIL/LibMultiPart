@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
@@ -29,7 +29,7 @@ public final class TransientPartIdentifier {
         if (parts.size() <= 1) {
             extra = new IdAdditional(Collections.emptySet());
         } else {
-            Set<AbstractPart> additional = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+            Set<AbstractPart> additional = new ObjectOpenCustomHashSet<>(Util.identityHashStrategy());
             for (PartHolder h : parts) {
                 if (h.part != part) {
                     additional.add(h.part);

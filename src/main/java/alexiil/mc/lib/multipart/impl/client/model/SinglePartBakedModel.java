@@ -16,21 +16,21 @@ import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 
 import net.minecraft.block.BlockState;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
-import net.minecraft.client.texture.MissingSprite;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.world.ExtendedBlockView;
+import net.minecraft.world.BlockRenderView;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.render.MultipartRenderRegistry;
 import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
+import alexiil.mc.lib.multipart.impl.LibMultiPartClient;
 
 /** A {@link BakedModel} that wraps a single {@link AbstractPart}. */
 public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel, FabricBakedModel {
@@ -57,8 +57,10 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
     }
 
     @Override
-    public void emitBlockQuads(ExtendedBlockView blockView, BlockState state, BlockPos pos, Supplier<
-        Random> randomSupplier, RenderContext context) {
+    public void emitBlockQuads(
+        BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier,
+        RenderContext context
+    ) {
 
         emitQuads(context, true);
     }
@@ -69,11 +71,17 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
     }
 
     private void emitQuads(RenderContext context, boolean shouldQuadsBeLit) {
-        if (key != null) {
-            PartModelBaker<? super K> baker = MultipartRenderRegistry.getBaker(clazz);
-            if (baker != null) {
-                baker.emitQuads(key, new NormalPartRenderContext(context, shouldQuadsBeLit));
-            }
+        if (key == null) {
+            return;
+        }
+        BakedModel model
+            = MinecraftClient.getInstance().getBakedModelManager().getModel(LibMultiPartClient.MODEL_IDENTIFIER);
+        if (!(model instanceof MultipartModel)) {
+            return;
+        }
+        PartModelBaker<? super K> baker = (PartModelBaker<? super K>) ((MultipartModel) model).getBaker(key.getClass());
+        if (baker != null) {
+            baker.emitQuads(key, new NormalPartRenderContext(context, shouldQuadsBeLit));
         }
     }
 
@@ -99,7 +107,8 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
 
     @Override
     public Sprite getSprite() {
-        return MissingSprite.getMissingSprite();
+        return MinecraftClient.getInstance().getBlockRenderManager().getModels().getModelManager().getMissingModel()
+            .getSprite();
     }
 
     @Override

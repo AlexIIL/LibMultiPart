@@ -1,0 +1,7 @@
+Changes:
+
+* Updated to minecraft 1.15.1.
+    * Registering static bakers and dynamic renders is now done
+      in events, rather than statically.
+* Added AbstractPart.getCullingShape() and getOutlineShape().
+* AbstractPart.getModelKey() is no longer called on the server.

@@ -35,7 +35,7 @@ public interface IBlockMultipart<T> {
     /** Multipart version of {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} */
     void onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player, T subpart);
 
-    /** Called instead of {@link World#clearBlockState(BlockPos, boolean)} in
+    /** Called instead of {@link World#removeBlock(BlockPos, boolean)} in
      * {@link ServerPlayerInteractionManager#tryBreakBlock} */
     boolean clearBlockState(World world, BlockPos pos, T subpart);
 
@@ -44,8 +44,10 @@ public interface IBlockMultipart<T> {
 
     /** Multipart version of
      * {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)}. */
-    void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity be,
-        ItemStack stack, T subpart);
+    void afterBreak(
+        World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity be, ItemStack stack,
+        T subpart
+    );
 
     VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec);
 

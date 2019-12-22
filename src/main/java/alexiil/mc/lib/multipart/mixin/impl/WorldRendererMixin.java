@@ -21,34 +21,19 @@ import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 public class WorldRendererMixin implements IWorldRendererMixin {
 
     @Unique
-    private boolean renderingPartiallyBrokenBlocks;
-
-    @Unique
     private boolean drawingBlockOutline;
-
-    @Override
-    public boolean libmultipart_isRenderingPartiallyBrokenBlocks() {
-        return renderingPartiallyBrokenBlocks;
-    }
 
     @Override
     public boolean libmultipart_isDrawingBlockOutline() {
         return drawingBlockOutline;
     }
 
-    @Inject(at = { @At("HEAD") }, method = "enableBlockOverlayRendering()V")
-    private void beginPartiallyBrokenBlocks(CallbackInfo ci) {
-        renderingPartiallyBrokenBlocks = true;
-    }
-
-    @Inject(at = { @At("HEAD") }, method = "disableBlockOverlayRendering()V")
-    private void endPartiallyBrokenBlocks(CallbackInfo ci) {
-        renderingPartiallyBrokenBlocks = false;
-    }
-
     @Inject(
         at = { @At("HEAD") },
-        method = ("drawHighlightedBlockOutline(Lnet/minecraft/client/render/Camera;Lnet/minecraft/util/hit/HitResult;I)V"))
+        method = ("drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;"
+            + "Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;"
+            + "DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)V")
+    )
     private void beginBlockOutline(CallbackInfo ci) {
         assert !drawingBlockOutline;
         drawingBlockOutline = true;
@@ -56,7 +41,10 @@ public class WorldRendererMixin implements IWorldRendererMixin {
 
     @Inject(
         at = { @At("RETURN") },
-        method = ("drawHighlightedBlockOutline(Lnet/minecraft/client/render/Camera;Lnet/minecraft/util/hit/HitResult;I)V"))
+        method = ("drawBlockOutline(Lnet/minecraft/client/util/math/MatrixStack;"
+            + "Lnet/minecraft/client/render/VertexConsumer;Lnet/minecraft/entity/Entity;"
+            + "DDDLnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)V")
+    )
     private void endBlockOutline(CallbackInfo ci) {
         assert drawingBlockOutline;
         drawingBlockOutline = false;

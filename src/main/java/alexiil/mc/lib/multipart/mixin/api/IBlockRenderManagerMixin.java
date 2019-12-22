@@ -7,6 +7,6 @@
  */
 package alexiil.mc.lib.multipart.mixin.api;
 
-public interface IWorldRendererMixin {
-    boolean libmultipart_isDrawingBlockOutline();
+public interface IBlockRenderManagerMixin {
+    boolean libmultipart_isRenderingPartiallyBrokenBlocks();
 }

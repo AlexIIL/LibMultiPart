@@ -14,7 +14,6 @@ import net.fabricmc.api.Environment;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
-import net.minecraft.block.BlockRenderLayer;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
@@ -26,10 +25,11 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.StateFactory.Builder;
+import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
@@ -54,10 +54,12 @@ import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
+import alexiil.mc.lib.multipart.mixin.api.IBlockDynamicCull;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
-    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider, Waterloggable {
+    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider, Waterloggable,
+    IBlockDynamicCull {
 
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
@@ -91,7 +93,7 @@ public class MultipartBlock extends Block
     // ###############
 
     @Override
-    protected void appendProperties(Builder<Block, BlockState> builder) {
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
         builder.add(LUMINANCE, EMITS_REDSTONE, Properties.WATERLOGGED);
     }
@@ -99,11 +101,6 @@ public class MultipartBlock extends Block
     @Override
     public BlockEntity createBlockEntity(BlockView var1) {
         return new MultipartBlockEntity();
-    }
-
-    @Override
-    public BlockRenderLayer getRenderLayer() {
-        return BlockRenderLayer.CUTOUT;
     }
 
     @Override
@@ -128,13 +125,28 @@ public class MultipartBlock extends Block
             MultipartBlockEntity container = (MultipartBlockEntity) be;
 
             if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
-                Vec3d hitVec = MinecraftClient.getInstance().hitResult.getPos();
+                Vec3d hitVec = MinecraftClient.getInstance().crosshairTarget.getPos();
                 return getPartOutlineShape(state, (World) view, pos, hitVec);
             }
 
-            return container.container.getDynamicShape(LibMultiPart.partialTickGetter.getAsFloat());
+            return container.container.getOutlineShape();
         }
         return MISSING_PARTS_SHAPE;
+    }
+
+    @Override
+    public VoxelShape getCullingShape(BlockState state, BlockView view, BlockPos pos) {
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
+            return container.container.getCullingShape();
+        }
+        return super.getCullingShape(state, view, pos);
+    }
+
+    @Override
+    public boolean hasDynamicCull(BlockState state) {
+        return true;
     }
 
     @Override
@@ -169,13 +181,13 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public boolean activate(
+    public ActionResult onUse(
         BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit
     ) {
-        boolean handled = super.activate(state, world, pos, player, hand, hit);
+        ActionResult handled = super.onUse(state, world, pos, player, hand, hit);
         TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hit.getPos());
         if (target != null) {
-            handled |= target.part.onActivate(player, hand, hit);
+            handled = target.part.onUse(player, hand, hit);
         }
         return handled;
     }
@@ -194,7 +206,7 @@ public class MultipartBlock extends Block
     @Environment(EnvType.CLIENT)
     public ItemStack getPickStack(BlockView view, BlockPos pos, BlockState state) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        HitResult hit = mc.hitResult;
+        HitResult hit = mc.crosshairTarget;
         if (view != null && view == mc.world && hit != null) {
             TransientPartIdentifier target = getTargetedMultipart(state, (World) view, pos, hit.getPos());
             if (target != null) {
@@ -329,7 +341,7 @@ public class MultipartBlock extends Block
             MultipartBlockEntity multi = (MultipartBlockEntity) be;
             return multi.container.removePart(subpart.part);
         }
-        return world.clearBlockState(pos, false);
+        return world.removeBlock(pos, false);
     }
 
     private static <Sub> boolean clearSubPart(IdSubPart<Sub> extra) {

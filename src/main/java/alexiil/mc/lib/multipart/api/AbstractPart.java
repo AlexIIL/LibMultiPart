@@ -16,18 +16,21 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.event.EventListener;
+import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.net.IMsgReadCtx;
@@ -40,7 +43,13 @@ import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdSingle;
 
-/** The base class for every part in a multipart block. */
+/** The base class for every part in a multipart block.
+ * <p>
+ * Generally implementations will want to override (in addition to the abstract methods):
+ * <ul>
+ * <li>{@link #getPickStack()} (and optionally {@link #addDrops(DefaultedList)}}</li>
+ * </ul>
+ */
 public abstract class AbstractPart {
     public static final ParentNetIdSingle<AbstractPart> NET_ID;
     public static final NetIdDataK<AbstractPart> NET_RENDER_DATA;
@@ -105,8 +114,8 @@ public abstract class AbstractPart {
         holder.getContainer().sendNetworkUpdateExcept(except, obj, netId, writer);
     }
 
-    /** Called whenever this part was added to the {@link MultipartContainer}, either in {@link BlockEntity#validate()}
-     * or when it is manually added by an item.
+    /** Called whenever this part was added to the {@link MultipartContainer}, either in
+     * {@link BlockEntity#cancelRemoval()} or when it is manually added by an item.
      * <p>
      * Register event handlers (as methods) with {@link MultipartEventBus#addListener(Object, Class, EventListener)}.
      * 
@@ -156,15 +165,28 @@ public abstract class AbstractPart {
         return false;
     }
 
-    /** @return The shape to use when calculating lighting, solidity logic, collisions with entities, ray tracing, etc.
-     *         This should always encompass {@link #getShape()}. */
+    /** @return The shape to use when solidity logic, collisions with entities, ray tracing, etc. This should always
+     *         encompass {@link #getShape()}. */
     public VoxelShape getCollisionShape() {
         return getShape();
     }
 
-    /** @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. */
-    public VoxelShape getDynamicShape(float partialTicks) {
+    /** @return The shape to use when calculating lighting and checking for opacity. This may be empty, although it
+     *         should always be contained by {@link #getCollisionShape()}. Generally anything that's not opaque should
+     *         override this and return {@link VoxelShapes#empty()}. */
+    public VoxelShape getCullingShape() {
         return getCollisionShape();
+    }
+
+    /** @return The shape for rendering bounding boxes and ray tracing. */
+    public VoxelShape getOutlineShape() {
+        return getCollisionShape();
+    }
+
+    /** @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. Unlike
+     *         {@link #getOutlineShape()} this is only called when rendering the box for this specific part. */
+    public VoxelShape getDynamicShape(float partialTicks) {
+        return getOutlineShape();
     }
 
     /** @return True if this pluggable should be an {@link AttributeList#obstruct(VoxelShape) obstacle} for attributes
@@ -174,7 +196,11 @@ public abstract class AbstractPart {
     }
 
     /** Offers every contained attribute to the given attribute list. NOTE: This must always use
-     * {@link AttributeList#offer(Object, VoxelShape)} with {@link #getShape()} as the {@link VoxelShape} argument! */
+     * {@link AttributeList#offer(Object, VoxelShape)} with {@link #getShape()} as the {@link VoxelShape} argument!
+     * <p>
+     * 
+     * @implNote This will {@link AttributeList#obstruct(VoxelShape)} the {@link #getShape()} if
+     *           {@link #isBlocking(Direction)} returns true, and the search direction is not null. */
     public void addAllAttributes(AttributeList<?> list) {
         Direction searchDirection = list.getSearchDirection();
         if (searchDirection != null && isBlocking(searchDirection)) {
@@ -197,12 +223,19 @@ public abstract class AbstractPart {
         }
     }
 
-    /** Called whenever this part is activated via
-     * {@link Block#activate(BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult)}. */
-    public boolean onActivate(PlayerEntity player, Hand hand, BlockHitResult hit) {
-        return false;
+    /** Called whenever this part is used via
+     * {@link Block#onUse(BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult)}. */
+    public ActionResult onUse(PlayerEntity player, Hand hand, BlockHitResult hit) {
+        return ActionResult.PASS;
     }
 
+    /** Called on the client for both rendering, and checking if this needs to re-render in
+     * {@link MultipartContainer#redrawIfChanged()}.
+     * <p>
+     * This is no longer called on the server.
+     * 
+     * @return The {@link PartModelKey} for the {@link PartModelBaker} to use to emit a static model. Returning null
+     *         will bake nothing. */
     @Nullable
     public abstract PartModelKey getModelKey();
 }

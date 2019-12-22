@@ -42,7 +42,7 @@ public interface SubdividedPart<Sub> {
         return false;
     }
 
-    /** Called instead of {@link World#clearBlockState(BlockPos, boolean)} in
+    /** Called instead of {@link World#removeBlock(BlockPos, boolean)} in
      * {@link ServerPlayerInteractionManager#tryBreakBlock}.
      * <p>
      * Generally this should remove the subpart from this {@link AbstractPart}, or return false if the whole part needs

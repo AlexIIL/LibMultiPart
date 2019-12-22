@@ -12,11 +12,14 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.mojang.datafixers.util.Pair;
+
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.ModelBakeSettings;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.util.Identifier;
 
 public final class PreBakedModel implements UnbakedModel {
@@ -33,12 +36,17 @@ public final class PreBakedModel implements UnbakedModel {
     }
 
     @Override
-    public Collection<Identifier> getTextureDependencies(Function<Identifier, UnbakedModel> var1, Set<String> var2) {
+    public Collection<SpriteIdentifier> getTextureDependencies(
+        Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences
+    ) {
         return Collections.emptyList();
     }
 
     @Override
-    public BakedModel bake(ModelLoader var1, Function<Identifier, Sprite> var2, ModelBakeSettings var3) {
+    public BakedModel bake(
+        ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer,
+        Identifier modelId
+    ) {
         return baked;
     }
 }

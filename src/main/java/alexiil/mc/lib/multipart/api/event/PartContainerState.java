@@ -17,10 +17,10 @@ import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 
 /** Fired when the state of a container's block entity changes. Listen for subclasses, not this one! */
 public abstract class PartContainerState extends MultipartEvent {
-    /** Fired in {@link BlockEntity#invalidate()} */
+    /** Fired in {@link BlockEntity#markRemoved()} */
     public static final Invalidate INVALIDATE = new Invalidate();
 
-    /** Fired in {@link BlockEntity#validate()} */
+    /** Fired in {@link BlockEntity#cancelRemoval()} */
     public static final Validate VALIDATE = new Validate();
 
     /** Fired in {@link IUnloadableBlockEntity#onChunkUnload()} */
@@ -31,12 +31,12 @@ public abstract class PartContainerState extends MultipartEvent {
 
     PartContainerState() {}
 
-    /** Fired in {@link BlockEntity#invalidate()} */
+    /** Fired in {@link BlockEntity#markRemoved()} */
     public static final class Invalidate extends PartContainerState implements ContextlessEvent {
         Invalidate() {}
     }
 
-    /** Fired in {@link BlockEntity#validate()} */
+    /** Fired in {@link BlockEntity#cancelRemoval()} */
     public static final class Validate extends PartContainerState implements ContextlessEvent {
         Validate() {}
     }

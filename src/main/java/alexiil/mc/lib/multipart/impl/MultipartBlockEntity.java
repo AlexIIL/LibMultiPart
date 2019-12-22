@@ -18,14 +18,12 @@ import com.google.common.collect.ImmutableList;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.server.PlayerStream;
 
-import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.attributes.AttributeList;
@@ -66,7 +64,7 @@ public class MultipartBlockEntity extends BlockEntity
     @Override
     public void fromTag(CompoundTag tag) {
         super.fromTag(tag);
-        if (tag.containsKey("container")) {
+        if (tag.contains("container")) {
             container.fromTag(tag.getCompound("container"));
         }
     }
@@ -95,14 +93,14 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     @Override
-    public void validate() {
-        super.validate();
+    public void cancelRemoval() {
+        super.cancelRemoval();
         container.validate();
     }
 
     @Override
-    public void invalidate() {
-        super.invalidate();
+    public void markRemoved() {
+        super.markRemoved();
         container.invalidate();
     }
 
@@ -166,8 +164,9 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     /** Sends a network update update of the specified ID. */
-    final <T> void sendNetworkUpdate(@Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<
-        T> writer) {
+    final <T> void sendNetworkUpdate(
+        @Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
+    ) {
 
         if (isClientWorld()) {
             netId.send(getClientConnection(), obj, writer);

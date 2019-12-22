@@ -65,13 +65,15 @@ public class ServerPlayerInteractionManagerMixin {
     }
 
     @Redirect(
-        method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;method_14263("
+        method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;processBlockBreakingAction("
             + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/server/network/packet/PlayerActionC2SPacket$Action;"
             + "Lnet/minecraft/util/math/Direction;I)V",
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
-                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"))
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"
+        )
+    )
     void onBlockBreakStart(BlockState state, World w, BlockPos pos, PlayerEntity pl) {
         // LibMultiPart.LOGGER.info("[server] onBlockBreakStart( " + pos + " " + state + " )");
         if (state.getBlock() instanceof IBlockMultipart<?>) {
@@ -82,17 +84,17 @@ public class ServerPlayerInteractionManagerMixin {
         }
     }
 
-    private <T> void onBlockBreakStart0(BlockState state, World w, BlockPos pos, PlayerEntity pl, IBlockMultipart<
-        T> block) {
+    private <T> void onBlockBreakStart0(
+        BlockState state, World w, BlockPos pos, PlayerEntity pl, IBlockMultipart<T> block
+    ) {
 
         Vec3d vec = sentHitVec;
         if (vec == null) {
             // LibMultiPart.LOGGER.info("[server] vec was null!");
             // Guess the hit vec from the player's look vector
             VoxelShape shape = state.getOutlineShape(w, pos);
-            BlockHitResult rayTrace = shape.rayTrace(
-                pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos
-            );
+            BlockHitResult rayTrace = shape
+                .rayTrace(pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos);
             // LibMultiPart.LOGGER.info("[server] rayTrace = " + rayTrace);
             if (rayTrace == null) {
                 // This shouldn't really happen... lets just fail.
@@ -117,8 +119,10 @@ public class ServerPlayerInteractionManagerMixin {
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;"
-                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"),
-        cancellable = true)
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"
+        ),
+        cancellable = true
+    )
     void destroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
         // LibMultiPart.LOGGER.info("[server] destroyBlock( " + pos + " )");
         BlockState state = world.getBlockState(pos);

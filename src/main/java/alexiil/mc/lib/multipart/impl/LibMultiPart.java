@@ -54,8 +54,7 @@ public class LibMultiPart implements ModInitializer {
 
         Material material = new Material.Builder(MaterialColor.BLACK).build();
         BLOCK = new MultipartBlock(
-            FabricBlockSettings.of(material).dropsNothing().breakByHand(true).hardness(0.5f).resistance(2.0f)
-                .dynamicBounds().build()
+            FabricBlockSettings.of(material).dropsNothing().breakByHand(true).hardness(0.5f).resistance(2.0f).dynamicBounds().build()
         );
 
         Set<Block> blocks = Collections.singleton(BLOCK);

@@ -7,6 +7,10 @@
  */
 package alexiil.mc.lib.multipart.mixin.api;
 
-public interface IWorldRendererMixin {
-    boolean libmultipart_isDrawingBlockOutline();
+import net.minecraft.block.BlockState;
+
+public interface IBlockDynamicCull {
+    default boolean hasDynamicCull(BlockState state) {
+        return state.getBlock().hasDynamicBounds();
+    }
 }

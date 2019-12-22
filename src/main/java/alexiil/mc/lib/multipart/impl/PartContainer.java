@@ -29,7 +29,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BooleanBiFunction;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -144,6 +144,8 @@ public class PartContainer implements MultipartContainer {
     MultipartBlockEntity blockEntity;
     VoxelShape cachedShape = null;
     VoxelShape cachedCollisionShape = null;
+    VoxelShape cachedCullingShape = null;
+    VoxelShape cachedOutlineShape = null;
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
 
@@ -427,8 +429,8 @@ public class PartContainer implements MultipartContainer {
 
     /** @return Every {@link PartHolder} that will be removed if the given part holder was removed. */
     public static Set<PartHolder> getAllRemoved(PartHolder holder) {
-        Set<PartHolder> toRemove = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
-        Set<PartHolder> openSet = new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+        Set<PartHolder> toRemove = new ObjectOpenCustomHashSet<>(Util.identityHashStrategy());
+        Set<PartHolder> openSet = new ObjectOpenCustomHashSet<>(Util.identityHashStrategy());
         openSet.add(holder);
 
         int iterationCount = 0;
@@ -476,7 +478,7 @@ public class PartContainer implements MultipartContainer {
 
     private void postRemovePart() {
         if (parts.isEmpty()) {
-            blockEntity.world().clearBlockState(getMultipartPos(), false);
+            blockEntity.world().removeBlock(getMultipartPos(), false);
         } else {
             recalculateShape();
             blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
@@ -581,42 +583,56 @@ public class PartContainer implements MultipartContainer {
         return cachedCollisionShape;
     }
 
+    public VoxelShape getCullingShape() {
+        if (cachedCullingShape == null) {
+            cachedCullingShape = VoxelShapes.empty();
+            for (PartHolder holder : parts) {
+                cachedCullingShape = VoxelShapes.union(cachedCullingShape, holder.part.getCullingShape());
+            }
+        }
+        return cachedCullingShape;
+    }
+
     @Override
-    public VoxelShape getDynamicShape(float partialTicks) {
-        VoxelShape shape = VoxelShapes.empty();
-        for (PartHolder holder : parts) {
-            shape = VoxelShapes.union(shape, holder.part.getDynamicShape(partialTicks));
+    public VoxelShape getOutlineShape() {
+        if (cachedOutlineShape == null) {
+            cachedOutlineShape = VoxelShapes.empty();
+            for (PartHolder holder : parts) {
+                cachedOutlineShape = VoxelShapes.union(cachedOutlineShape, holder.part.getOutlineShape());
+            }
+            if (cachedOutlineShape.isEmpty()) {
+                cachedOutlineShape = MultipartBlock.MISSING_PARTS_SHAPE;
+            }
         }
-        if (shape.isEmpty()) {
-            shape = MultipartBlock.MISSING_PARTS_SHAPE;
-        }
-        return shape;
+        return cachedOutlineShape;
     }
 
     @Override
     public void recalculateShape() {
         cachedShape = null;
         cachedCollisionShape = null;
+        cachedCullingShape = null;
+        cachedOutlineShape = null;
     }
 
     @Override
     public void redrawIfChanged() {
-        ImmutableList.Builder<PartModelKey> builder = ImmutableList.builder();
-        for (PartHolder holder : parts) {
-            PartModelKey key = holder.part.getModelKey();
-            if (key != null) {
-                builder.add(key);
-            }
-        }
-        ImmutableList<PartModelKey> list = builder.build();
-        if (list.equals(partModelKeys)) {
-            return;
-        }
-        partModelKeys = list;
         if (isClientWorld()) {
+            ImmutableList.Builder<PartModelKey> builder = ImmutableList.builder();
+            for (PartHolder holder : parts) {
+                PartModelKey key = holder.part.getModelKey();
+                if (key != null) {
+                    builder.add(key);
+                }
+            }
+            ImmutableList<PartModelKey> list = builder.build();
+            if (list.equals(partModelKeys)) {
+                return;
+            }
+            partModelKeys = list;
             // Just to make the world always re-render even though our state hasn't changed
             blockEntity.world()
-                .scheduleBlockRender(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
+                .checkBlockRerender(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
         } else {
             sendNetworkUpdate(this, NET_SIGNAL_REDRAW);
         }
@@ -641,18 +657,27 @@ public class PartContainer implements MultipartContainer {
 
     private void readInitialRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
         ctx.assertClientSide();
-        if (hasInitialisedFromRemote) {
+        if (hasInitialisedFromRemote || !parts.isEmpty()) {
             ctx.drop("Already initialised");
             return;
         }
         hasInitialisedFromRemote = true;
+
+        if (parts.size() != partsByUid.size()) {
+            throw new InvalidInputDataException("Differing parts lists: \n" + parts + "\n vs " + partsByUid);
+        }
 
         int count = buffer.readUnsignedByte();
         for (int i = 0; i < count; i++) {
             PartHolder holder = new PartHolder(this, buffer, ctx);
             parts.add(holder);
             PartHolder old = partsByUid.put(holder.uniqueId, holder);
-            assert old == null : "Already contained a part with the UID " + old.uniqueId + "!";
+            if (old != null) {
+                throw new InvalidInputDataException(
+                    "Already contained a part with the UID " + old.uniqueId + "!\n" + "Differing parts lists: \n"
+                        + parts + "\n vs " + partsByUid
+                );
+            }
         }
         for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
@@ -700,7 +725,7 @@ public class PartContainer implements MultipartContainer {
         boolean areIdsValid = true;
         ListTag allPartsTag = tag.getList("parts", new CompoundTag().getType());
         for (int i = 0; i < allPartsTag.size(); i++) {
-            CompoundTag partTag = allPartsTag.getCompoundTag(i);
+            CompoundTag partTag = allPartsTag.getCompound(i);
             PartHolder holder = new PartHolder(this, partTag);
             if (holder.part != null) {
                 parts.add(holder);
@@ -870,7 +895,7 @@ public class PartContainer implements MultipartContainer {
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("  Required " + req);
                     }
-                    if (!world.isBlockLoaded(req.pos)) {
+                    if (!world.isChunkLoaded(req.pos)) {
                         if (LibMultiPart.DEBUG) {
                             LibMultiPart.LOGGER.info("    -- not loaded.");
                         }
@@ -908,7 +933,7 @@ public class PartContainer implements MultipartContainer {
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("  InvReq " + invreq);
                     }
-                    if (!world.isBlockLoaded(invreq.pos)) {
+                    if (!world.isChunkLoaded(invreq.pos)) {
                         if (LibMultiPart.DEBUG) {
                             LibMultiPart.LOGGER.info("    -- not loaded.");
                         }

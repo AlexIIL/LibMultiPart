@@ -73,7 +73,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
     private <T> void onBlockBreakStart0(BlockState state, World world, BlockPos pos, PlayerEntity player,
         IBlockMultipart<T> blockMulti) {
 
-        HitResult hit = MinecraftClient.getInstance().hitResult;
+        HitResult hit = MinecraftClient.getInstance().crosshairTarget;
         T key = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         partKey = key;
 //        LibMultiPart.LOGGER.info("[client] hit = " + hit);
@@ -104,7 +104,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
 
     private <T> Boolean breakBlock0(BlockPos pos, IBlockMultipart<T> blockMulti) {
 
-        HitResult hit = MinecraftClient.getInstance().hitResult;
+        HitResult hit = MinecraftClient.getInstance().crosshairTarget;
         World world = client.world;
         BlockState state = world.getBlockState(pos);
 //        LibMultiPart.LOGGER.info("[client] hit = " + hit);

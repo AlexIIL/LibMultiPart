@@ -14,7 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.SystemUtil;
+import net.minecraft.util.Util;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
@@ -62,20 +62,19 @@ public final class PartHolder implements MultipartHolder {
         if (def == null) {
             // The container shouldn't add this part
             part = null;
-            LibMultiPart.LOGGER.warn(
-                "Unknown part with ID '" + id + "': it has been removed from " + container.getMultipartPos()
-            );
+            LibMultiPart.LOGGER
+                .warn("Unknown part with ID '" + id + "': it has been removed from " + container.getMultipartPos());
         } else {
             part = def.readFromNbt(this, tag.getCompound("data"));
             if (LibMultiPart.DEBUG) {
                 LibMultiPart.LOGGER.info("  PartHolder.fromTag( " + uniqueId + ", " + part.getClass() + " ) {");
             }
 
-            Tag reqltag = tag.getTag("req");
+            Tag reqltag = tag.get("req");
             if (reqltag instanceof ListTag) {
                 ListTag reql = (ListTag) reqltag;
                 for (int i = 0; i < reql.size(); i++) {
-                    CompoundTag posPartTag = reql.getCompoundTag(i);
+                    CompoundTag posPartTag = reql.getCompound(i);
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("    Required ( tag = " + posPartTag + " )");
                     }
@@ -92,11 +91,11 @@ public final class PartHolder implements MultipartHolder {
                 }
             }
 
-            Tag invreqltag = tag.getTag("invReq");
+            Tag invreqltag = tag.get("invReq");
             if (invreqltag instanceof ListTag) {
                 ListTag invreql = (ListTag) invreqltag;
                 for (int i = 0; i < invreql.size(); i++) {
-                    CompoundTag posPartTag = invreql.getCompoundTag(i);
+                    CompoundTag posPartTag = invreql.getCompound(i);
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("    InvReq ( tag = " + posPartTag + " )");
                     }
@@ -176,7 +175,7 @@ public final class PartHolder implements MultipartHolder {
     }
 
     static <T> ObjectOpenCustomHashSet<T> identityHashSet() {
-        return new ObjectOpenCustomHashSet<>(SystemUtil.identityHashStrategy());
+        return new ObjectOpenCustomHashSet<>(Util.identityHashStrategy());
     }
 
     @Override

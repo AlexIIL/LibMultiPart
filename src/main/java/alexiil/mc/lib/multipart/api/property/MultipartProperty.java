@@ -77,7 +77,7 @@ public abstract class MultipartProperty<T> {
         @Override
         public Boolean combine(List<Boolean> values) {
             for (Boolean val : values) {
-                if (val != defaultValue) {
+                if (val != null && val.booleanValue() != defaultValue.booleanValue()) {
                     return val;
                 }
             }
