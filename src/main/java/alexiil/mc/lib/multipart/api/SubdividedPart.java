@@ -17,6 +17,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
@@ -62,6 +63,10 @@ public interface SubdividedPart<Sub> {
     /** Subpart equivalent to {@link AbstractPart#getDynamicShape(float)}. If the given part is invalid then this should
      * return {@link AbstractPart#getDynamicShape(float)}. */
     VoxelShape getSubpartDynamicShape(Vec3d hitVec, Sub subpart, float partialTicks);
+
+    default boolean spawnBreakingParticles(Vec3d hitVec, Sub subpart, Direction side) {
+        return false;
+    }
 
     /** @param hitVec The exact hit position, relative the the world's origin. (So you need to subtract the position of
      *            this part to get a position between 0 and 1).

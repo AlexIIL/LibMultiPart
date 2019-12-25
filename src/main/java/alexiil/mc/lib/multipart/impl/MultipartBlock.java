@@ -54,13 +54,14 @@ import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
+import alexiil.mc.lib.multipart.mixin.api.IBlockCustomParticles;
 import alexiil.mc.lib.multipart.mixin.api.IBlockDynamicCull;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
     implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider, Waterloggable,
-    IBlockDynamicCull {
-
+    IBlockDynamicCull, IBlockCustomParticles
+{
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
@@ -279,6 +280,37 @@ public class MultipartBlock extends Block
     @Override
     public FluidState getFluidState(BlockState state) {
         return state.get(Properties.WATERLOGGED) ? Fluids.WATER.getStill(false) : super.getFluidState(state);
+    }
+
+    // ###############
+    //
+    // IBlockCustomParticles
+    //
+    // ###############
+
+    @Override
+    @Environment(EnvType.CLIENT)
+    public boolean spawnBreakingParticles(World world, BlockPos pos, BlockState state, Direction side, Vec3d hitVec) {
+        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hitVec);
+        if (target != null) {
+
+            if (target.extra instanceof IdSubPart<?>) {
+                if (spawnSubBreakingParticles(hitVec, side, (IdSubPart<?>) target.extra)) {
+                    return true;
+                }
+            } else if (target.extra instanceof IdAdditional) {
+                for (AbstractPart extra : ((IdAdditional) target.extra).additional) {
+                    extra.spawnBreakingParticles(side);
+                }
+            }
+
+            return target.part.spawnBreakingParticles(side);
+        }
+        return false;
+    }
+
+    private static <Sub> boolean spawnSubBreakingParticles(Vec3d hitVec, Direction side, IdSubPart<Sub> extra) {
+        return extra.part.spawnBreakingParticles(hitVec, extra.subpart, side);
     }
 
     // ###############

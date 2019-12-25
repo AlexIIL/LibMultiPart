@@ -1,0 +1,3 @@
+Changes:
+
+* Added proper particle and sound handling.
