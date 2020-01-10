@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* [#10] Fixed MultipartUtil.turnIntoMultipart throwing a NullPointerException.

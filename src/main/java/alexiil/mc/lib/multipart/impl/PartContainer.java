@@ -127,7 +127,7 @@ public class PartContainer implements MultipartContainer {
                 if (index >= parts.size()) {
                     throw new InvalidInputDataException(
                         ("The client is aware of " + parts.size() + " parts, ")
-                            + ("but the server has sent data for the " + index + " part!")
+                            + ("but the server has sent data for the " + (index + 1) + " part!")
                     );
                 }
                 return parts.get(index).part;

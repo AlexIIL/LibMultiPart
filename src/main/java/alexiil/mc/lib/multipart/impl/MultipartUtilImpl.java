@@ -146,7 +146,6 @@ public final class MultipartUtilImpl {
         World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing, MultipartCreator creatorB,
         boolean respectEntityBBs
     ) {
-
         MultipartBlockEntity be = new MultipartBlockEntity();
         be.setWorld(world, pos);
         PartContainer container = new PartContainer(be);
@@ -184,10 +183,14 @@ public final class MultipartUtilImpl {
             }
         }
 
+        if (offeredHolder == null && existingHolders.isEmpty()) {
+            return null;
+        }
+
         return new PartOffer() {
             @Override
             public MultipartHolder getHolder() {
-                return offeredHolder;
+                return offeredHolder != null ? offeredHolder : existingHolders.get(0);
             }
 
             @Override
