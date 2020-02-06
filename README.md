@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    modCompile "alexiil.mc.lib:libmultipart-all:0.3.3"
+    modCompile "alexiil.mc.lib:libmultipart-all:0.3.4"
 }
 ```
 
