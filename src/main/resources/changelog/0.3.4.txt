@@ -1,3 +1,15 @@
+Changes:
+
+* Update to Minecraft 1.15.2.
+* Added AbstractPart.rotate and mirror, to allow parts in structures to
+   mirror and rotate properly.
+* Store required parts offset in NBT, rather than absolute
+    * This allows them to work correctly when used in a structure.
+* Moved a few more logging messages to require the system property
+   "-Dlibmultipart.debug=true" to be present.
+
 Bug Fixes:
 
 * [#10] Fixed MultipartUtil.turnIntoMultipart throwing a NullPointerException.
+* Fixed multipart blocks crashing when a block receivers multiple ini packets.
+

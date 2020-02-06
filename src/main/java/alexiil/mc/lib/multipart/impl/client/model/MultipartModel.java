@@ -109,8 +109,13 @@ public final class MultipartModel
     }
 
     @Override
-    public boolean hasDepthInGui() {
+    public boolean hasDepth() {
         return false;
+    }
+
+    @Override
+    public boolean isSideLit() {
+        return true;
     }
 
     @Override

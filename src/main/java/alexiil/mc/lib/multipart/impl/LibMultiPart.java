@@ -65,7 +65,7 @@ public class LibMultiPart implements ModInitializer {
     public void onInitialize() {
         // For now always register everything
         register(Registry.BLOCK, BLOCK, "container");
-        register(Registry.BLOCK_ENTITY, BLOCK_ENTITY, "container");
+        register(Registry.BLOCK_ENTITY_TYPE, BLOCK_ENTITY, "container");
     }
 
     private static <T> void register(Registry<T> registry, T obj, String path) {

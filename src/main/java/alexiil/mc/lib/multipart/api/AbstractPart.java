@@ -28,6 +28,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -74,14 +76,11 @@ public abstract class AbstractPart {
 
     static {
         NET_ID = PartContainer.NET_KEY_PART;
-        NET_RENDER_DATA
-            = NET_ID.idData("render_data").setReadWrite(AbstractPart::readRenderData, AbstractPart::writeRenderData);
-        NET_SPAWN_BREAK_PARTICLES
-            = NET_ID.idSignal("spawn_break_particles").setReceiver(AbstractPart::spawnBreakParticles);
-
-        // This needs to happen ASAP, because otherwise the client will remove this block before the particles can be
-        // spawned (at the end of the tick).
-        NET_SPAWN_BREAK_PARTICLES.notBuffered();
+        NET_RENDER_DATA = NET_ID.idData("render_data").toClientOnly()
+            .setReadWrite(AbstractPart::readRenderData, AbstractPart::writeRenderData);
+        // never buffer break particles because otherwise the block will be removed before the particles can spawn
+        NET_SPAWN_BREAK_PARTICLES = NET_ID.idSignal("spawn_break_particles").toClientOnly().withoutBuffering()
+            .setReceiver(AbstractPart::spawnBreakParticles);
     }
 
     public final PartDefinition definition;
@@ -101,17 +100,11 @@ public abstract class AbstractPart {
      * the server and sent to the client). Note that this will be called *instead* of write and read payload.
      * 
      * @param ctx TODO */
-    public void writeCreationData(NetByteBuf buffer, IMsgWriteCtx ctx) {
-        ctx.assertServerSide();
-    }
+    public void writeCreationData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
 
-    public void writeRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {
-        ctx.assertServerSide();
-    }
+    public void writeRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
 
-    public void readRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
-        ctx.assertClientSide();
-    }
+    public void readRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {}
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart. */
     public final <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
@@ -166,8 +159,10 @@ public abstract class AbstractPart {
      * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} from being
      *         called afterwards, false otherwise. */
     public boolean onBreak(PlayerEntity player) {
-        playBreakSound();
-        sendNetworkUpdate(this, NET_SPAWN_BREAK_PARTICLES);
+        if (!holder.getContainer().isClientWorld()) {
+            playBreakSound();
+            sendNetworkUpdate(this, NET_SPAWN_BREAK_PARTICLES);
+        }
         return true;
     }
 
@@ -234,11 +229,11 @@ public abstract class AbstractPart {
         VoxelShape voxelShape = getOutlineShape();
         for (Box box : voxelShape.getBoundingBoxes()) {
             double x0 = box.x1;
-            double y0 = box.x1;
-            double z0 = box.x1;
+            double y0 = box.y1;
+            double z0 = box.z1;
             double x1 = box.x2;
-            double y1 = box.x2;
-            double z1 = box.x2;
+            double y1 = box.y2;
+            double z1 = box.z2;
             double minX = Math.min(1.0D, x1 - x0);
             double minY = Math.min(1.0D, y1 - y0);
             double minZ = Math.min(1.0D, z1 - z0);
@@ -353,6 +348,20 @@ public abstract class AbstractPart {
      * {@link Block#onUse(BlockState, World, BlockPos, PlayerEntity, Hand, BlockHitResult)}. */
     public ActionResult onUse(PlayerEntity player, Hand hand, BlockHitResult hit) {
         return ActionResult.PASS;
+    }
+
+    /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} is called on the containing block.
+     * 
+     * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE} */
+    public void rotate(BlockRotation rotation) {
+
+    }
+
+    /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} is called on the containing block.
+     * 
+     * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE} */
+    public void mirror(BlockMirror mirror) {
+
     }
 
     /** Called on the client for both rendering, and checking if this needs to re-render in

@@ -19,9 +19,12 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.server.PlayerStream;
 
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -40,8 +43,8 @@ import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 import alexiil.mc.lib.net.impl.McNetworkStack;
 
 public class MultipartBlockEntity extends BlockEntity
-    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity {
-
+    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity
+{
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
     static {
@@ -49,6 +52,7 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     PartContainer container;
+    private boolean hasSentInitial = false;
 
     public MultipartBlockEntity() {
         super(LibMultiPart.BLOCK_ENTITY);
@@ -64,6 +68,7 @@ public class MultipartBlockEntity extends BlockEntity
     @Override
     public void fromTag(CompoundTag tag) {
         super.fromTag(tag);
+        hasSentInitial = false;
         if (tag.contains("container")) {
             container.fromTag(tag.getCompound("container"));
         }
@@ -78,8 +83,34 @@ public class MultipartBlockEntity extends BlockEntity
 
     @Override
     public CompoundTag toInitialChunkDataTag() {
-        sendNetworkUpdate(null, container, PartContainer.NET_ID_INITIAL_RENDER_DATA);
+        sendNetworkUpdate(null, container, PartContainer.NET_INITIAL_RENDER_DATA);
+        hasSentInitial = true;
         return super.toInitialChunkDataTag();
+    }
+
+    @Override
+    public BlockEntityUpdateS2CPacket toUpdatePacket() {
+        if (!hasSentInitial) {
+            sendNetworkUpdate(null, container, PartContainer.NET_INITIAL_RENDER_DATA);
+            hasSentInitial = true;
+        }
+        return null;
+    }
+
+    @Override
+    public void applyRotation(BlockRotation rotation) {
+        super.applyRotation(rotation);
+        if (rotation != BlockRotation.NONE) {
+            container.rotate(rotation);
+        }
+    }
+
+    @Override
+    public void applyMirror(BlockMirror mirror) {
+        super.applyMirror(mirror);
+        if (mirror != BlockMirror.NONE) {
+            container.mirror(mirror);
+        }
     }
 
     @Nonnull

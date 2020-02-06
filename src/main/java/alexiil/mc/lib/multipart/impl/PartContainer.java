@@ -28,6 +28,8 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
@@ -73,11 +75,11 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 public class PartContainer implements MultipartContainer {
 
     static final ParentNetIdSingle<PartContainer> NET_KEY;
-    static final NetIdDataK<PartContainer> NET_ID_INITIAL_RENDER_DATA;
-    static final NetIdDataK<PartContainer> NET_ID_ADD_PART;
-    static final NetIdDataK<PartContainer> NET_ID_REMOVE_PART;
-    static final NetIdDataK<PartContainer> NET_ID_REMOVE_PART_MULTI;
-    static final NetIdSignalK<PartContainer> NET_SIGNAL_REDRAW;
+    static final NetIdDataK<PartContainer> NET_INITIAL_RENDER_DATA;
+    static final NetIdDataK<PartContainer> NET_ADD_PART;
+    static final NetIdDataK<PartContainer> NET_REMOVE_PART;
+    static final NetIdDataK<PartContainer> NET_REMOVE_PARTS;
+    static final NetIdSignalK<PartContainer> NET_REDRAW;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
     static PartHolder extractPartHolder(AbstractPart value) {
@@ -94,12 +96,13 @@ public class PartContainer implements MultipartContainer {
     static {
         NET_KEY = MultipartBlockEntity.NET_KEY
             .extractor(PartContainer.class, "container", c -> c.blockEntity, b -> b.container);
-        NET_ID_ADD_PART = NET_KEY.idData("add_part").setReceiver(PartContainer::readAddPart);
-        NET_ID_REMOVE_PART = NET_KEY.idData("remove_part").setReceiver(PartContainer::readRemovePart);
-        NET_ID_REMOVE_PART_MULTI = NET_KEY.idData("remove_part_multi").setReceiver(PartContainer::readRemovePartMulti);
-        NET_ID_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data")
+        NET_ADD_PART = NET_KEY.idData("add_part").toClientOnly().setReceiver(PartContainer::readAddPart);
+        NET_REMOVE_PART = NET_KEY.idData("remove_part").toClientOnly().setReceiver(PartContainer::readRemovePart);
+        NET_REMOVE_PARTS
+            = NET_KEY.idData("remove_part_multi").toClientOnly().setReceiver(PartContainer::readRemoveParts);
+        NET_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").toClientOnly()
             .setReadWrite(PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData);
-        NET_SIGNAL_REDRAW = NET_KEY.idSignal("redraw").setReceiver(PartContainer::receiveRedraw);
+        NET_REDRAW = NET_KEY.idSignal("redraw").toClientOnly().setReceiver(PartContainer::receiveRedraw);
         NET_KEY_PART = new ParentNetIdDuel<PartContainer, AbstractPart>(NET_KEY, "holder", AbstractPart.class) {
             @Override
             protected PartContainer extractParent(AbstractPart value) {
@@ -366,7 +369,7 @@ public class PartContainer implements MultipartContainer {
         assert prev == null : "Already contained a part with the given ID";
         holder.part.onAdded(eventBus);
         // Send the new part information *now* because other parts have a chance to send network packets
-        sendNetworkUpdate(PartContainer.this, NET_ID_ADD_PART, (p, buffer, ctx) -> {
+        sendNetworkUpdate(PartContainer.this, NET_ADD_PART, (p, buffer, ctx) -> {
             holder.writeCreation(buffer, ctx);
         });
         recalculateShape();
@@ -375,7 +378,6 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void readAddPart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
-        ctx.assertClientSide();
         PartHolder holder = new PartHolder(this, buffer, ctx);
         assert holder.part != null;
         parts.add(holder);
@@ -462,7 +464,7 @@ public class PartContainer implements MultipartContainer {
         assert removedById == removed;
         removed.clearRequiredParts();
         if (!parts.isEmpty()) {
-            sendNetworkUpdate(this, NET_ID_REMOVE_PART, (p, buffer, ctx) -> {
+            sendNetworkUpdate(this, NET_REMOVE_PART, (p, buffer, ctx) -> {
                 buffer.writeByte(index);
             });
         }
@@ -486,11 +488,9 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void readRemovePart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
-        ctx.assertClientSide();
-
         int index = buffer.readUnsignedByte();
         if (index >= parts.size()) {
-            throw new InvalidInputDataException("Invalid pluggable index " + index + " - we've probably got desynced!");
+            throw new InvalidInputDataException("Invalid part index " + index + " - we've probably got desynced!");
         }
 
         PartHolder removed = parts.remove(index);
@@ -519,7 +519,7 @@ public class PartContainer implements MultipartContainer {
             assert removedById == holder;
         }
         if (!isClientWorld()) {
-            sendNetworkUpdate(this, NET_ID_REMOVE_PART_MULTI, (p, buffer, ctx) -> {
+            sendNetworkUpdate(this, NET_REMOVE_PARTS, (p, buffer, ctx) -> {
                 buffer.writeByte(indices.length);
                 for (int i : indices) {
                     buffer.writeByte(i);
@@ -551,8 +551,7 @@ public class PartContainer implements MultipartContainer {
         }
     }
 
-    private void readRemovePartMulti(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
-        ctx.assertClientSide();
+    private void readRemoveParts(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
         int count = buffer.readUnsignedByte();
         int[] indices = new int[count];
         for (int i = 0; i < count; i++) {
@@ -634,12 +633,11 @@ public class PartContainer implements MultipartContainer {
             blockEntity.world()
                 .checkBlockRerender(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
         } else {
-            sendNetworkUpdate(this, NET_SIGNAL_REDRAW);
+            sendNetworkUpdate(this, NET_REDRAW);
         }
     }
 
     private void receiveRedraw(IMsgReadCtx ctx) throws InvalidInputDataException {
-        ctx.assertClientSide();
         redrawIfChanged();
     }
 
@@ -721,6 +719,7 @@ public class PartContainer implements MultipartContainer {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
         }
+        recalculateShape();
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
         ListTag allPartsTag = tag.getList("parts", new CompoundTag().getType());
@@ -823,6 +822,18 @@ public class PartContainer implements MultipartContainer {
     void onChunkUnload() {
         eventBus.fireEvent(PartContainerState.CHUNK_UNLOAD);
         delinkOtherBlockRequired();
+    }
+
+    void rotate(BlockRotation rotation) {
+        for (PartHolder holder : parts) {
+            holder.rotate(rotation);
+        }
+    }
+
+    void mirror(BlockMirror mirror) {
+        for (PartHolder holder : parts) {
+            holder.mirror(mirror);
+        }
     }
 
     private void delinkOtherBlockRequired() {

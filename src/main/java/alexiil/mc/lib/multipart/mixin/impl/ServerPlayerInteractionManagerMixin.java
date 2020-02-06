@@ -30,6 +30,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 
+import alexiil.mc.lib.multipart.impl.LibMultiPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 @Mixin(ServerPlayerInteractionManager.class)
@@ -56,10 +57,16 @@ public class ServerPlayerInteractionManagerMixin {
     @Unique
     Vec3d sentHitVec;
 
+    private void log(String text) {
+        LibMultiPart.LOGGER.info("[player-interaction] '" + player.getEntityName() + "' " + text);
+    }
+
     @Inject(method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;update()V", at = @At("RETURN"))
     void update(CallbackInfo ci) {
         if (!field_14003 && multipartKey != null) {
-            // LibMultiPart.LOGGER.info("[server] Cleared multipartKey");
+            if (LibMultiPart.DEBUG) {
+                log("update(): Cleared multipartKey");
+            }
             multipartKey = null;
         }
     }
@@ -75,7 +82,9 @@ public class ServerPlayerInteractionManagerMixin {
         )
     )
     void onBlockBreakStart(BlockState state, World w, BlockPos pos, PlayerEntity pl) {
-        // LibMultiPart.LOGGER.info("[server] onBlockBreakStart( " + pos + " " + state + " )");
+        if (LibMultiPart.DEBUG) {
+            log("onBlockBreakStart( " + pos + " " + state + " )");
+        }
         if (state.getBlock() instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
             onBlockBreakStart0(state, w, pos, pl, block);
@@ -90,21 +99,29 @@ public class ServerPlayerInteractionManagerMixin {
 
         Vec3d vec = sentHitVec;
         if (vec == null) {
-            // LibMultiPart.LOGGER.info("[server] vec was null!");
+            if (LibMultiPart.DEBUG) {
+                log("onBlockBreakStart0(): vec was null!");
+            }
             // Guess the hit vec from the player's look vector
             VoxelShape shape = state.getOutlineShape(w, pos);
             BlockHitResult rayTrace = shape
                 .rayTrace(pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos);
-            // LibMultiPart.LOGGER.info("[server] rayTrace = " + rayTrace);
+            if (LibMultiPart.DEBUG) {
+                log("onBlockBreakStart(): rayTrace = " + rayTrace);
+            }
             if (rayTrace == null) {
                 // This shouldn't really happen... lets just fail.
                 return;
             }
             vec = rayTrace.getPos();
         }
-        // LibMultiPart.LOGGER.info("[server] vec = " + vec);
+        if (LibMultiPart.DEBUG) {
+            log("onBlockBreakStart(): vec = " + vec);
+        }
         T bestKey = block.getTargetedMultipart(state, w, pos, vec);
-        // LibMultiPart.LOGGER.info("[server] bestKey = " + bestKey);
+        if (LibMultiPart.DEBUG) {
+            log("onBlockBreakStart(): bestKey = " + bestKey);
+        }
 
         if (bestKey == null) {
             // TODO!
@@ -124,9 +141,13 @@ public class ServerPlayerInteractionManagerMixin {
         cancellable = true
     )
     void destroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
-        // LibMultiPart.LOGGER.info("[server] destroyBlock( " + pos + " )");
+        if (LibMultiPart.DEBUG) {
+            log("destroyBlock( " + pos + " )");
+        }
         BlockState state = world.getBlockState(pos);
-        // LibMultiPart.LOGGER.info("[server] multipartKey = " + multipartKey);
+        if (LibMultiPart.DEBUG) {
+            log("destroyBlock(): multipartKey = " + multipartKey);
+        }
         if (multipartKey == null) {
             // We haven't actually started breaking yet?
             onBlockBreakStart(state, world, pos, player);
@@ -134,7 +155,9 @@ public class ServerPlayerInteractionManagerMixin {
 
         Block block = state.getBlock();
         if (block instanceof IBlockMultipart<?>) {
-            // LibMultiPart.LOGGER.info("[server] multipartKey = " + multipartKey);
+            if (LibMultiPart.DEBUG) {
+                log("destroyBlock(): multipartKey = " + multipartKey);
+            }
             boolean ret = destroyBlock0(pos, state, (IBlockMultipart<?>) block);
             ci.setReturnValue(ret);
         }
@@ -145,14 +168,18 @@ public class ServerPlayerInteractionManagerMixin {
             return false;
         }
         if (!block.getKeyClass().isInstance(multipartKey)) {
-            // LibMultiPart.LOGGER.info("[server] wrong key class");
+            if (LibMultiPart.DEBUG) {
+                log("destroyBlock0(): Wrong key " + multipartKey.getClass() + ", expected " + block.getKeyClass());
+            }
             return false;
         }
         T key = block.getKeyClass().cast(multipartKey);
         BlockEntity be = world.getBlockEntity(pos);
         block.onBreak(world, pos, state, player, key);
         if (block.clearBlockState(world, pos, key)) {
-            // LibMultiPart.LOGGER.info("[server] was cleared!");
+            if (LibMultiPart.DEBUG) {
+                log("destroyBlock0(): IBlockMultipart.clearBlockState() -> true");
+            }
             block.onBroken(world, pos, state, key);
             if (!player.isCreative()) {
                 ItemStack stack = player.getMainHandStack();
@@ -161,7 +188,9 @@ public class ServerPlayerInteractionManagerMixin {
             }
             return true;
         } else {
-            // LibMultiPart.LOGGER.info("[server] wasn't cleared!");
+            if (LibMultiPart.DEBUG) {
+                log("destroyBlock0(): IBlockMultipart.clearBlockState() -> false");
+            }
             return false;
         }
     }

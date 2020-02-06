@@ -12,6 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
@@ -20,7 +22,8 @@ import alexiil.mc.lib.multipart.api.MultipartHolder;
 /** Combined {@link BlockPos} + {@link PartHolder#uniqueId}. */
 final class PosPartId {
 
-    private static final Set<String> TAG_NAMES = new HashSet<>(Arrays.asList("x", "y", "z", "u"));
+    private static final Set<String> OLD_EXACT_TAG_NAMES = new HashSet<>(Arrays.asList("x", "y", "z", "u"));
+    private static final Set<String> NEW_OFFSET_TAG_NAMES = new HashSet<>(Arrays.asList("a", "b", "c", "u"));
 
     final BlockPos pos;
     final long uid;
@@ -38,23 +41,29 @@ final class PosPartId {
         this(holder.getContainer().getMultipartPos(), holder.getUniqueId());
     }
 
-    PosPartId(CompoundTag tag) {
-        pos = new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
+    PosPartId(PartContainer from, CompoundTag tag) {
+        if (tag.contains("x")) {
+            pos = new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
+        } else {
+            BlockPos f = from.getMultipartPos();
+            pos = new BlockPos(tag.getInt("a") + f.getX(), tag.getInt("b") + f.getY(), tag.getInt("c") + f.getZ());
+        }
         uid = tag.getLong("u");
     }
 
-    CompoundTag toTag() {
+    CompoundTag toTag(PartContainer from) {
+        BlockPos f = from.getMultipartPos();
         CompoundTag tag = new CompoundTag();
-        tag.putInt("x", pos.getX());
-        tag.putInt("y", pos.getY());
-        tag.putInt("z", pos.getZ());
+        tag.putInt("a", pos.getX() - f.getX());
+        tag.putInt("b", pos.getY() - f.getY());
+        tag.putInt("c", pos.getZ() - f.getZ());
         tag.putLong("u", uid);
         return tag;
     }
 
     public static boolean isValid(CompoundTag tag) {
-        return tag.getKeys().size() == 4//
-            && tag.getKeys().containsAll(TAG_NAMES);
+        Set<String> keys = tag.getKeys();
+        return keys.size() == 4 && (keys.containsAll(OLD_EXACT_TAG_NAMES) || keys.containsAll(NEW_OFFSET_TAG_NAMES));
     }
 
     @Override
@@ -86,5 +95,29 @@ final class PosPartId {
 
     public boolean isFor(PartHolder req) {
         return uid == req.uniqueId && posEquals(req.container.getMultipartPos());
+    }
+
+    public PosPartId rotate(PartContainer from, BlockRotation rotation) {
+        if (rotation == BlockRotation.NONE) {
+            return this;
+        }
+        BlockPos f = from.getMultipartPos();
+        return new PosPartId(pos.subtract(f).rotate(rotation).add(f), uid);
+    }
+
+    public PosPartId mirror(PartContainer from, BlockMirror mirror) {
+        if (mirror == BlockMirror.NONE) {
+            return this;
+        }
+        BlockPos f = from.getMultipartPos();
+        int x = pos.getX() - f.getX();
+        int z = pos.getZ() - f.getZ();
+        if (mirror == BlockMirror.LEFT_RIGHT) {
+            x = -x;
+        } else {
+            assert mirror == BlockMirror.FRONT_BACK;
+            z = -z;
+        }
+        return new PosPartId(new BlockPos(x + f.getX(), pos.getY(), z + f.getZ()), uid);
     }
 }

@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.3.4-pre.1"
+version = "0.3.4-pre.10"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -25,12 +25,12 @@ minecraft {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.15.1"
-    mappings "net.fabricmc:yarn:1.15.1+build.6:v2"
-    modCompile "net.fabricmc:fabric-loader:0.7.2+build.175"
+    minecraft "com.mojang:minecraft:1.15.2"
+    mappings "net.fabricmc:yarn:1.15.2+build.7:v2"
+    modCompile "net.fabricmc:fabric-loader:0.7.6+build.179"
 
     //Fabric api
-    modCompile "net.fabricmc.fabric-api:fabric-api:0.4.25+build.282-1.15"
+    modCompile "net.fabricmc.fabric-api:fabric-api:0.4.29+build.290-1.15"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
     modApi "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"
@@ -95,6 +95,10 @@ apply from: "extra_jar_def.gradle"
 ext.mainName = "libmultipart"
 ext.mavenGroupId = "alexiil.mc.lib";
 
+ext.extra_jar_def__optimised_compression = true;
+ext.extra_jar_def__decompress_external_included = true;
+ext.extra_jar_def__common_manifest.put(null, ['Sealed': 'true']);
+
 ext.extra_jar_def__fabric_mod_json_replacements = [
   ["\$version", project.version],
   ["\$libblockattributes_version", "$libblockattributes_version"],
@@ -112,3 +116,9 @@ def jarDeps = [
 
 generateJar("base", ["**"], [], true);
 generateJar("all", allIncludes, [], false, [], ["base"], [], jarDeps);
+// Don't generate a devonly fatjar - as there's only 1 module.
+
+tasks.withType(AbstractArchiveTask) {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}

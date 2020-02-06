@@ -13,6 +13,8 @@ import java.util.Set;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 
@@ -87,7 +89,7 @@ public final class PartHolder implements MultipartHolder {
                     if (unloadedRequiredParts == null) {
                         unloadedRequiredParts = identityHashSet();
                     }
-                    unloadedRequiredParts.add(new PosPartId(posPartTag));
+                    unloadedRequiredParts.add(new PosPartId(container, posPartTag));
                 }
             }
 
@@ -109,7 +111,7 @@ public final class PartHolder implements MultipartHolder {
                     if (unloadedInverseRequiredParts == null) {
                         unloadedInverseRequiredParts = identityHashSet();
                     }
-                    unloadedInverseRequiredParts.add(new PosPartId(posPartTag));
+                    unloadedInverseRequiredParts.add(new PosPartId(container, posPartTag));
                 }
             }
         }
@@ -128,12 +130,12 @@ public final class PartHolder implements MultipartHolder {
             ListTag reql = new ListTag();
             if (requiredParts != null) {
                 for (PartHolder req : requiredParts) {
-                    reql.add(new PosPartId(req).toTag());
+                    reql.add(new PosPartId(req).toTag(container));
                 }
             }
             if (unloadedRequiredParts != null) {
                 for (PosPartId req : unloadedRequiredParts) {
-                    reql.add(req.toTag());
+                    reql.add(req.toTag(container));
                 }
             }
             if (!reql.isEmpty()) {
@@ -142,12 +144,12 @@ public final class PartHolder implements MultipartHolder {
             ListTag invReql = new ListTag();
             if (inverseRequiredParts != null) {
                 for (PartHolder req : inverseRequiredParts) {
-                    invReql.add(new PosPartId(req).toTag());
+                    invReql.add(new PosPartId(req).toTag(container));
                 }
             }
             if (unloadedInverseRequiredParts != null) {
                 for (PosPartId req : unloadedInverseRequiredParts) {
-                    invReql.add(req.toTag());
+                    invReql.add(req.toTag(container));
                 }
             }
             if (!invReql.isEmpty()) {
@@ -307,5 +309,39 @@ public final class PartHolder implements MultipartHolder {
             removeRequiredPart(holder.part);
         }
         assert requiredParts == null : "Required Parts (" + requiredParts + ") wasn't fully cleared!";
+    }
+
+    void rotate(BlockRotation rotation) {
+        part.rotate(rotation);
+        unloadedRequiredParts = rotate(unloadedRequiredParts, rotation);
+        unloadedInverseRequiredParts = rotate(unloadedInverseRequiredParts, rotation);
+    }
+
+    private Set<PosPartId> rotate(Set<PosPartId> parts, BlockRotation rotation) {
+        if (parts == null) {
+            return null;
+        }
+        Set<PosPartId> to = identityHashSet();
+        for (PosPartId pos : parts) {
+            to.add(pos.rotate(container, rotation));
+        }
+        return to;
+    }
+
+    void mirror(BlockMirror mirror) {
+        part.mirror(mirror);
+        unloadedRequiredParts = mirror(unloadedRequiredParts, mirror);
+        unloadedInverseRequiredParts = mirror(unloadedInverseRequiredParts, mirror);
+    }
+
+    private Set<PosPartId> mirror(Set<PosPartId> parts, BlockMirror mirror) {
+        if (parts == null) {
+            return null;
+        }
+        Set<PosPartId> to = identityHashSet();
+        for (PosPartId pos : parts) {
+            to.add(pos.mirror(container, mirror));
+        }
+        return to;
     }
 }

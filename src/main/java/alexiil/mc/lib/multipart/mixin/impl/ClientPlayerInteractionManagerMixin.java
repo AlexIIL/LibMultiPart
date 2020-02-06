@@ -27,6 +27,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
+import alexiil.mc.lib.multipart.impl.LibMultiPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 
@@ -57,10 +58,14 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
-            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"),
-        method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z")
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"
+        ),
+        method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"
+    )
     void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
-//        LibMultiPart.LOGGER.info("[client] onBlockBreakStart( " + pos + " " + state + " )");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] onBlockBreakStart( " + pos + " " + state + " )");
+        }
         Block block = state.getBlock();
         if (block instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> blockMulti = (IBlockMultipart<?>) block;
@@ -70,14 +75,17 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         }
     }
 
-    private <T> void onBlockBreakStart0(BlockState state, World world, BlockPos pos, PlayerEntity player,
-        IBlockMultipart<T> blockMulti) {
+    private <T> void onBlockBreakStart0(
+        BlockState state, World world, BlockPos pos, PlayerEntity player, IBlockMultipart<T> blockMulti
+    ) {
 
         HitResult hit = MinecraftClient.getInstance().crosshairTarget;
         T key = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         partKey = key;
-//        LibMultiPart.LOGGER.info("[client] hit = " + hit);
-//        LibMultiPart.LOGGER.info("[client] key = " + key);
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] onBlockBreakStart0(): hit = " + hit);
+            LibMultiPart.LOGGER.info("[player-interaction] onBlockBreakStart0(): key = " + key);
+        }
         blockMulti.onBlockBreakStart(state, world, pos, player, key);
     }
 
@@ -86,12 +94,16 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         at = @At(
             value = "INVOKE",
             target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;"
-            + "Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"),
-        cancellable = true)
+                + "Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"
+        ),
+        cancellable = true
+    )
     void breakBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
         World world = client.world;
         BlockState state = world.getBlockState(pos);
-//        LibMultiPart.LOGGER.info("[client] breakBlock( " + pos + " " + state + " )");
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] breakBlock( " + pos + " " + state + " )");
+        }
         if (state.getBlock() instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> blockMulti = (IBlockMultipart<?>) state.getBlock();
             Boolean ret = breakBlock0(pos, blockMulti);
@@ -107,10 +119,14 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         HitResult hit = MinecraftClient.getInstance().crosshairTarget;
         World world = client.world;
         BlockState state = world.getBlockState(pos);
-//        LibMultiPart.LOGGER.info("[client] hit = " + hit);
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] breakBlock0(): hit = " + hit);
+        }
         T target = blockMulti.getTargetedMultipart(state, world, pos, hit.getPos());
         T previous;
-//        LibMultiPart.LOGGER.info("[client] target = " + target);
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] breakBlock0(): target = " + target);
+        }
         if (partKey == null) {
             previous = target;
         } else if (blockMulti.getKeyClass().isInstance(partKey)) {
@@ -118,10 +134,17 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         } else {
             previous = target;
         }
-//        LibMultiPart.LOGGER.info("[client] previous = " + previous);
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] breakBlock0(): previous = " + previous);
+        }
         partKey = null;
         if (target == null || !Objects.equals(previous, target)) {
-//            LibMultiPart.LOGGER.info("Different subpart keys: previous = " + previous + ", current = " + target);
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info(
+                    "[player-interaction] breakBlock0(): Different subpart keys: previous = " + previous
+                        + ", current = " + target
+                );
+            }
             currentBreakingPos = new BlockPos(currentBreakingPos.getX(), -1, currentBreakingPos.getZ());
             return Boolean.FALSE;
         }
