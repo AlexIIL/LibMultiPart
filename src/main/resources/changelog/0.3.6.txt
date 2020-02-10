@@ -1,0 +1,3 @@
+Changes:
+
+* Allowed LMP to be loaded in 20w06a as well as 1.15.2.
