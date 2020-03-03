@@ -68,7 +68,7 @@ public final class MultipartUtilImpl {
                 return null;
             }
             if (!conversions.isEmpty()) {
-                PartOffer offer = offerAdder(world, pos, hasWater, conversions, null, true);
+                PartOffer offer = offerAdder(world, pos, hasWater, conversions, null, false);
                 if (offer == null) {
                     return null;
                 }
