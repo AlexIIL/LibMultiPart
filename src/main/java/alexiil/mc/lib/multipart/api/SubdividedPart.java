@@ -15,14 +15,14 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
-import net.minecraft.util.DefaultedList;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 /** Optional interface for {@link AbstractPart} implementations which can have sub-parts targeted and broken instead of
  * the whole thing. */
@@ -53,7 +53,7 @@ public interface SubdividedPart<Sub> {
      *         otherwise. */
     boolean clearSubpart(Sub subpart);
 
-    /** Multipart version of {@link Block#onBroken(IWorld, BlockPos, BlockState)} */
+    /** Multipart version of {@link Block#onBroken(WorldAccess, BlockPos, BlockState)} */
     void onSubpartBroken(Sub subpart);
 
     /** Multipart version of

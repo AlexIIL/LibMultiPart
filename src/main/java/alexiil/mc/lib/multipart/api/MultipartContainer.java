@@ -44,7 +44,7 @@ public interface MultipartContainer {
     BlockEntity getMultipartBlockEntity();
 
     default DimensionType getDimension() {
-        return getMultipartWorld().dimension.getType();
+        return getMultipartWorld().getDimension();
     }
 
     default boolean isClientWorld() {

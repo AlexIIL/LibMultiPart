@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.4.0-pre.1"
+version = "0.4.0-pre.21"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -25,20 +25,12 @@ minecraft {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.15.2"
-    mappings "net.fabricmc:yarn:1.15.2+build.7:v2"
-    modCompile "net.fabricmc:fabric-loader:0.7.6+build.179"
-
-    //Fabric api
-    modCompile "net.fabricmc.fabric-api:fabric-api:0.4.29+build.290-1.15"
-    /*
-    minecraft "com.mojang:minecraft:1.16-pre2"
-    mappings "net.fabricmc:yarn:1.16-pre2+build.1:v2"
+    minecraft "com.mojang:minecraft:1.16-pre4"
+    mappings "net.fabricmc:yarn:1.16-pre4+build.1:v2"
     modImplementation "net.fabricmc:fabric-loader:0.8.7+build.201"
 
     //Fabric api
-    modImplementation "net.fabricmc.fabric-api:fabric-api:0.11.6+build.355-1.16"
-    */
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.12.0+build.360-1.16"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
     modApi "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"

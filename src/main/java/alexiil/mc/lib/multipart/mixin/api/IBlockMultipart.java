@@ -19,8 +19,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 /** Interface for blocks to implement if parts of them can be targeted and broken independently from other parts. */
 public interface IBlockMultipart<T> {
@@ -39,8 +39,8 @@ public interface IBlockMultipart<T> {
      * {@link ServerPlayerInteractionManager#tryBreakBlock} */
     boolean clearBlockState(World world, BlockPos pos, T subpart);
 
-    /** Multipart version of {@link Block#onBroken(IWorld, BlockPos, BlockState)} */
-    void onBroken(IWorld world, BlockPos pos, BlockState state, T subpart);
+    /** Multipart version of {@link Block#onBroken(WorldAccess, BlockPos, BlockState)} */
+    void onBroken(WorldAccess world, BlockPos pos, BlockState state, T subpart);
 
     /** Multipart version of
      * {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)}. */

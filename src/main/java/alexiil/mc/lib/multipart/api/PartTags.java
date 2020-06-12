@@ -1,5 +1,6 @@
 package alexiil.mc.lib.multipart.api;
 
+import alexiil.mc.lib.multipart.api.PartTags.CachingTag;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;

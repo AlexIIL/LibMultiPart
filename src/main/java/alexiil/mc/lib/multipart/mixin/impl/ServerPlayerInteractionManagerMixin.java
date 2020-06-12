@@ -45,9 +45,8 @@ public class ServerPlayerInteractionManagerMixin {
     @Shadow
     ServerPlayerEntity player;
 
-    /** isBreaking (?) */
     @Shadow
-    boolean field_14003;
+    boolean mining;
 
     @Unique
     Object multipartKey;
@@ -63,7 +62,7 @@ public class ServerPlayerInteractionManagerMixin {
 
     @Inject(method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;update()V", at = @At("RETURN"))
     void update(CallbackInfo ci) {
-        if (!field_14003 && multipartKey != null) {
+        if (!mining && multipartKey != null) {
             if (LibMultiPart.DEBUG) {
                 log("update(): Cleared multipartKey");
             }
@@ -73,14 +72,11 @@ public class ServerPlayerInteractionManagerMixin {
 
     @Redirect(
         method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;processBlockBreakingAction("
-            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/server/network/packet/PlayerActionC2SPacket$Action;"
+            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/network/packet/c2s/play/PlayerActionC2SPacket$Action;"
             + "Lnet/minecraft/util/math/Direction;I)V",
-        at = @At(
-            value = "INVOKE",
+        at = @At(value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
-                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"
-        )
-    )
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"))
     void onBlockBreakStart(BlockState state, World w, BlockPos pos, PlayerEntity pl) {
         if (LibMultiPart.DEBUG) {
             log("onBlockBreakStart( " + pos + " " + state + " )");
@@ -133,13 +129,9 @@ public class ServerPlayerInteractionManagerMixin {
 
     @Inject(
         method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;tryBreakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
-        at = @At(
-            value = "INVOKE",
-            target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;"
-                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"
-        ),
-        cancellable = true
-    )
+        at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;"
+            + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"),
+        cancellable = true)
     void destroyBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
         if (LibMultiPart.DEBUG) {
             log("destroyBlock( " + pos + " )");

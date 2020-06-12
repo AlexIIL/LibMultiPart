@@ -18,12 +18,12 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public interface IBlockSimpleMultipart<T> extends IBlockMultipart<T> {
 
-    Map<T, VoxelShape> getSubParts(IWorld world, BlockPos pos, BlockState state);
+    Map<T, VoxelShape> getSubParts(WorldAccess world, BlockPos pos, BlockState state);
 
     @Override
     @Nullable

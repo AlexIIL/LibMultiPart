@@ -71,7 +71,7 @@ public final class TransientPartIdentifier {
     }
 
     public void putLootContext(LootContext.Builder builder) {
-        builder.put(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+        builder.parameter(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
         extra.putLootContext(builder);
     }
 
@@ -92,7 +92,8 @@ public final class TransientPartIdentifier {
 
         @Override
         protected void putLootContext(LootContext.Builder builder) {
-            builder.put(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
+            builder.parameter(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
+            builder.parameter(PartLootParams.ADDITIONAL_PARTS, new BrokenPart[0]);
         }
     }
 
@@ -110,7 +111,7 @@ public final class TransientPartIdentifier {
             for (AbstractPart part : additional) {
                 array[i++] = new BrokenSinglePart(part);
             }
-            builder.put(PartLootParams.ADDITIONAL_PARTS, array);
+            builder.parameter(PartLootParams.ADDITIONAL_PARTS, array);
         }
     }
 }

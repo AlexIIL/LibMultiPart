@@ -21,6 +21,7 @@ import net.minecraft.client.particle.BlockDustParticle;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -31,9 +32,9 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
@@ -230,12 +231,12 @@ public abstract class AbstractPart {
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
         VoxelShape voxelShape = getOutlineShape();
         for (Box box : voxelShape.getBoundingBoxes()) {
-            double x0 = box.x1;
-            double y0 = box.y1;
-            double z0 = box.z1;
-            double x1 = box.x2;
-            double y1 = box.y2;
-            double z1 = box.z2;
+            double x0 = box.minX;
+            double y0 = box.minY;
+            double z0 = box.minZ;
+            double x1 = box.maxX;
+            double y1 = box.maxY;
+            double z1 = box.maxZ;
             double minX = Math.min(1.0D, x1 - x0);
             double minY = Math.min(1.0D, y1 - y0);
             double minZ = Math.min(1.0D, z1 - z0);
@@ -253,8 +254,8 @@ public abstract class AbstractPart {
                         double pY = vY * minY + y0;
                         double pZ = vZ * minZ + z0;
                         BlockDustParticle particle = new BlockDustParticle(
-                            world, pos.getX() + pX, pos.getY() + pY, pos.getZ() + pZ, vX - 0.5D, vY - 0.5D, vZ - 0.5D,
-                            state
+                            (ClientWorld) world, pos.getX() + pX, pos.getY() + pY, pos.getZ() + pZ, vX - 0.5D,
+                            vY - 0.5D, vZ - 0.5D, state
                         );
                         particle.setBlockPos(pos);
                         if (sprite != null) {

@@ -18,10 +18,11 @@ import com.google.common.collect.ImmutableList;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.server.PlayerStream;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.network.packet.BlockEntityUpdateS2CPacket;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -41,9 +42,10 @@ import alexiil.mc.lib.net.ParentNetIdSingle;
 import alexiil.mc.lib.net.impl.ActiveMinecraftConnection;
 import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 import alexiil.mc.lib.net.impl.McNetworkStack;
+import alexiil.mc.lib.net.mixin.api.IBlockEntityInitialData;
 
 public class MultipartBlockEntity extends BlockEntity
-    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity
+    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity, IBlockEntityInitialData
 {
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
@@ -52,7 +54,6 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     PartContainer container;
-    private boolean hasSentInitial = false;
 
     public MultipartBlockEntity() {
         super(LibMultiPart.BLOCK_ENTITY);
@@ -66,9 +67,8 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     @Override
-    public void fromTag(CompoundTag tag) {
-        super.fromTag(tag);
-        hasSentInitial = false;
+    public void fromTag(BlockState state, CompoundTag tag) {
+        super.fromTag(state, tag);
         if (tag.contains("container")) {
             container.fromTag(tag.getCompound("container"));
         }
@@ -82,22 +82,8 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     @Override
-    public CompoundTag toInitialChunkDataTag() {
-        DelayedMessageQueue.appendTask(this::sendInitialRenderData);
-        return super.toInitialChunkDataTag();
-    }
-
-    @Override
-    public BlockEntityUpdateS2CPacket toUpdatePacket() {
-        sendInitialRenderData();
-        return null;
-    }
-
-    private void sendInitialRenderData() {
-        if (!hasSentInitial) {
-            sendNetworkUpdate(null, container, PartContainer.NET_INITIAL_RENDER_DATA);
-            hasSentInitial = true;
-        }
+    public void sendInitialData(ServerPlayerEntity to) {
+        PartContainer.NET_INITIAL_RENDER_DATA.send(CoreMinecraftNetUtil.getConnection(to), container);
     }
 
     @Override

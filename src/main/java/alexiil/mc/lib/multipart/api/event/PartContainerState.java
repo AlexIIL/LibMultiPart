@@ -26,7 +26,7 @@ public abstract class PartContainerState extends MultipartEvent {
     /** Fired in {@link IUnloadableBlockEntity#onChunkUnload()} */
     public static final ChunkUnload CHUNK_UNLOAD = new ChunkUnload();
 
-    /** Fired in {@link Block#onBlockRemoved(BlockState, World, BlockPos, BlockState, boolean)} */
+    /** Fired in {@link Block#onStateReplaced(BlockState, World, BlockPos, BlockState, boolean)} */
     public static final Remove REMOVE = new Remove();
 
     PartContainerState() {}
@@ -45,7 +45,7 @@ public abstract class PartContainerState extends MultipartEvent {
         ChunkUnload() {}
     }
 
-    /** Fired in {@link Block#onBlockRemoved(BlockState, World, BlockPos, BlockState, boolean)} */
+    /** Fired in {@link Block#onStateReplaced(BlockState, World, BlockPos, BlockState, boolean)} */
     public static final class Remove extends PartContainerState implements ContextlessEvent {
         Remove() {}
     }

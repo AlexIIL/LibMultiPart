@@ -30,8 +30,8 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.BooleanBiFunction;
 import net.minecraft.util.Util;
+import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
@@ -631,7 +631,7 @@ public class PartContainer implements MultipartContainer {
             partModelKeys = list;
             // Just to make the world always re-render even though our state hasn't changed
             blockEntity.world()
-                .checkBlockRerender(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
+                .scheduleBlockRerenderIfNeeded(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
         } else {
             sendNetworkUpdate(this, NET_REDRAW);
         }

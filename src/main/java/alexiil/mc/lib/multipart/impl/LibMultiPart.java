@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.Material;
@@ -54,7 +54,13 @@ public class LibMultiPart implements ModInitializer {
 
         Material material = new Material.Builder(MaterialColor.BLACK).build();
         BLOCK = new MultipartBlock(
-            FabricBlockSettings.of(material).dropsNothing().breakByHand(true).hardness(0.5f).resistance(2.0f).dynamicBounds().build()
+            FabricBlockSettings.of(material)//
+                .dropsNothing()//
+                .breakByHand(true)//
+                .hardness(0.5f)//
+                .resistance(2.0f)//
+                .dynamicBounds()//
+                .lightLevel(state -> state.get(MultipartBlock.LUMINANCE))
         );
 
         Set<Block> blocks = Collections.singleton(BLOCK);
@@ -66,8 +72,6 @@ public class LibMultiPart implements ModInitializer {
         // For now always register everything
         register(Registry.BLOCK, BLOCK, "container");
         register(Registry.BLOCK_ENTITY_TYPE, BLOCK_ENTITY, "container");
-
-        DelayedMessageQueue.init();
     }
 
     private static <T> void register(Registry<T> registry, T obj, String path) {

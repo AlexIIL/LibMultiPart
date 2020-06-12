@@ -17,27 +17,28 @@ import net.fabricmc.api.Environment;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.ShapeContext;
 import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityContext;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
-import net.minecraft.util.DefaultedList;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ItemScatterer;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -47,14 +48,14 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.PartLootParams;
-import alexiil.mc.lib.multipart.api.PartLootParams.BrokenSinglePart;
+import alexiil.mc.lib.multipart.api.PartLootParams.BrokenPart;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
 import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
@@ -84,6 +85,8 @@ public class MultipartBlock extends Block
         createCuboidShape(0, 12, 0, 4, 16, 16), createCuboidShape(12, 12, 0, 16, 16, 16)//
     );
 
+    private transient TransientPartIdentifier droppingPart;
+
     public MultipartBlock(Settings settings) {
         super(settings);
         setDefaultState(
@@ -112,12 +115,7 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public int getLuminance(BlockState state) {
-        return state.get(LUMINANCE);
-    }
-
-    @Override
-    public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
+    public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
@@ -127,7 +125,7 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, EntityContext ctx) {
+    public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
@@ -158,13 +156,13 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public void onBlockRemoved(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean bool) {
+    public void onStateReplaced(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean bool) {
         BlockEntity be = world.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
             container.onRemoved();
         }
-        super.onBlockRemoved(oldState, world, pos, newState, bool);
+        super.onStateReplaced(oldState, world, pos, newState, bool);
     }
 
     @Override
@@ -277,7 +275,7 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public boolean tryFillWithFluid(IWorld world, BlockPos pos, BlockState state, FluidState fluid) {
+    public boolean tryFillWithFluid(WorldAccess world, BlockPos pos, BlockState state, FluidState fluid) {
         if (!canFillWithFluid(world, pos, state, fluid.getFluid())) {
             return false;
         }
@@ -369,7 +367,6 @@ public class MultipartBlock extends Block
 
     @Override
     public boolean clearBlockState(World world, BlockPos pos, TransientPartIdentifier subpart) {
-
         if (subpart.extra instanceof IdSubPart<?>) {
             return clearSubPart((IdSubPart<?>) subpart.extra);
         }
@@ -387,7 +384,7 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public void onBroken(IWorld world, BlockPos pos, BlockState state, TransientPartIdentifier subpart) {
+    public void onBroken(WorldAccess world, BlockPos pos, BlockState state, TransientPartIdentifier subpart) {
         onBroken(world, pos, state);
     }
 
@@ -417,16 +414,32 @@ public class MultipartBlock extends Block
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+        // TODO: Add a method to allow parts to drop stacks themselves,
+        // so that they have control over the position that the stacks spawn at.
         DefaultedList<ItemStack> drops = DefaultedList.of();
+        builder.parameter(LootContextParameters.BLOCK_STATE, state);
         BlockEntity be = builder.get(LootContextParameters.BLOCK_ENTITY);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
-            for (PartHolder holder : mpbe.container.parts) {
-                
+
+        LootContext lootContext;
+        if (droppingPart != null) {
+            droppingPart.putLootContext(builder);
+            lootContext = builder.build(PartLootParams.PART_TYPE);
+
+            builder.get(PartLootParams.BROKEN_PART).getPart().addDrops(drops, lootContext);
+            for (BrokenPart part : builder.get(PartLootParams.ADDITIONAL_PARTS)) {
+                part.getPart().addDrops(drops, lootContext);
+            }
+        } else {
+            lootContext = builder.build(LootContextTypes.BLOCK);
+
+            if (be instanceof MultipartBlockEntity) {
+                MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
+                for (PartHolder holder : mpbe.container.parts) {
+                    holder.part.addDrops(drops, lootContext);
+                }
             }
         }
         return drops;
-
     }
 
     private static <Sub> void afterSubpartBreak(
@@ -442,7 +455,7 @@ public class MultipartBlock extends Block
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity multi = (MultipartBlockEntity) be;
 
-            vec = vec.subtract(new Vec3d(pos));
+            vec = vec.subtract(Vec3d.of(pos));
             float partialTicks = LibMultiPart.partialTickGetter.getAsFloat();
 
             for (PartHolder holder : multi.container.parts) {

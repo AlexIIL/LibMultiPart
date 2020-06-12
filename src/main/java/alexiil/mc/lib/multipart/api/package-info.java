@@ -125,7 +125,7 @@
  * validated}.</li>
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartContainerState.Remove PartContainerState.Remove}, which is fired
  * whenever the BlockEntity containing the parts is
- * {@link net.minecraft.block.Block#onBlockRemoved(net.minecraft.block.BlockState, net.minecraft.world.World, net.minecraft.util.math.BlockPos, net.minecraft.block.BlockState, boolean)
+ * {@link net.minecraft.block.Block#onStateReplaced(net.minecraft.block.BlockState, net.minecraft.world.World, net.minecraft.util.math.BlockPos, net.minecraft.block.BlockState, boolean)
  * removed}.</li>
  * <li>{@link alexiil.mc.lib.multipart.api.event.PartTickEvent PartTickEvent}, which is fired once when the BlockEntity
  * containing it is ticked.</li>

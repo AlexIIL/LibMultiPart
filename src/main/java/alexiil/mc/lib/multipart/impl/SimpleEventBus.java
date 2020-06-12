@@ -18,7 +18,7 @@ import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.multipart.api.event.PartListenerAdded;
 import alexiil.mc.lib.multipart.api.event.PartListenerRemoved;
-
+import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
 import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
 import it.unimi.dsi.fastutil.booleans.BooleanList;
 

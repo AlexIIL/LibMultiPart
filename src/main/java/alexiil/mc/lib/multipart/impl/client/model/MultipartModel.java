@@ -32,7 +32,7 @@ import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.ModelBakeSettings;
 import net.minecraft.client.render.model.ModelLoader;
 import net.minecraft.client.render.model.UnbakedModel;
-import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
+import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
@@ -53,6 +53,7 @@ import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
+import alexiil.mc.lib.multipart.impl.client.model.MultipartModel.NoopBaker;
 import alexiil.mc.lib.multipart.impl.client.render.MultipartBlockEntityRenderer;
 import alexiil.mc.lib.multipart.mixin.api.IBlockRenderManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
@@ -137,8 +138,8 @@ public final class MultipartModel
     }
 
     @Override
-    public ModelItemPropertyOverrideList getItemPropertyOverrides() {
-        return ModelItemPropertyOverrideList.EMPTY;
+    public ModelOverrideList getOverrides() {
+        return ModelOverrideList.EMPTY;
     }
 
     // FabricBakedModel
