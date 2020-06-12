@@ -24,6 +24,7 @@ import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
@@ -49,6 +50,7 @@ import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.PartContainer;
+import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
 import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
 import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
 import alexiil.mc.lib.net.IMsgReadCtx;
@@ -332,15 +334,50 @@ public abstract class AbstractPart {
     /** Called whenever this part is picked by the player (similar to
      * {@link Block#getPickStack(BlockView, BlockPos, BlockState)})
      * 
-     * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this pluggable. */
+     * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part. */
     public ItemStack getPickStack() {
         return ItemStack.EMPTY;
     }
 
+    public void afterBreak() {
+
+    }
+
+    public void addDrops(DefaultedList<ItemStack> to, LootContext context) {
+
+    }
+
+    /** @deprecated Replaced by */
+    @Deprecated
     public void addDrops(DefaultedList<ItemStack> to) {
         ItemStack pickStack = getPickStack();
         if (!pickStack.isEmpty()) {
             to.add(pickStack);
+        }
+    }
+
+    /** Part version of {@link Block#calcBlockBreakingDelta(BlockState, PlayerEntity, BlockView, BlockPos)}.
+     * <p>
+     * The default implementation treats parts as equal to oak planks, but you are encouraged to override this. */
+    public float calculateBreakingDelta(PlayerEntity player) {
+        return calculateBreakingDelta(player, Blocks.OAK_PLANKS);
+    }
+
+    /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block instead. */
+    public final float calculateBreakingDelta(PlayerEntity player, Block block) {
+        return calculateBreakingDelta(player, block.getDefaultState());
+    }
+
+    /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block state instead. */
+    public final float calculateBreakingDelta(PlayerEntity player, BlockState state) {
+        World world = holder.getContainer().getMultipartWorld();
+        BlockPos thisPos = holder.getContainer().getMultipartPos();
+        float hardness = state.getHardness(new SingleReplacementBlockView(world, thisPos, state), thisPos);
+        if (hardness == -1.0F) {
+            return 0.0F;
+        } else {
+            int mult = player.isUsingEffectiveTool(state) ? 30 : 100;
+            return player.getBlockBreakingSpeed(state) / hardness / mult;
         }
     }
 

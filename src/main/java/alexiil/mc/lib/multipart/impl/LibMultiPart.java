@@ -66,9 +66,15 @@ public class LibMultiPart implements ModInitializer {
         // For now always register everything
         register(Registry.BLOCK, BLOCK, "container");
         register(Registry.BLOCK_ENTITY_TYPE, BLOCK_ENTITY, "container");
+
+        DelayedMessageQueue.init();
     }
 
     private static <T> void register(Registry<T> registry, T obj, String path) {
-        Registry.register(registry, new Identifier(NAMESPACE, path), obj);
+        Registry.register(registry, id(path), obj);
+    }
+
+    public static Identifier id(String path) {
+        return new Identifier(NAMESPACE, path);
     }
 }

@@ -7,6 +7,8 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import net.fabricmc.api.EnvType;
@@ -25,6 +27,9 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
+import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameters;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
@@ -48,6 +53,8 @@ import net.minecraft.world.World;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.PartLootParams;
+import alexiil.mc.lib.multipart.api.PartLootParams.BrokenSinglePart;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
 import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
@@ -335,8 +342,7 @@ public class MultipartBlock extends Block
     public float calcBlockBreakingDelta(
         BlockState state, PlayerEntity player, BlockView view, BlockPos pos, TransientPartIdentifier subpart
     ) {
-        // TODO: More/less expensive depending on the part hit?
-        return calcBlockBreakingDelta(state, player, view, pos);
+        return subpart.part.calculateBreakingDelta(player);
     }
 
     @Override
@@ -387,10 +393,16 @@ public class MultipartBlock extends Block
 
     @Override
     public void afterBreak(
-        World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity be, ItemStack stack,
+        World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity, ItemStack stack,
         TransientPartIdentifier subpart
     ) {
-
+        try {
+            droppingPart = subpart;
+            super.afterBreak(world, player, pos, state, blockEntity, stack);
+        } finally {
+            droppingPart = null;
+        }
+        super.afterBreak(world, player, pos, state, blockEntity, stack);
         DefaultedList<ItemStack> drops = DefaultedList.of();
         if (subpart.extra instanceof IdSubPart<?>) {
             afterSubpartBreak(player, stack, drops, (IdSubPart<?>) subpart.extra);
@@ -401,6 +413,20 @@ public class MultipartBlock extends Block
             }
         }
         ItemScatterer.spawn(world, pos, drops);
+    }
+
+    @Override
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+        DefaultedList<ItemStack> drops = DefaultedList.of();
+        BlockEntity be = builder.get(LootContextParameters.BLOCK_ENTITY);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
+            for (PartHolder holder : mpbe.container.parts) {
+                
+            }
+        }
+        return drops;
+
     }
 
     private static <Sub> void afterSubpartBreak(
@@ -430,7 +456,7 @@ public class MultipartBlock extends Block
                     }
                 }
 
-                VoxelShape shape = part.getDynamicShape(partialTicks);
+                VoxelShape shape = part.getOutlineShape();
                 for (Box box : shape.getBoundingBoxes()) {
                     if (box.expand(0.01).contains(vec)) {
                         return new TransientPartIdentifier(part);

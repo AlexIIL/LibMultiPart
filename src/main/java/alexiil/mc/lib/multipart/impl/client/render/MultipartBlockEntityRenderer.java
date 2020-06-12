@@ -10,6 +10,7 @@ package alexiil.mc.lib.multipart.impl.client.render;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
@@ -20,9 +21,12 @@ import alexiil.mc.lib.multipart.api.render.PartDynamicModelRegisterEvent;
 import alexiil.mc.lib.multipart.api.render.PartRenderer;
 import alexiil.mc.lib.multipart.impl.MultipartBlockEntity;
 import alexiil.mc.lib.multipart.impl.PartHolder;
+import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 
 public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartBlockEntity>
-    implements PartDynamicModelRegisterEvent.DynamicModelRenderer {
+    implements PartDynamicModelRegisterEvent.DynamicModelRenderer
+{
+    private static MultipartBlockEntityRenderer instance;
 
     private final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers, resolved;
 
@@ -30,11 +34,30 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
         super(dispatcher);
         renderers = new HashMap<>();
         resolved = new HashMap<>();
-        PartDynamicModelRegisterEvent.EVENT.invoker().registerModels(this);
+        if (instance != null) {
+            // Bit odd, but ok
+            // (this is unlikely to happen though)
+            instance = this;
+            registerModels();
+        } else {
+            instance = this;
+        }
+    }
+
+    /** Called by {@link MultipartModel} as the {@link BlockEntityRenderDispatcher} is a singleton, and so only creates
+     * this renderer once. */
+    public static void registerModels() {
+        assert MinecraftClient.getInstance().isOnThread() : "Not on the main thread!";
+        if (instance == null) {
+            throw new IllegalStateException("Instance not set yet!");
+        }
+        instance.renderers.clear();
+        instance.resolved.clear();
+        PartDynamicModelRegisterEvent.EVENT.invoker().registerModels(instance);
     }
 
     @Override
-    public <P extends AbstractPart> void register(Class<P> clazz, PartRenderer<P> renderer) {
+    public synchronized <P extends AbstractPart> void register(Class<P> clazz, PartRenderer<P> renderer) {
         renderers.put(clazz, renderer);
         resolved.clear();
     }
@@ -83,8 +106,8 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
 
         @Override
         public void render(
-            AbstractPart part, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
-            int light, int breakProgress
+            AbstractPart part, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
+            int breakProgress
         ) {
             // NO-OP
         }

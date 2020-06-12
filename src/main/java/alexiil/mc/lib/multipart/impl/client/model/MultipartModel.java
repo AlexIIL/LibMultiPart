@@ -53,6 +53,7 @@ import alexiil.mc.lib.multipart.impl.TransientPartIdentifier;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
+import alexiil.mc.lib.multipart.impl.client.render.MultipartBlockEntityRenderer;
 import alexiil.mc.lib.multipart.mixin.api.IBlockRenderManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
 
@@ -67,6 +68,7 @@ public final class MultipartModel
         bakers = new HashMap<>();
         resolved = new HashMap<>();
         PartStaticModelRegisterEvent.EVENT.invoker().registerModels(this);
+        MultipartBlockEntityRenderer.registerModels();
     }
 
     @Override

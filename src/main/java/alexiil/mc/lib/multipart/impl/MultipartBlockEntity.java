@@ -83,18 +83,21 @@ public class MultipartBlockEntity extends BlockEntity
 
     @Override
     public CompoundTag toInitialChunkDataTag() {
-        sendNetworkUpdate(null, container, PartContainer.NET_INITIAL_RENDER_DATA);
-        hasSentInitial = true;
+        DelayedMessageQueue.appendTask(this::sendInitialRenderData);
         return super.toInitialChunkDataTag();
     }
 
     @Override
     public BlockEntityUpdateS2CPacket toUpdatePacket() {
+        sendInitialRenderData();
+        return null;
+    }
+
+    private void sendInitialRenderData() {
         if (!hasSentInitial) {
             sendNetworkUpdate(null, container, PartContainer.NET_INITIAL_RENDER_DATA);
             hasSentInitial = true;
         }
-        return null;
     }
 
     @Override
