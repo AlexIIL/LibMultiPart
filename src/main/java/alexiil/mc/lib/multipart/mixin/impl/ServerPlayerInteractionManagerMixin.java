@@ -28,6 +28,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.multipart.impl.LibMultiPart;
@@ -125,6 +126,48 @@ public class ServerPlayerInteractionManagerMixin {
             this.multipartKey = bestKey;
             block.onBlockBreakStart(state, w, pos, pl, bestKey);
         }
+    }
+
+    @Redirect(at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
+            + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"),
+        method = "*")
+    float calcBlockBreakingDelta(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
+        if (LibMultiPart.DEBUG) {
+            log("calcBlockBreakingDelta( " + pos + " " + state + " )");
+        }
+        if (state.getBlock() instanceof IBlockMultipart<?>) {
+            IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
+            return calcBlockBreakingDelta0(block, state, pl, view, pos);
+        } else {
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+    }
+
+    private <T> float calcBlockBreakingDelta0(
+        IBlockMultipart<T> block, BlockState state, PlayerEntity pl, BlockView view, BlockPos pos
+    ) {
+        if (multipartKey == null) {
+            // We haven't actually started breaking yet?
+            onBlockBreakStart(state, world, pos, player);
+        }
+
+        if (multipartKey == null) {
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+
+        if (!block.getKeyClass().isInstance(multipartKey)) {
+            if (LibMultiPart.DEBUG) {
+                log(
+                    "calcBlockBreakingDelta0(): Wrong key " + multipartKey.getClass() + ", expected "
+                        + block.getKeyClass()
+                );
+            }
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+
+        T key = block.getKeyClass().cast(multipartKey);
+        return block.calcBlockBreakingDelta(state, pl, view, pos, key);
     }
 
     @Inject(

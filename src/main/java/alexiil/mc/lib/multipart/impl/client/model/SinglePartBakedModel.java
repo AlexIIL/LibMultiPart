@@ -61,7 +61,6 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
         BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier,
         RenderContext context
     ) {
-
         emitQuads(context, true);
     }
 

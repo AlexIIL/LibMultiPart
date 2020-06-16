@@ -40,6 +40,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -340,15 +341,41 @@ public abstract class AbstractPart {
         return ItemStack.EMPTY;
     }
 
-    public void afterBreak() {
+    /** A target for retrieving item drops from {@link AbstractPart#addDrops(ItemDropTarget, LootContext)}. This will
+     * either spawn the dropped items into the world, or add them to a list, depending on what method called it. */
+    public interface ItemDropTarget {
 
+        /** Drops the given itemstack, using a default position and velocity. */
+        void drop(ItemStack stack);
+
+        default void dropAll(Iterable<ItemStack> iter) {
+            for (ItemStack stack : iter) {
+                drop(stack);
+            }
+        }
+
+        /** Drops the given {@link ItemStack}, using the given position and a random velocity. This will also split the
+         * stack up randomly, like how vanilla splits stacks. */
+        void drop(ItemStack stack, Vec3d pos);
+
+        /** If {@link #dropsAsEntity()} is false then this ignores the position and velocity. Otherwise, this drops the
+         * given {@link ItemStack} directly at the given position, using the exact given velocity. This won't split the
+         * stack up. */
+        void drop(ItemStack stack, Vec3d pos, Vec3d velocity);
+
+        /** @return True if the position and velocity of the {@link ItemStack} will be used. */
+        boolean dropsAsEntity();
     }
 
-    public void addDrops(DefaultedList<ItemStack> to, LootContext context) {
-
+    public void addDrops(ItemDropTarget target, LootContext context) {
+        DefaultedList<ItemStack> list = DefaultedList.of();
+        addDrops(list);
+        if (!list.isEmpty()) {
+            target.dropAll(list);
+        }
     }
 
-    /** @deprecated Replaced by */
+    /** @deprecated Replaced by {@link #addDrops(ItemDropTarget, LootContext)} */
     @Deprecated
     public void addDrops(DefaultedList<ItemStack> to) {
         ItemStack pickStack = getPickStack();
@@ -357,11 +384,17 @@ public abstract class AbstractPart {
         }
     }
 
+    /** Called instead of {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)},
+     * except that this shouldn't drop any items, as that's handled separately. */
+    public void afterBreak(PlayerEntity player) {
+        player.addExhaustion(0.005F);
+    }
+
     /** Part version of {@link Block#calcBlockBreakingDelta(BlockState, PlayerEntity, BlockView, BlockPos)}.
      * <p>
-     * The default implementation treats parts as equal to oak planks, but you are encouraged to override this. */
+     * The default implementation treats parts as equal to dirt, but you are encouraged to override this. */
     public float calculateBreakingDelta(PlayerEntity player) {
-        return calculateBreakingDelta(player, Blocks.OAK_PLANKS);
+        return calculateBreakingDelta(player, Blocks.DIRT);
     }
 
     /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block instead. */
@@ -374,6 +407,12 @@ public abstract class AbstractPart {
         World world = holder.getContainer().getMultipartWorld();
         BlockPos thisPos = holder.getContainer().getMultipartPos();
         float hardness = state.getHardness(new SingleReplacementBlockView(world, thisPos, state), thisPos);
+        return calcBreakingDelta(player, state, hardness);
+    }
+
+    /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block state instead, but
+     * using a custom hardness value. */
+    public static float calcBreakingDelta(PlayerEntity player, BlockState state, float hardness) {
         if (hardness == -1.0F) {
             return 0.0F;
         } else {

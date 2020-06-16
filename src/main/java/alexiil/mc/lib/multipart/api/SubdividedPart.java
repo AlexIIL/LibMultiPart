@@ -15,7 +15,6 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerInteractionManager;
-import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -58,7 +57,7 @@ public interface SubdividedPart<Sub> {
 
     /** Multipart version of
      * {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)}. */
-    void afterSubpartBreak(PlayerEntity player, ItemStack tool, DefaultedList<ItemStack> drops, Sub subpart);
+    void afterSubpartBreak(PlayerEntity player, ItemStack tool, Sub subpart);
 
     /** Subpart equivalent to {@link AbstractPart#getDynamicShape(float)}. If the given part is invalid then this should
      * return {@link AbstractPart#getDynamicShape(float)}. */

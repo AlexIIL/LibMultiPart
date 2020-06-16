@@ -25,6 +25,7 @@ import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.multipart.impl.LibMultiPart;
@@ -55,13 +56,10 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
     }
 
     @Redirect(
-        at = @At(
-            value = "INVOKE",
+        at = @At(value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
-                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"
-        ),
-        method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"
-    )
+                + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"),
+        method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z")
     void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("[player-interaction] onBlockBreakStart( " + pos + " " + state + " )");
@@ -73,6 +71,43 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         } else {
             state.onBlockBreakStart(world, pos, player);
         }
+    }
+
+    @Redirect(at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
+            + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"),
+        method = "*")
+    float calcBlockBreakingDelta(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] calcBlockBreakingDelta( " + pos + " " + state + " )");
+        }
+        if (state.getBlock() instanceof IBlockMultipart<?>) {
+            IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
+            return calcBlockBreakingDelta0(block, state, pl, view, pos);
+        } else {
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+    }
+
+    private <T> float calcBlockBreakingDelta0(
+        IBlockMultipart<T> block, BlockState state, PlayerEntity pl, BlockView view, BlockPos pos
+    ) {
+        if (partKey == null) {
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+
+        if (!block.getKeyClass().isInstance(partKey)) {
+            if (LibMultiPart.DEBUG) {
+                LibMultiPart.LOGGER.info(
+                    "[player-interaction] calcBlockBreakingDelta0(): Wrong key " + partKey.getClass() + ", expected "
+                        + block.getKeyClass()
+                );
+            }
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+
+        T key = block.getKeyClass().cast(partKey);
+        return block.calcBlockBreakingDelta(state, pl, view, pos, key);
     }
 
     private <T> void onBlockBreakStart0(
@@ -89,15 +124,11 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         blockMulti.onBlockBreakStart(state, world, pos, player, key);
     }
 
-    @Inject(
-        method = "breakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
-        at = @At(
-            value = "INVOKE",
+    @Inject(method = "breakBlock(Lnet/minecraft/util/math/BlockPos;)Z",
+        at = @At(value = "INVOKE",
             target = "Lnet/minecraft/block/Block;onBreak(Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;"
-                + "Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"
-        ),
-        cancellable = true
-    )
+                + "Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)V"),
+        cancellable = true)
     void breakBlock(BlockPos pos, CallbackInfoReturnable<Boolean> ci) {
         World world = client.world;
         BlockState state = world.getBlockState(pos);

@@ -22,22 +22,22 @@ import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.loot.context.LootContextParameter;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -54,8 +54,8 @@ import net.minecraft.world.WorldAccess;
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
 import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.AbstractPart.ItemDropTarget;
 import alexiil.mc.lib.multipart.api.PartLootParams;
-import alexiil.mc.lib.multipart.api.PartLootParams.BrokenPart;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
 import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
@@ -84,8 +84,6 @@ public class MultipartBlock extends Block
         createCuboidShape(0, 0, 0, 4, 4, 16), createCuboidShape(12, 0, 0, 16, 4, 16), //
         createCuboidShape(0, 12, 0, 4, 16, 16), createCuboidShape(12, 12, 0, 16, 16, 16)//
     );
-
-    private transient TransientPartIdentifier droppingPart;
 
     public MultipartBlock(Settings settings) {
         super(settings);
@@ -393,59 +391,121 @@ public class MultipartBlock extends Block
         World world, PlayerEntity player, BlockPos pos, BlockState state, BlockEntity blockEntity, ItemStack stack,
         TransientPartIdentifier subpart
     ) {
-        try {
-            droppingPart = subpart;
-            super.afterBreak(world, player, pos, state, blockEntity, stack);
-        } finally {
-            droppingPart = null;
-        }
-        super.afterBreak(world, player, pos, state, blockEntity, stack);
-        DefaultedList<ItemStack> drops = DefaultedList.of();
         if (subpart.extra instanceof IdSubPart<?>) {
-            afterSubpartBreak(player, stack, drops, (IdSubPart<?>) subpart.extra);
+            afterSubpartBreak(player, stack, (IdSubPart<?>) subpart.extra);
         } else {
-            subpart.part.addDrops(drops);
-            for (AbstractPart additional : ((IdAdditional) subpart.extra).additional) {
-                additional.addDrops(drops);
+            if (world instanceof ServerWorld) {
+                LootContext.Builder ctxBuilder = new LootContext.Builder((ServerWorld) world);
+                ctxBuilder.random(world.random);
+                ctxBuilder.parameter(LootContextParameters.BLOCK_STATE, state);
+                ctxBuilder.parameter(LootContextParameters.POSITION, pos);
+                ctxBuilder.parameter(LootContextParameters.TOOL, stack);
+                ctxBuilder.optionalParameter(LootContextParameters.THIS_ENTITY, player);
+                ctxBuilder.optionalParameter(LootContextParameters.BLOCK_ENTITY, blockEntity);
+                subpart.putLootContext(ctxBuilder);
+                LootContext context = ctxBuilder.build(PartLootParams.PART_TYPE);
+                subpart.part.afterBreak(player);
+                subpart.part.addDrops(createDropTarget(subpart.part), context);
+                for (AbstractPart part : ((IdAdditional) subpart.extra).additional) {
+                    part.afterBreak(player);
+                    part.addDrops(createDropTarget(part), context);
+                }
+            } else {
+                subpart.part.afterBreak(player);
+                for (AbstractPart part : ((IdAdditional) subpart.extra).additional) {
+                    part.afterBreak(player);
+                }
             }
         }
-        ItemScatterer.spawn(world, pos, drops);
+    }
+
+    private static <Sub> void afterSubpartBreak(PlayerEntity player, ItemStack tool, IdSubPart<Sub> extra) {
+        extra.part.afterSubpartBreak(player, tool, extra.subpart);
+    }
+
+    private static ItemDropTarget createDropTarget(AbstractPart part) {
+        return new ItemDropTarget() {
+
+            Vec3d center = null;
+
+            @Override
+            public boolean dropsAsEntity() {
+                return true;
+            }
+
+            @Override
+            public void drop(ItemStack stack) {
+                if (center == null) {
+                    center = part.getOutlineShape().getBoundingBox().getCenter();
+                    center = center.add(Vec3d.of(part.holder.getContainer().getMultipartPos()));
+                }
+                drop(stack, center);
+            }
+
+            @Override
+            public void drop(ItemStack stack, Vec3d pos) {
+                World world = part.holder.getContainer().getMultipartWorld();
+                while (!stack.isEmpty()) {
+                    ItemStack split = stack.split(world.random.nextInt(21) + 10);
+                    ItemEntity ent = new ItemEntity(world, pos.x, pos.y, pos.z, split);
+                    ent.setVelocity(
+                        world.random.nextGaussian() * 0.05, //
+                        world.random.nextGaussian() * 0.05 + 0.2, //
+                        world.random.nextGaussian() * 0.05//
+                    );
+                    world.spawnEntity(ent);
+                }
+            }
+
+            @Override
+            public void drop(ItemStack stack, Vec3d pos, Vec3d velocity) {
+                World world = part.holder.getContainer().getMultipartWorld();
+                ItemEntity ent = new ItemEntity(world, pos.x, pos.y, pos.z, stack);
+                ent.setVelocity(velocity);
+                world.spawnEntity(ent);
+            }
+        };
     }
 
     @Override
     public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
-        // TODO: Add a method to allow parts to drop stacks themselves,
-        // so that they have control over the position that the stacks spawn at.
         DefaultedList<ItemStack> drops = DefaultedList.of();
         builder.parameter(LootContextParameters.BLOCK_STATE, state);
         BlockEntity be = builder.get(LootContextParameters.BLOCK_ENTITY);
 
         LootContext lootContext;
-        if (droppingPart != null) {
-            droppingPart.putLootContext(builder);
-            lootContext = builder.build(PartLootParams.PART_TYPE);
+        lootContext = builder.build(LootContextTypes.BLOCK);
 
-            builder.get(PartLootParams.BROKEN_PART).getPart().addDrops(drops, lootContext);
-            for (BrokenPart part : builder.get(PartLootParams.ADDITIONAL_PARTS)) {
-                part.getPart().addDrops(drops, lootContext);
-            }
-        } else {
-            lootContext = builder.build(LootContextTypes.BLOCK);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
 
-            if (be instanceof MultipartBlockEntity) {
-                MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
-                for (PartHolder holder : mpbe.container.parts) {
-                    holder.part.addDrops(drops, lootContext);
+            ItemDropTarget target = new ItemDropTarget() {
+                @Override
+                public void drop(ItemStack stack) {
+                    drops.add(stack);
                 }
+
+                @Override
+                public void drop(ItemStack stack, Vec3d pos) {
+                    drops.add(stack);
+                }
+
+                @Override
+                public void drop(ItemStack stack, Vec3d pos, Vec3d velocity) {
+                    drops.add(stack);
+                }
+
+                @Override
+                public boolean dropsAsEntity() {
+                    return false;
+                }
+            };
+
+            for (PartHolder holder : mpbe.container.parts) {
+                holder.part.addDrops(target, lootContext);
             }
         }
         return drops;
-    }
-
-    private static <Sub> void afterSubpartBreak(
-        PlayerEntity player, ItemStack tool, DefaultedList<ItemStack> drops, IdSubPart<Sub> extra
-    ) {
-        extra.part.afterSubpartBreak(player, tool, drops, extra.subpart);
     }
 
     @Override
