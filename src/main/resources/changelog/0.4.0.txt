@@ -1,7 +1,7 @@
 Changes:
 
-* Updated to 1.16-pre.2.
-* Allowed this version to be loaded in any version of 1.16.
+* Updated to 1.16-pre.4.
+* Allowed this version to be loaded in any version of 1.16 after pre-4.
 * Allowed parts to override "calcBreakingDelta"
 * Added parts to have more control over exactly where items spawn when dropped.
 * Added the part & subpart broken to the loot context (see PartLootParams)
