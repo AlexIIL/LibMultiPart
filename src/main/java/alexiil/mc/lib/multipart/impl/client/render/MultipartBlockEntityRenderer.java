@@ -15,6 +15,7 @@ import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.profiler.Profiler;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.render.PartDynamicModelRegisterEvent;
@@ -24,7 +25,8 @@ import alexiil.mc.lib.multipart.impl.PartHolder;
 import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 
 public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartBlockEntity> {
-    private static final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers, resolved;
+    private static final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers;
+    private static final Map<Class<? extends AbstractPart>, PartRenderData> resolved;
 
     static {
         renderers = new HashMap<>();
@@ -42,22 +44,40 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
         PartDynamicModelRegisterEvent.EVENT.invoker().registerModels(Registrar.INSTANCE);
     }
 
-    private static <P extends AbstractPart> PartRenderer<? super P> getRenderer(Class<P> clazz) {
-        PartRenderer<?> renderer = resolved.get(clazz);
+    private static <P extends AbstractPart> PartRenderData<? super P> getRenderer(Class<P> clazz) {
+        PartRenderData renderer = resolved.get(clazz);
         if (renderer != null) {
-            return (PartRenderer<? super P>) renderer;
+            return (PartRenderData<? super P>) renderer;
         }
 
         Class<? super P> c = clazz;
         do {
             PartRenderer<?> pr = renderers.get(c);
             if (pr != null) {
-                resolved.put(clazz, pr);
-                return (PartRenderer<? super P>) pr;
+                PartRenderData<?> data = new PartRenderData<>(pr, getDebugName(clazz));
+                resolved.put(clazz, data);
+                return (PartRenderData<? super P>) data;
             }
         } while ((c = c.getSuperclass()) != null);
-        resolved.put(clazz, NoopRenderer.INSTANCE);
-        return NoopRenderer.INSTANCE;
+        PartRenderData<AbstractPart> data = new PartRenderData<>(NoopRenderer.INSTANCE, getDebugName(clazz));
+        resolved.put(clazz, data);
+        return data;
+    }
+
+    private static String getDebugName(Class<?> clazz) {
+        Package pkg = clazz.getPackage();
+        String fqn = clazz.getName();
+
+        if (pkg == null) {
+            return fqn;
+        }
+
+        if (fqn.startsWith(pkg.getName() + ".")) {
+            return fqn.substring(pkg.getName().length() + 1);
+        } else {
+            return fqn;
+        }
+
     }
 
     @Override
@@ -65,20 +85,23 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
         MultipartBlockEntity be, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers,
         int light, int overlay
     ) {
+        Profiler p = MinecraftClient.getInstance().getProfiler();
+
+        p.push("LMP");
         for (PartHolder holder : be.getContainer().parts) {
-            AbstractPart part = holder.part;
-            renderPart(part, part.getClass(), tickDelta, matrices, vertexConsumers, light, overlay);
+            renderPart(p, holder.part, holder.part.getClass(), tickDelta, matrices, vertexConsumers, light, overlay);
         }
+        p.pop();
     }
 
     static <P extends AbstractPart> void renderPart(
-        AbstractPart part, Class<P> clazz, float tickDelta, MatrixStack matrices,
+        Profiler p, AbstractPart part, Class<P> clazz, float tickDelta, MatrixStack matrices,
         VertexConsumerProvider vertexConsumers, int light, int overlay
     ) {
-        PartRenderer<? super P> renderer = getRenderer(clazz);
-        if (renderer != null) {
-            renderer.render(clazz.cast(part), tickDelta, matrices, vertexConsumers, light, overlay);
-        }
+        PartRenderData<? super P> data = getRenderer(clazz);
+        p.push(data.debugName);
+        data.renderer.render(clazz.cast(part), tickDelta, matrices, vertexConsumers, light, overlay);
+        p.pop();
     }
 
     enum NoopRenderer implements PartRenderer<AbstractPart> {
@@ -100,6 +123,16 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
         public <P extends AbstractPart> void register(Class<P> clazz, PartRenderer<P> renderer) {
             renderers.put(clazz, renderer);
             resolved.clear();
+        }
+    }
+
+    static class PartRenderData<P extends AbstractPart> {
+        final PartRenderer<P> renderer;
+        final String debugName;
+
+        PartRenderData(PartRenderer<P> renderer, String debugName) {
+            this.renderer = renderer;
+            this.debugName = debugName;
         }
     }
 }
