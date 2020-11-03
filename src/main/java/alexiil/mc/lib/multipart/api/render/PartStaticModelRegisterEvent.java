@@ -34,15 +34,15 @@ public interface PartStaticModelRegisterEvent {
         // Sprites
 
         default Sprite getMissingBlockSprite() {
-            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEX, MissingSprite.getMissingSpriteId());
+            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, MissingSprite.getMissingSpriteId());
         }
 
         default Sprite getBlockSprite(String id) {
-            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier(id));
+            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, new Identifier(id));
         }
 
         default Sprite getBlockSprite(Identifier id) {
-            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEX, id);
+            return getSprite(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE, id);
         }
 
         Sprite getSprite(Identifier atlasId, Identifier spriteId);

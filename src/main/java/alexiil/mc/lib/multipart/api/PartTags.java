@@ -10,7 +10,7 @@ import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourceReloadListener;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.Tag;
-import net.minecraft.tag.TagContainer;
+import net.minecraft.tag.TagGroupLoader;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.profiler.Profiler;
 
@@ -18,7 +18,7 @@ import net.minecraft.util.profiler.Profiler;
 public final class PartTags {
     private PartTags() {}
 
-    private static TagContainer<PartDefinition> container = new TagContainer<>(id -> Optional.empty(), "", false, "");
+    private static TagGroupLoader<PartDefinition> container = new TagGroupLoader<>(id -> Optional.empty(), "", false, "");
     private static int reloadCount = 0;
 
     public static ResourceReloadListener reloader() {
@@ -31,7 +31,7 @@ public final class PartTags {
         };
     }
 
-    public static TagContainer<PartDefinition> getContainer() {
+    public static TagGroupLoader<PartDefinition> getContainer() {
         return container;
     }
 

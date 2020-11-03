@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.2.7-SNAPSHOT'
+    id 'fabric-loom' version '0.5-SNAPSHOT'
     id 'net.minecrell.licenser' version '0.4.1'
 }
 
@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.4.2-pre.1"
+version = "0.4.2-pre.2"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -25,12 +25,12 @@ minecraft {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.16-pre4"
-    mappings "net.fabricmc:yarn:1.16-pre4+build.1:v2"
-    modImplementation "net.fabricmc:fabric-loader:0.8.7+build.201"
+    minecraft "com.mojang:minecraft:1.16.4"
+    mappings "net.fabricmc:yarn:1.16.4+build.1:v2"
+    modImplementation "net.fabricmc:fabric-loader:0.10.6+build.214"
 
-    //Fabric api
-    modImplementation "net.fabricmc.fabric-api:fabric-api:0.12.0+build.360-1.16"
+    // Fabric api
+    modImplementation "net.fabricmc.fabric-api:fabric-api:0.25.1+build.416-1.16"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
     modApi "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"

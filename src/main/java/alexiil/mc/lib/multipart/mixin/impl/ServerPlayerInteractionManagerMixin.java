@@ -102,7 +102,7 @@ public class ServerPlayerInteractionManagerMixin {
             // Guess the hit vec from the player's look vector
             VoxelShape shape = state.getOutlineShape(w, pos);
             BlockHitResult rayTrace = shape
-                .rayTrace(pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos);
+                .raycast(pl.getCameraPosVec(1), pl.getCameraPosVec(1).add(pl.getRotationVec(1).multiply(10)), pos);
             if (LibMultiPart.DEBUG) {
                 log("onBlockBreakStart(): rayTrace = " + rayTrace);
             }

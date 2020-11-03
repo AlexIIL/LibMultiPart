@@ -1,0 +1,4 @@
+Changes:
+
+* Updated to 1.16.4.
+* Allowed this version to be loaded in any version of 1.16 after 1.16.3.

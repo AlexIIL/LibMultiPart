@@ -32,7 +32,7 @@ public final class PartLootParams {
         PART_TYPE = new LootContextType.Builder()//
             // Block
             .require(LootContextParameters.BLOCK_STATE)//
-            .require(LootContextParameters.POSITION)//
+            .require(LootContextParameters.ORIGIN)//
             .require(LootContextParameters.TOOL)//
             .allow(LootContextParameters.THIS_ENTITY)//
             .allow(LootContextParameters.BLOCK_ENTITY)//

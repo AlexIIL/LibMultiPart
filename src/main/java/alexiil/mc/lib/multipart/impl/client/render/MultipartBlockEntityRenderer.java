@@ -26,7 +26,7 @@ import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 
 public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartBlockEntity> {
     private static final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers;
-    private static final Map<Class<? extends AbstractPart>, PartRenderData> resolved;
+    private static final Map<Class<? extends AbstractPart>, PartRenderData<?>> resolved;
 
     static {
         renderers = new HashMap<>();
@@ -45,7 +45,7 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
     }
 
     private static <P extends AbstractPart> PartRenderData<? super P> getRenderer(Class<P> clazz) {
-        PartRenderData renderer = resolved.get(clazz);
+        PartRenderData<?> renderer = resolved.get(clazz);
         if (renderer != null) {
             return (PartRenderData<? super P>) renderer;
         }

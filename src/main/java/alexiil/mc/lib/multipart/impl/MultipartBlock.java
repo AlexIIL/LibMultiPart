@@ -398,7 +398,7 @@ public class MultipartBlock extends Block
                 LootContext.Builder ctxBuilder = new LootContext.Builder((ServerWorld) world);
                 ctxBuilder.random(world.random);
                 ctxBuilder.parameter(LootContextParameters.BLOCK_STATE, state);
-                ctxBuilder.parameter(LootContextParameters.POSITION, pos);
+                ctxBuilder.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
                 ctxBuilder.parameter(LootContextParameters.TOOL, stack);
                 ctxBuilder.optionalParameter(LootContextParameters.THIS_ENTITY, player);
                 ctxBuilder.optionalParameter(LootContextParameters.BLOCK_ENTITY, blockEntity);

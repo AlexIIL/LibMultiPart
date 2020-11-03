@@ -220,7 +220,7 @@ public abstract class AbstractPart {
         if (spriteId == null) {
             sprite = null;
         } else {
-            sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEX).apply(spriteId);
+            sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE).apply(spriteId);
         }
         spawnBreakParticles(state, sprite);
     }
