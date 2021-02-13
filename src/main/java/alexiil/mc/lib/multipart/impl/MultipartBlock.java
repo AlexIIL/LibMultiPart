@@ -114,10 +114,12 @@ public class MultipartBlock extends Block
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
-        BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
-            return container.container.getCollisionShape();
+        if (view != null) {
+            BlockEntity be = view.getBlockEntity(pos);
+            if (be instanceof MultipartBlockEntity) {
+                MultipartBlockEntity container = (MultipartBlockEntity) be;
+                return container.container.getCollisionShape();
+            }
         }
         return MISSING_PARTS_SHAPE;
     }
@@ -125,12 +127,12 @@ public class MultipartBlock extends Block
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
+        if (be instanceof MultipartBlockEntity && view instanceof World) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
 
             if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
                 Vec3d hitVec = MinecraftClient.getInstance().crosshairTarget.getPos();
-                return getPartOutlineShape(state, (World) view, pos, hitVec);
+                return getPartOutlineShape(state, (World)view, pos, hitVec);
             }
 
             return container.container.getOutlineShape();
