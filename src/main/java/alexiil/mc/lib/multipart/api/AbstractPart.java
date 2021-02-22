@@ -7,6 +7,8 @@
  */
 package alexiil.mc.lib.multipart.api;
 
+import java.util.function.Function;
+
 import javax.annotation.Nullable;
 
 import net.fabricmc.api.EnvType;
@@ -19,6 +21,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.particle.BlockDustParticle;
 import net.minecraft.client.particle.ParticleManager;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.world.ClientWorld;
@@ -39,6 +42,7 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Direction.AxisDirection;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
@@ -46,15 +50,6 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 
-import alexiil.mc.lib.attributes.AttributeList;
-import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
-import alexiil.mc.lib.multipart.api.event.EventListener;
-import alexiil.mc.lib.multipart.api.render.PartModelBaker;
-import alexiil.mc.lib.multipart.api.render.PartModelKey;
-import alexiil.mc.lib.multipart.impl.PartContainer;
-import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
-import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
-import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.IMsgWriteCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
@@ -64,6 +59,17 @@ import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdSingle;
+
+import alexiil.mc.lib.attributes.AttributeList;
+
+import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
+import alexiil.mc.lib.multipart.api.event.EventListener;
+import alexiil.mc.lib.multipart.api.render.PartModelBaker;
+import alexiil.mc.lib.multipart.api.render.PartModelKey;
+import alexiil.mc.lib.multipart.impl.PartContainer;
+import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
+import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
+import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
 
 /** The base class for every part in a multipart block.
  * <p>
@@ -170,11 +176,27 @@ public abstract class AbstractPart {
         return true;
     }
 
+    /** @return The {@link BlockState} to use for {@link #playBreakSound()}, {@link #playHitSound(PlayerEntity)},
+     *         {@link #spawnBreakParticles()}, {@link #spawnHitParticle(Direction)}, and
+     *         {@link #calculateBreakingDelta(PlayerEntity)}. */
+    protected BlockState getClosestBlockState() {
+        return Blocks.DIRT.getDefaultState();
+    }
+
+    /** Called instead of {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)}, to play the broken sound,
+     * and spawn break particles.
+     * 
+     * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} from being
+     *         called afterwards, false otherwise. */
+    @Environment(EnvType.CLIENT)
+    public void playHitSound(PlayerEntity player) {
+        playHitSound(getClosestBlockState());
+    }
+
     /** Called by default in {@link #onBreak(PlayerEntity)} to play the breaking sound. The default implementation calls
-     * {@link #playBreakSound(BlockState)} with {@link Blocks#STONE}, however you are encouraged to call it with a more
-     * appropriate sound or */
+     * {@link #playBreakSound(BlockState)} with {@link #getClosestBlockState()}. */
     protected void playBreakSound() {
-        playBreakSound(Blocks.STONE.getDefaultState());
+        playBreakSound(getClosestBlockState());
     }
 
     protected final void playBreakSound(BlockState blockState) {
@@ -187,6 +209,17 @@ public abstract class AbstractPart {
         );
     }
 
+    @Environment(EnvType.CLIENT)
+    protected final void playHitSound(BlockState blockState) {
+        BlockSoundGroup group = blockState.getSoundGroup();
+        MinecraftClient.getInstance().getSoundManager().play(
+            new PositionedSoundInstance(
+                ((BlockSoundGroupAccessor) group).libmultipart_getHitSound(), SoundCategory.BLOCKS, //
+                (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F, holder.getContainer().getMultipartPos()
+            )
+        );
+    }
+
     private final void spawnBreakParticles(IMsgReadCtx ctx) throws InvalidInputDataException {
         ctx.assertClientSide();
         spawnBreakParticles();
@@ -195,18 +228,92 @@ public abstract class AbstractPart {
     /** Spawns a single breaking particle.
      * 
      * @param side The side that was hit
+     * @return True to cancel the default breaking particle from spawning, false otherwise.
+     * @deprecated This was renamed to {@link #spawnHitParticle(Direction)} */
+    @Environment(EnvType.CLIENT)
+    @Deprecated
+    public boolean spawnBreakingParticles(Direction side) {
+        return spawnHitParticle(side);
+    }
+
+    /** Spawns a single partial-break (hit) particle.
+     * 
+     * @param side The side that was hit
      * @return True to cancel the default breaking particle from spawning, false otherwise. */
     @Environment(EnvType.CLIENT)
-    public boolean spawnBreakingParticles(Direction side) {
-        // TODO: Implement this!
-        return false;
+    public boolean spawnHitParticle(Direction side) {
+        spawnHitParticle(side, getClosestBlockState());
+        return true;
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnHitParticle(Direction side, BlockState state) {
+        spawnHitParticle(side, state, (Sprite) null);
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnHitParticle(Direction side, BlockState state, @Nullable Identifier spriteId) {
+        Sprite sprite;
+        if (spriteId == null) {
+            sprite = null;
+        } else {
+            sprite = getBlockAtlas().apply(spriteId);
+        }
+        spawnHitParticle(side, state, sprite);
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnHitParticle(Direction side, BlockState state, @Nullable Sprite sprite) {
+        spawnHitParticle(side, getOutlineShape().getBoundingBox(), state, sprite);
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnHitParticle(Direction side, Box box, BlockState state, @Nullable Sprite sprite) {
+        World world = holder.getContainer().getMultipartWorld();
+        BlockPos pos = holder.getContainer().getMultipartPos();
+        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+
+        double x = pos.getX() + box.minX + pos(world, side, Direction.Axis.X, box.maxX - box.minX);
+        double y = pos.getY() + box.minY + pos(world, side, Direction.Axis.Y, box.maxY - box.minY);
+        double z = pos.getZ() + box.minZ + pos(world, side, Direction.Axis.Z, box.maxZ - box.minZ);
+
+        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, 0, 0, 0, state);
+        particle.setBlockPos(pos);
+        particle.move(0.2f);
+        particle.scale(0.6f);
+        if (sprite != null) {
+            particle.setSprite(new SingleSpriteProvider(sprite));
+        }
+        manager.addParticle(particle);
+    }
+
+    protected static final double pos(World world, Direction side, Direction.Axis axis, double size) {
+
+        if (side.getAxis() == axis) {
+            if (side.getDirection() == AxisDirection.NEGATIVE) {
+                return -0.1;
+            } else {
+                return size + 0.1;
+            }
+        }
+
+        if (size >= 0.5) {
+            return 0.1 + (size - 0.2) * world.random.nextDouble();
+        } else {
+            double off = size / 8;
+            return off + (size - 2 * off) * world.random.nextDouble();
+        }
+    }
+
+    private static Function<Identifier, Sprite> getBlockAtlas() {
+        return MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
     }
 
     /** Called on the client to spawn break particles. This calls {@link #spawnBreakParticles(BlockState)} with
-     * {@link Blocks#STONE} by default, however you are encouraged to override this. */
+     * {@link #getClosestBlockState()} by default. */
     @Environment(EnvType.CLIENT)
     protected void spawnBreakParticles() {
-        spawnBreakParticles(Blocks.STONE.getDefaultState());
+        spawnBreakParticles(getClosestBlockState());
     }
 
     @Environment(EnvType.CLIENT)
@@ -220,7 +327,7 @@ public abstract class AbstractPart {
         if (spriteId == null) {
             sprite = null;
         } else {
-            sprite = MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE).apply(spriteId);
+            sprite = getBlockAtlas().apply(spriteId);
         }
         spawnBreakParticles(state, sprite);
     }
@@ -392,9 +499,9 @@ public abstract class AbstractPart {
 
     /** Part version of {@link Block#calcBlockBreakingDelta(BlockState, PlayerEntity, BlockView, BlockPos)}.
      * <p>
-     * The default implementation treats parts as equal to dirt, but you are encouraged to override this. */
+     * The default implementation treats parts as equal to {@link #getClosestBlockState()}. */
     public float calculateBreakingDelta(PlayerEntity player) {
-        return calculateBreakingDelta(player, Blocks.DIRT);
+        return calculateBreakingDelta(player, getClosestBlockState());
     }
 
     /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block instead. */

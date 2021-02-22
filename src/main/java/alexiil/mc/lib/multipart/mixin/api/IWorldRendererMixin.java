@@ -8,5 +8,7 @@
 package alexiil.mc.lib.multipart.mixin.api;
 
 public interface IWorldRendererMixin {
+
+    @Deprecated
     boolean libmultipart_isDrawingBlockOutline();
 }

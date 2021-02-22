@@ -38,6 +38,7 @@ public class LibMultiPart implements ModInitializer {
     public static final BlockEntityType<MultipartBlockEntity> BLOCK_ENTITY;
 
     static Predicate<World> isWorldClientPredicate = w -> false;
+    @Deprecated
     static BooleanSupplier isDrawingBlockOutlines = () -> false;
     static FloatSupplier partialTickGetter = () -> 1;
 

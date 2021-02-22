@@ -53,6 +53,7 @@ import net.minecraft.world.WorldAccess;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProvider;
+
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.AbstractPart.ItemDropTarget;
 import alexiil.mc.lib.multipart.api.PartLootParams;
@@ -126,14 +127,7 @@ public class MultipartBlock extends Block
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
-
-            if (LibMultiPart.isDrawingBlockOutlines.getAsBoolean()) {
-                Vec3d hitVec = MinecraftClient.getInstance().crosshairTarget.getPos();
-                return getPartOutlineShape(state, (World) view, pos, hitVec);
-            }
-
-            return container.container.getOutlineShape();
+            return ((MultipartBlockEntity) be).container.getOutlineShape();
         }
         return MISSING_PARTS_SHAPE;
     }
@@ -189,7 +183,7 @@ public class MultipartBlock extends Block
         BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit
     ) {
         ActionResult handled = super.onUse(state, world, pos, player, hand, hit);
-        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hit.getPos());
+        TransientPartIdentifier target = getMultipartTarget(state, world, pos, hit.getPos());
         if (target != null) {
             handled = target.part.onUse(player, hand, hit);
         }
@@ -212,7 +206,7 @@ public class MultipartBlock extends Block
         MinecraftClient mc = MinecraftClient.getInstance();
         HitResult hit = mc.crosshairTarget;
         if (view != null && view == mc.world && hit != null) {
-            TransientPartIdentifier target = getTargetedMultipart(state, (World) view, pos, hit.getPos());
+            TransientPartIdentifier target = getMultipartTarget(state, view, pos, hit.getPos());
             if (target != null) {
                 return target.part.getPickStack();
             }
@@ -294,7 +288,7 @@ public class MultipartBlock extends Block
     @Override
     @Environment(EnvType.CLIENT)
     public boolean spawnBreakingParticles(World world, BlockPos pos, BlockState state, Direction side, Vec3d hitVec) {
-        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hitVec);
+        TransientPartIdentifier target = getMultipartTarget(state, world, pos, hitVec);
         if (target != null) {
 
             if (target.extra instanceof IdSubPart<?>) {
@@ -509,14 +503,35 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d vec) {
+    @Environment(EnvType.CLIENT)
+    public boolean playHitSound(
+        World world, BlockPos pos, BlockState state, PlayerEntity player, TransientPartIdentifier subpart
+    ) {
+        if (subpart.extra instanceof IdSubPart<?>) {
+            playSubpartHitSound(player, (IdSubPart<?>) subpart.extra);
+        } else {
+            subpart.part.playHitSound(player);
+        }
+        return true;
+    }
 
-        BlockEntity be = world.getBlockEntity(pos);
+    private static <T> void playSubpartHitSound(PlayerEntity player, IdSubPart<T> subpart) {
+        subpart.part.playHitSound(player, subpart.subpart);
+    }
+
+    @Deprecated
+    @Override
+    public TransientPartIdentifier getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d vec) {
+        return getMultipartTarget(state, world, pos, vec);
+    }
+
+    @Override
+    public TransientPartIdentifier getMultipartTarget(BlockState state, BlockView view, BlockPos pos, Vec3d vec) {
+        BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity multi = (MultipartBlockEntity) be;
 
             vec = vec.subtract(Vec3d.of(pos));
-            float partialTicks = LibMultiPart.partialTickGetter.getAsFloat();
 
             for (PartHolder holder : multi.container.parts) {
 
@@ -551,8 +566,14 @@ public class MultipartBlock extends Block
     }
 
     @Override
+    @Deprecated
     public VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec) {
-        TransientPartIdentifier target = getTargetedMultipart(state, world, pos, hitVec);
+        return getPartOutline(state, world, pos, hitVec);
+    }
+
+    @Override
+    public VoxelShape getPartOutline(BlockState state, BlockView world, BlockPos pos, Vec3d hitVec) {
+        TransientPartIdentifier target = getMultipartTarget(state, world, pos, hitVec);
         if (target == null) {
             return VoxelShapes.empty();
         }

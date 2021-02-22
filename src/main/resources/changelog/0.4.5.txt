@@ -1,0 +1,13 @@
+Player-visible changes:
+
+* Added hit particles and sounds.
+* [#24] Fixed a crash where LMP wrongly casted a BlockView to a World when it shouldn't have.
+
+Developer changes:
+
+* Added AbstractPart.getClosestBlockState().
+    * This is used for playing/spawning hit and break sounds/particles, and calculating the break speed of the part by default.
+    * This defaults to dirt, however it is *highly* recommended that subclasses either override getClosestBlockState(), or all of the methods that use it by default.
+* Deprecated various methods that take a World argument and replace them with BlockView instead:
+    * IBlockMultipart.getPartOutlineShape() -> getPartOutline()
+    * IBlockMultipart.getTargetedMultipart() -> getMultipartTarget()

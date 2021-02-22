@@ -9,6 +9,9 @@ package alexiil.mc.lib.multipart.mixin.api;
 
 import javax.annotation.Nullable;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -18,6 +21,7 @@ import net.minecraft.server.network.ServerPlayerInteractionManager;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
+import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
@@ -39,6 +43,11 @@ public interface IBlockMultipart<T> {
      * {@link ServerPlayerInteractionManager#tryBreakBlock} */
     boolean clearBlockState(World world, BlockPos pos, T subpart);
 
+    @Environment(EnvType.CLIENT)
+    default boolean playHitSound(World world, BlockPos pos, BlockState state, PlayerEntity player, T subpart) {
+        return false;
+    }
+
     /** Multipart version of {@link Block#onBroken(WorldAccess, BlockPos, BlockState)} */
     void onBroken(WorldAccess world, BlockPos pos, BlockState state, T subpart);
 
@@ -49,8 +58,29 @@ public interface IBlockMultipart<T> {
         T subpart
     );
 
+    /** @deprecated Please use {@link #getPartOutline(BlockState, BlockView, BlockPos, Vec3d)} instead. */
+    @Deprecated
     VoxelShape getPartOutlineShape(BlockState state, World world, BlockPos pos, Vec3d hitVec);
 
+    default VoxelShape getPartOutline(BlockState state, BlockView view, BlockPos pos, Vec3d hitVec) {
+        if (view instanceof World) {
+            return getPartOutlineShape(state, (World) view, pos, hitVec);
+        } else {
+            return VoxelShapes.empty();
+        }
+    }
+
+    /** @deprecated Please use {@link #getMultipartTarget(BlockState, BlockView, BlockPos, Vec3d)} instead. */
     @Nullable
+    @Deprecated
     T getTargetedMultipart(BlockState state, World world, BlockPos pos, Vec3d hitVec);
+
+    @Nullable
+    default T getMultipartTarget(BlockState state, BlockView view, BlockPos pos, Vec3d vec) {
+        if (view instanceof World) {
+            return getTargetedMultipart(state, (World) view, pos, vec);
+        } else {
+            return null;
+        }
+    }
 }

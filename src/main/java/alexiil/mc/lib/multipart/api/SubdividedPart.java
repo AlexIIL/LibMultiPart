@@ -9,6 +9,9 @@ package alexiil.mc.lib.multipart.api;
 
 import javax.annotation.Nullable;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -72,4 +75,7 @@ public interface SubdividedPart<Sub> {
      * @return The targeted subpart, or null if the given position doesn't intersect with a subpart. */
     @Nullable
     Sub getTargetedSubpart(Vec3d hitVec);
+
+    @Environment(EnvType.CLIENT)
+    void playHitSound(PlayerEntity player, Sub subpart);
 }

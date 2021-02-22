@@ -18,4 +18,7 @@ public interface BlockSoundGroupAccessor {
 
     @Accessor("breakSound")
     SoundEvent libmultipart_getBreakSound();
+
+    @Accessor("hitSound")
+    SoundEvent libmultipart_getHitSound();
 }

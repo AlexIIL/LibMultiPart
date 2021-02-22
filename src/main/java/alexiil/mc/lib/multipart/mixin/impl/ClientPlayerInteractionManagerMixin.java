@@ -42,6 +42,12 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
     @Shadow
     BlockPos currentBreakingPos;
 
+    @Shadow
+    private float blockBreakingSoundCooldown;
+
+    @Shadow
+    private float currentBreakingProgress;
+
     @Unique
     Object partKey;
 
@@ -73,24 +79,44 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         }
     }
 
-    @Redirect(at = @At(value = "INVOKE",
-        target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
-            + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"),
-        method = "*")
-    float calcBlockBreakingDelta(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
+    @Redirect(
+        at = @At(
+            value = "INVOKE", target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
+                + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"
+        ), method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"
+    )
+    float calcBlockBreakingDeltaAttack(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("[player-interaction] calcBlockBreakingDelta( " + pos + " " + state + " )");
         }
         if (state.getBlock() instanceof IBlockMultipart<?>) {
             IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
-            return calcBlockBreakingDelta0(block, state, pl, view, pos);
+            return calcBlockBreakingDelta0(block, state, pl, view, pos, false);
+        } else {
+            return state.calcBlockBreakingDelta(pl, view, pos);
+        }
+    }
+
+    @Redirect(
+        at = @At(
+            value = "INVOKE", target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
+                + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"
+        ), method = "updateBlockBreakingProgress(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"
+    )
+    float calcBlockBreakingDeltaUpdate(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
+        if (LibMultiPart.DEBUG) {
+            LibMultiPart.LOGGER.info("[player-interaction] calcBlockBreakingDelta( " + pos + " " + state + " )");
+        }
+        if (state.getBlock() instanceof IBlockMultipart<?>) {
+            IBlockMultipart<?> block = (IBlockMultipart<?>) state.getBlock();
+            return calcBlockBreakingDelta0(block, state, pl, view, pos, true);
         } else {
             return state.calcBlockBreakingDelta(pl, view, pos);
         }
     }
 
     private <T> float calcBlockBreakingDelta0(
-        IBlockMultipart<T> block, BlockState state, PlayerEntity pl, BlockView view, BlockPos pos
+        IBlockMultipart<T> block, BlockState state, PlayerEntity pl, BlockView view, BlockPos pos, boolean playHitSound
     ) {
         if (partKey == null) {
             return state.calcBlockBreakingDelta(pl, view, pos);
@@ -107,7 +133,14 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         }
 
         T key = block.getKeyClass().cast(partKey);
-        return block.calcBlockBreakingDelta(state, pl, view, pos, key);
+        float delta = block.calcBlockBreakingDelta(state, pl, view, pos, key);
+        if (playHitSound) {
+            boolean reallyPlay = blockBreakingSoundCooldown % 4 == 0 || blockBreakingSoundCooldown == 4.1f;
+            if (reallyPlay && block.playHitSound(pl.world, pos, state, pl, key)) {
+                blockBreakingSoundCooldown = 0.1f;
+            }
+        }
+        return delta;
     }
 
     private <T> void onBlockBreakStart0(
