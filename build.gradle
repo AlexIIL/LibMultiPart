@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.4.5"
+version = "0.4.6"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -59,6 +59,15 @@ compileJava {
     options.compilerArgs << "-Xlint:all"
     options.compilerArgs << "-Xdiags:verbose"
 }
+
+javadoc {
+    exclude "alexiil/mc/lib/multipart/mixin";
+    exclude "alexiil/mc/lib/multipart/impl";
+    destinationDir file(new File(System.getenv("JAVADOC_DIR") ?: "$projectDir/build/javadoc", "$version"));
+    options.optionFiles << file('javadoc.options');
+}
+
+build.dependsOn(javadoc);
 
 // ensure that the encoding is set to UTF-8, no matter what the system default is
 // this fixes some edge cases with special characters not displaying correctly

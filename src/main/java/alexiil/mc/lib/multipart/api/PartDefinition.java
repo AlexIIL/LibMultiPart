@@ -21,7 +21,7 @@ import alexiil.mc.lib.net.NetByteBuf;
 import alexiil.mc.lib.net.NetObjectCache;
 import alexiil.mc.lib.net.impl.McNetworkStack;
 
-/** Contains the definition for an {@link AbstractPart}. Used for saving and loading, and syncing server -> client. */
+/** Contains the definition for an {@link AbstractPart}. Used for saving and loading, and syncing server to client. */
 public class PartDefinition {
     public static final Map<Identifier, PartDefinition> PARTS = new HashMap<>();
     public static final NetObjectCache<PartDefinition> ID_NET_CACHE;

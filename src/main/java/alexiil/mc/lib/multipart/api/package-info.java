@@ -20,7 +20,7 @@
  * <li>Adding Parts</li>
  * <li>Part Requirements</li>
  * <li>Removing Parts</li>
- * <li>Client <-> Server Networking</li>
+ * <li>Client &lt;-&gt; Server Networking</li>
  * <li>Events</li>
  * <li>Properties</li>
  * <li>Rendering</li>
@@ -95,7 +95,7 @@
  * MultipartContainer.removePart(AbstractPart)}. This will remove both the given part and every part that required it.
  * This will not drop any of the items.
  * <p>
- * <h2>Client <-> Server Networking</h2>
+ * <h2>Client &lt;-&gt; Server Networking</h2>
  * <p>
  * Multipart's use {@link alexiil.mc.lib.net LibNetworkStack} for all networking operations, exposed through
  * {@link alexiil.mc.lib.multipart.api.AbstractPart#NET_ID AbstractPart.NET_ID}.

@@ -107,9 +107,7 @@ public abstract class AbstractPart {
 
     /** Writes the payload that will be passed into
      * {@link PartDefinition#loadFromBuffer(MultipartHolder, NetByteBuf, IMsgReadCtx)} on the client. (This is called on
-     * the server and sent to the client). Note that this will be called *instead* of write and read payload.
-     * 
-     * @param ctx TODO */
+     * the server and sent to the client). Note that this will be called *instead* of write and read payload. */
     public void writeCreationData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
 
     public void writeRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
@@ -430,9 +428,8 @@ public abstract class AbstractPart {
     /** Offers every contained attribute to the given attribute list. NOTE: This must always use
      * {@link AttributeList#offer(Object, VoxelShape)} with {@link #getShape()} as the {@link VoxelShape} argument!
      * <p>
-     * 
-     * @implNote This will {@link AttributeList#obstruct(VoxelShape)} the {@link #getShape()} if
-     *           {@link #isBlocking(Direction)} returns true, and the search direction is not null. */
+     * The default implementation will {@link AttributeList#obstruct(VoxelShape)} the {@link #getShape()} if
+     * {@link #isBlocking(Direction)} returns true, and the search direction is not null. */
     public void addAllAttributes(AttributeList<?> list) {
         Direction searchDirection = list.getSearchDirection();
         if (searchDirection != null && isBlocking(searchDirection)) {
