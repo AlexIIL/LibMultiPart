@@ -32,13 +32,12 @@ import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 @Mixin(WorldRenderer.class)
 public class WorldRendererMixin implements IWorldRendererMixin {
 
-//     FIXME: Test this!
-
     private static final String WORLD_RENDERER = "Lnet/minecraft/client/render/WorldRenderer;";
 
     private static final String MATRIX_STACK = "Lnet/minecraft/client/util/math/MatrixStack;";
     private static final String VERTEX_CONSUMER = "Lnet/minecraft/client/render/VertexConsumer;";
     private static final String ENTITY = "Lnet/minecraft/entity/Entity;";
+    private static final String VOXEL_SHAPE = "Lnet/minecraft/util/shape/VoxelShape;";
     private static final String BLOCK_POS = "Lnet/minecraft/util/math/BlockPos;";
     private static final String BLOCK_STATE = "Lnet/minecraft/block/BlockState;";
 
@@ -50,19 +49,24 @@ public class WorldRendererMixin implements IWorldRendererMixin {
     private static final String _M_DRAW_BLOCK_OUTLINE
         = "drawBlockOutline(" + MATRIX_STACK + VERTEX_CONSUMER + ENTITY + "DDD" + BLOCK_POS + BLOCK_STATE + ")V";
 
+    private static final String _M_DRAW_SHAPE_OUTLINE
+        = "drawShapeOutline(" + MATRIX_STACK + VERTEX_CONSUMER + VOXEL_SHAPE + "DDDFFFF)V";
+
     @Shadow
     private ClientWorld world;
 
     @Unique
+    @Deprecated
     private boolean drawingBlockOutline;
 
     @Override
+    @Deprecated
     public boolean libmultipart_isDrawingBlockOutline() {
         return drawingBlockOutline;
     }
 
-    @ModifyArg(at = @At(value = "INVOKE", target = WORLD_RENDERER + _M_DRAW_BLOCK_OUTLINE), method = WORLD_RENDERER
-        + "render(" + MATRIX_STACK + "FJZ" + CAMERA + GAME_RENDERER + LIGHTMAP_TEXTURE_MANAGER + MATRIX4F + ")V")
+    @ModifyArg(at = @At(value = "INVOKE", target = WORLD_RENDERER + _M_DRAW_SHAPE_OUTLINE),
+        method = WORLD_RENDERER + _M_DRAW_BLOCK_OUTLINE)
     private VoxelShape modifyShape(VoxelShape shape) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.crosshairTarget != null && mc.crosshairTarget.getType() == Type.BLOCK) {
