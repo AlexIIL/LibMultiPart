@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* [#25] Fixed an untested mixin to allow multipart outlines to display.
