@@ -74,10 +74,10 @@ javadoc {
         }
 
         if ("true".equalsIgnoreCase(System.getenv("JAVADOC_LINKS_FULL"))) {
-            links.add("https://alexiil.uk/javadoc/libblockattributes/$libblockattributes_version/");
-            links.add("https://alexiil.uk/javadoc/libnetworkstack/$libnetworkstack_version/");
-            links.add("https://maven.fabricmc.net/docs/fabric-api-$fabric_version/");
-            links.add("https://maven.fabricmc.net/docs/yarn-$yarn_mappings/");
+            links.add("https://alexiil.uk/javadoc/libblockattributes/$libblockattributes_version/".toString());
+            links.add("https://alexiil.uk/javadoc/libnetworkstack/$libnetworkstack_version/".toString());
+            links.add("https://maven.fabricmc.net/docs/fabric-api-$fabric_version/".toString());
+            links.add("https://maven.fabricmc.net/docs/yarn-$yarn_mappings/".toString());
         }
 
         options.links(links.toArray(new String[0]));
