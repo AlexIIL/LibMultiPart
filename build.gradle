@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.4.7"
+version = "0.5.0-pre.1"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -25,12 +25,12 @@ minecraft {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:1.16.4"
-    mappings "net.fabricmc:yarn:1.16.4+build.1:v2"
-    modImplementation "net.fabricmc:fabric-loader:0.10.6+build.214"
+    minecraft "com.mojang:minecraft:$minecraft_version"
+    mappings "net.fabricmc:yarn:$yarn_mappings:v2"
+    modImplementation "net.fabricmc:fabric-loader:$loader_version"
 
     // Fabric api
-    modImplementation "net.fabricmc.fabric-api:fabric-api:0.25.1+build.416-1.16"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:$fabric_version"
 
     modApi "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
     modApi "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"
@@ -64,6 +64,24 @@ javadoc {
     exclude "alexiil/mc/lib/multipart/mixin";
     exclude "alexiil/mc/lib/multipart/impl";
     destinationDir file(new File(System.getenv("JAVADOC_DIR") ?: "$projectDir/build/javadoc", "$version"));
+
+    if (!"false".equalsIgnoreCase(System.getenv("JAVADOC_LINKS"))) {
+        List<String> links = new ArrayList<>();
+        if (System.getProperty("java.version").startsWith("1.")) {
+            links.add("https://docs.oracle.com/javase/8/docs/api/");
+        } else {
+            links.add("https://docs.oracle.com/en/java/javase/11/docs/api/");
+        }
+
+        if ("true".equalsIgnoreCase(System.getenv("JAVADOC_LINKS_FULL"))) {
+            links.add("https://alexiil.uk/javadoc/libblockattributes/$libblockattributes_version/");
+            links.add("https://alexiil.uk/javadoc/libnetworkstack/$libnetworkstack_version/");
+            links.add("https://maven.fabricmc.net/docs/fabric-api-$fabric_version/");
+            links.add("https://maven.fabricmc.net/docs/yarn-$yarn_mappings/");
+        }
+
+        options.links(links.toArray(new String[0]));
+    }
     options.optionFiles << file('javadoc.options');
 }
 

@@ -26,7 +26,6 @@ import net.minecraft.util.Identifier;
 
 import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 import alexiil.mc.lib.multipart.impl.client.render.MultipartBlockEntityRenderer;
-import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
 public class LibMultiPartClient implements ClientModInitializer {
 
@@ -37,10 +36,6 @@ public class LibMultiPartClient implements ClientModInitializer {
     public void onInitializeClient() {
         LibMultiPart.isWorldClientPredicate = w -> w != null && w == MinecraftClient.getInstance().world;
         LibMultiPart.partialTickGetter = MinecraftClient.getInstance()::getTickDelta;
-        LibMultiPart.isDrawingBlockOutlines = () -> {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            return mc.isOnThread() && ((IWorldRendererMixin) mc.worldRenderer).libmultipart_isDrawingBlockOutline();
-        };
         ModelLoadingRegistry.INSTANCE.registerVariantProvider(res -> varProvider());
         ModelLoadingRegistry.INSTANCE.registerAppender(LibMultiPartClient::requestModels);
         BlockRenderLayerMap.INSTANCE.putBlock(LibMultiPart.BLOCK, RenderLayer.getCutout());

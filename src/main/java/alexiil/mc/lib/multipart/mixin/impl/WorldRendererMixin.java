@@ -9,12 +9,8 @@ package alexiil.mc.lib.multipart.mixin.impl;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.At.Shift;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
@@ -27,10 +23,9 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
-import alexiil.mc.lib.multipart.mixin.api.IWorldRendererMixin;
 
 @Mixin(WorldRenderer.class)
-public class WorldRendererMixin implements IWorldRendererMixin {
+public class WorldRendererMixin {
 
     private static final String WORLD_RENDERER = "Lnet/minecraft/client/render/WorldRenderer;";
 
@@ -55,16 +50,6 @@ public class WorldRendererMixin implements IWorldRendererMixin {
     @Shadow
     private ClientWorld world;
 
-    @Unique
-    @Deprecated
-    private boolean drawingBlockOutline;
-
-    @Override
-    @Deprecated
-    public boolean libmultipart_isDrawingBlockOutline() {
-        return drawingBlockOutline;
-    }
-
     @ModifyArg(at = @At(value = "INVOKE", target = WORLD_RENDERER + _M_DRAW_SHAPE_OUTLINE),
         method = WORLD_RENDERER + _M_DRAW_BLOCK_OUTLINE)
     private VoxelShape modifyShape(VoxelShape shape) {
@@ -84,27 +69,5 @@ public class WorldRendererMixin implements IWorldRendererMixin {
         }
 
         return shape;
-    }
-
-    @Inject(at = { @At("HEAD") }, method = _M_DRAW_BLOCK_OUTLINE)
-    private void beginBlockOutline(CallbackInfo ci) {
-        if (drawingBlockOutline) {
-            throw new IllegalStateException(
-                "[LibMultiPart] We've gotten out of sync! (Expected to *NOT* be in the middle of drawing block outlines when we are!)"
-            );
-        }
-        drawingBlockOutline = true;
-    }
-
-    @Inject(at = { @At(value = "INVOKE", shift = Shift.AFTER, target = WORLD_RENDERER + _M_DRAW_BLOCK_OUTLINE) },
-        method = WORLD_RENDERER + "render(" + MATRIX_STACK + "FJZ" + CAMERA + GAME_RENDERER + LIGHTMAP_TEXTURE_MANAGER
-            + MATRIX4F + ")V")
-    private void endBlockOutline(CallbackInfo ci) {
-        if (!drawingBlockOutline) {
-            throw new IllegalStateException(
-                "[LibMultiPart] We've gotten out of sync! (Expected to be in the middle of drawing block outlines when we're not!)"
-            );
-        }
-        drawingBlockOutline = false;
     }
 }

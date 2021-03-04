@@ -9,7 +9,6 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
 import org.apache.logging.log4j.LogManager;
@@ -38,8 +37,6 @@ public class LibMultiPart implements ModInitializer {
     public static final BlockEntityType<MultipartBlockEntity> BLOCK_ENTITY;
 
     static Predicate<World> isWorldClientPredicate = w -> false;
-    @Deprecated
-    static BooleanSupplier isDrawingBlockOutlines = () -> false;
     static FloatSupplier partialTickGetter = () -> 1;
 
     static {

@@ -1,0 +1,7 @@
+Breaking changes:
+
+* Removed LMP.mixin.api.IWorldRendererMixin
+
+Bug Fixes:
+
+* [#26] Crash with Vanilla Hammers (and possibly other mods)
