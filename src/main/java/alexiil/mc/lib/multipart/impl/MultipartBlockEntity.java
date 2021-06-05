@@ -40,6 +40,7 @@ import alexiil.mc.lib.net.impl.CoreMinecraftNetUtil;
 import alexiil.mc.lib.net.impl.McNetworkStack;
 
 import alexiil.mc.lib.attributes.AttributeList;
+import alexiil.mc.lib.attributes.AttributeProviderBlockEntity;
 
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
@@ -47,7 +48,8 @@ import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 
 public class MultipartBlockEntity extends BlockEntity
-    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData
+    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
+    AttributeProviderBlockEntity
 {
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
@@ -223,7 +225,8 @@ public class MultipartBlockEntity extends BlockEntity
         container.tick();
     }
 
-    void addAllAttributes(AttributeList<?> list) {
+    @Override
+    public void addAllAttributes(AttributeList<?> list) {
         container.addAllAttributes(list);
     }
 

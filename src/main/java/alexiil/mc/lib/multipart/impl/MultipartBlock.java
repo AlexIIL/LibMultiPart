@@ -51,9 +51,6 @@ import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 
-import alexiil.mc.lib.attributes.AttributeList;
-import alexiil.mc.lib.attributes.AttributeProvider;
-
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.AbstractPart.ItemDropTarget;
 import alexiil.mc.lib.multipart.api.PartLootParams;
@@ -68,8 +65,8 @@ import alexiil.mc.lib.multipart.mixin.api.IBlockDynamicCull;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
-    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, AttributeProvider, Waterloggable,
-    IBlockDynamicCull, IBlockCustomParticles
+    implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, Waterloggable, IBlockDynamicCull,
+    IBlockCustomParticles
 {
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
@@ -155,15 +152,6 @@ public class MultipartBlock extends Block
             container.onRemoved();
         }
         super.onStateReplaced(oldState, world, pos, newState, bool);
-    }
-
-    @Override
-    public void addAllAttributes(World world, BlockPos pos, BlockState state, AttributeList<?> to) {
-        BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
-            container.addAllAttributes(to);
-        }
     }
 
     @Override
