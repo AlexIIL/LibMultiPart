@@ -46,7 +46,6 @@ dependencies {
 sourceSets {
     main {
         java {
-            srcDir "src/main/java"
             // This is unfinished - so we won't build it quite yet
             exclude "**/PartTags.java"
         }
