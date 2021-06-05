@@ -51,4 +51,14 @@ public final class SingleReplacementBlockView implements BlockView {
     public FluidState getFluidState(BlockPos pos) {
         return pos.equals(replacedPos) ? replacedState.getFluidState() : real.getFluidState(pos);
     }
+
+    @Override
+    public int getHeight() {
+        return real.getHeight();
+    }
+
+    @Override
+    public int getBottomY() {
+        return real.getBottomY();
+    }
 }

@@ -25,8 +25,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -715,16 +715,16 @@ public class PartContainer implements MultipartContainer {
 
     // Internals
 
-    void fromTag(CompoundTag tag) {
+    void fromTag(NbtCompound tag) {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
         }
         recalculateShape();
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
-        ListTag allPartsTag = tag.getList("parts", new CompoundTag().getType());
+        NbtList allPartsTag = tag.getList("parts", new NbtCompound().getType());
         for (int i = 0; i < allPartsTag.size(); i++) {
-            CompoundTag partTag = allPartsTag.getCompound(i);
+            NbtCompound partTag = allPartsTag.getCompound(i);
             PartHolder holder = new PartHolder(this, partTag);
             if (holder.part != null) {
                 parts.add(holder);
@@ -796,9 +796,9 @@ public class PartContainer implements MultipartContainer {
         }
     }
 
-    CompoundTag toTag() {
-        CompoundTag tag = new CompoundTag();
-        ListTag partsTag = new ListTag();
+    NbtCompound toTag() {
+        NbtCompound tag = new NbtCompound();
+        NbtList partsTag = new NbtList();
         for (PartHolder part : parts) {
             partsTag.add(part.toTag());
         }

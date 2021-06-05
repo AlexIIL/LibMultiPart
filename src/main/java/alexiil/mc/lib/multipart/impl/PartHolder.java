@@ -9,10 +9,9 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.Iterator;
 import java.util.Set;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
@@ -56,7 +55,7 @@ public final class PartHolder implements MultipartHolder {
         this.part = creator.create(this);
     }
 
-    PartHolder(PartContainer container, CompoundTag tag) {
+    PartHolder(PartContainer container, NbtCompound tag) {
         this.container = container;
         String id = tag.getString("id");
         PartDefinition def = PartDefinition.PARTS.get(Identifier.tryParse(id));
@@ -72,11 +71,11 @@ public final class PartHolder implements MultipartHolder {
                 LibMultiPart.LOGGER.info("  PartHolder.fromTag( " + uniqueId + ", " + part.getClass() + " ) {");
             }
 
-            Tag reqltag = tag.get("req");
-            if (reqltag instanceof ListTag) {
-                ListTag reql = (ListTag) reqltag;
+            NbtElement reqltag = tag.get("req");
+            if (reqltag instanceof NbtList) {
+                NbtList reql = (NbtList) reqltag;
                 for (int i = 0; i < reql.size(); i++) {
-                    CompoundTag posPartTag = reql.getCompound(i);
+                    NbtCompound posPartTag = reql.getCompound(i);
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("    Required ( tag = " + posPartTag + " )");
                     }
@@ -93,11 +92,11 @@ public final class PartHolder implements MultipartHolder {
                 }
             }
 
-            Tag invreqltag = tag.get("invReq");
-            if (invreqltag instanceof ListTag) {
-                ListTag invreql = (ListTag) invreqltag;
+            NbtElement invreqltag = tag.get("invReq");
+            if (invreqltag instanceof NbtList) {
+                NbtList invreql = (NbtList) invreqltag;
                 for (int i = 0; i < invreql.size(); i++) {
-                    CompoundTag posPartTag = invreql.getCompound(i);
+                    NbtCompound posPartTag = invreql.getCompound(i);
                     if (LibMultiPart.DEBUG) {
                         LibMultiPart.LOGGER.info("    InvReq ( tag = " + posPartTag + " )");
                     }
@@ -121,13 +120,13 @@ public final class PartHolder implements MultipartHolder {
         }
     }
 
-    CompoundTag toTag() {
-        CompoundTag nbt = new CompoundTag();
+    NbtCompound toTag() {
+        NbtCompound nbt = new NbtCompound();
         if (part != null) {
             nbt.putLong("uid", uniqueId);
             nbt.putString("id", part.definition.identifier.toString());
             nbt.put("data", part.toTag());
-            ListTag reql = new ListTag();
+            NbtList reql = new NbtList();
             if (requiredParts != null) {
                 for (PartHolder req : requiredParts) {
                     reql.add(new PosPartId(req).toTag(container));
@@ -141,7 +140,7 @@ public final class PartHolder implements MultipartHolder {
             if (!reql.isEmpty()) {
                 nbt.put("req", reql);
             }
-            ListTag invReql = new ListTag();
+            NbtList invReql = new NbtList();
             if (inverseRequiredParts != null) {
                 for (PartHolder req : inverseRequiredParts) {
                     invReql.add(new PosPartId(req).toTag(container));

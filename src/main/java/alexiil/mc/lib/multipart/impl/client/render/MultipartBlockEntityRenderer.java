@@ -12,8 +12,8 @@ import java.util.Map;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactory;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.profiler.Profiler;
 
@@ -22,29 +22,22 @@ import alexiil.mc.lib.multipart.api.render.PartDynamicModelRegisterEvent;
 import alexiil.mc.lib.multipart.api.render.PartRenderer;
 import alexiil.mc.lib.multipart.impl.MultipartBlockEntity;
 import alexiil.mc.lib.multipart.impl.PartHolder;
-import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 
-public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartBlockEntity> {
-    private static final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers;
-    private static final Map<Class<? extends AbstractPart>, PartRenderData<?>> resolved;
+public class MultipartBlockEntityRenderer implements BlockEntityRenderer<MultipartBlockEntity> {
+    private final Map<Class<? extends AbstractPart>, PartRenderer<?>> renderers = new HashMap<>();
+    private final Map<Class<? extends AbstractPart>, PartRenderData<?>> resolved = new HashMap<>();
 
-    static {
-        renderers = new HashMap<>();
-        resolved = new HashMap<>();
+    public MultipartBlockEntityRenderer(BlockEntityRendererFactory.Context ctx) {
+        PartDynamicModelRegisterEvent.EVENT.invoker().registerModels(new PartDynamicModelRegisterEvent.DynamicModelRenderer() {
+            @Override
+            public <P extends AbstractPart> void register(Class<P> clazz, PartRenderer<P> renderer) {
+                renderers.put(clazz, renderer);
+                resolved.clear();
+            }
+        });
     }
 
-    public MultipartBlockEntityRenderer(BlockEntityRenderDispatcher dispatcher) {
-        super(dispatcher);
-    }
-
-    /** Called by {@link MultipartModel} as the {@link BlockEntityRenderDispatcher} is a singleton, and so only creates
-     * this renderer once. */
-    public static void registerModels() {
-        assert MinecraftClient.getInstance().isOnThread() : "Not on the main thread!";
-        PartDynamicModelRegisterEvent.EVENT.invoker().registerModels(Registrar.INSTANCE);
-    }
-
-    private static <P extends AbstractPart> PartRenderData<? super P> getRenderer(Class<P> clazz) {
+    private <P extends AbstractPart> PartRenderData<? super P> getRenderer(Class<P> clazz) {
         PartRenderData<?> renderer = resolved.get(clazz);
         if (renderer != null) {
             return (PartRenderData<? super P>) renderer;
@@ -94,7 +87,7 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
         p.pop();
     }
 
-    static <P extends AbstractPart> void renderPart(
+    <P extends AbstractPart> void renderPart(
         Profiler p, AbstractPart part, Class<P> clazz, float tickDelta, MatrixStack matrices,
         VertexConsumerProvider vertexConsumers, int light, int overlay
     ) {
@@ -113,16 +106,6 @@ public class MultipartBlockEntityRenderer extends BlockEntityRenderer<MultipartB
             int breakProgress
         ) {
             // NO-OP
-        }
-    }
-
-    enum Registrar implements PartDynamicModelRegisterEvent.DynamicModelRenderer {
-        INSTANCE;
-
-        @Override
-        public <P extends AbstractPart> void register(Class<P> clazz, PartRenderer<P> renderer) {
-            renderers.put(clazz, renderer);
-            resolved.clear();
         }
     }
 

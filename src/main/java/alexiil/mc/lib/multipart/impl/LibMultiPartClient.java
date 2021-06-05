@@ -37,7 +37,7 @@ public class LibMultiPartClient implements ClientModInitializer {
         LibMultiPart.isWorldClientPredicate = w -> w != null && w == MinecraftClient.getInstance().world;
         LibMultiPart.partialTickGetter = MinecraftClient.getInstance()::getTickDelta;
         ModelLoadingRegistry.INSTANCE.registerVariantProvider(res -> varProvider());
-        ModelLoadingRegistry.INSTANCE.registerAppender(LibMultiPartClient::requestModels);
+        ModelLoadingRegistry.INSTANCE.registerModelProvider(LibMultiPartClient::requestModels);
         BlockRenderLayerMap.INSTANCE.putBlock(LibMultiPart.BLOCK, RenderLayer.getCutout());
         BlockEntityRendererRegistry.INSTANCE.register(LibMultiPart.BLOCK_ENTITY, MultipartBlockEntityRenderer::new);
     }
@@ -61,7 +61,7 @@ public class LibMultiPartClient implements ClientModInitializer {
         };
     }
 
-    private static void requestModels(ResourceManager res, Consumer<ModelIdentifier> out) {
+    private static void requestModels(ResourceManager res, Consumer<Identifier> out) {
         out.accept(MODEL_IDENTIFIER);
     }
 }

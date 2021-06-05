@@ -110,8 +110,8 @@ public final class MultipartUtilImpl {
             return null;
         }
 
-        MultipartBlockEntity be = new MultipartBlockEntity();
-        be.setLocation(world, pos);
+        MultipartBlockEntity be = new MultipartBlockEntity(pos, state);
+        be.setWorld(world);
         PartContainer container = new PartContainer(be);
         PartHolder holder = new PartHolder(container, creator);
         VoxelShape shape = holder.part.getCollisionShape();
@@ -146,8 +146,8 @@ public final class MultipartUtilImpl {
         World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing, MultipartCreator creatorB,
         boolean respectEntityBBs
     ) {
-        MultipartBlockEntity be = new MultipartBlockEntity();
-        be.setLocation(world, pos);
+        MultipartBlockEntity be = new MultipartBlockEntity(pos, LibMultiPart.BLOCK.getDefaultState().with(Properties.WATERLOGGED, hasWater));
+        be.setWorld(world);
         PartContainer container = new PartContainer(be);
 
         List<PartHolder> existingHolders = new ArrayList<>();

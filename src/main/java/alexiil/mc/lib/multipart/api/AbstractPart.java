@@ -29,7 +29,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.util.ActionResult;
@@ -101,8 +101,8 @@ public abstract class AbstractPart {
         this.holder = holder;
     }
 
-    public CompoundTag toTag() {
-        return new CompoundTag();
+    public NbtCompound toTag() {
+        return new NbtCompound();
     }
 
     /** Writes the payload that will be passed into
@@ -275,8 +275,7 @@ public abstract class AbstractPart {
         double y = pos.getY() + box.minY + pos(world, side, Direction.Axis.Y, box.maxY - box.minY);
         double z = pos.getZ() + box.minZ + pos(world, side, Direction.Axis.Z, box.maxZ - box.minZ);
 
-        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, 0, 0, 0, state);
-        particle.setBlockPos(pos);
+        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, 0, 0, 0, state, pos);
         particle.move(0.2f);
         particle.scale(0.6f);
         if (sprite != null) {
@@ -361,9 +360,8 @@ public abstract class AbstractPart {
                         double pZ = vZ * minZ + z0;
                         BlockDustParticle particle = new BlockDustParticle(
                             (ClientWorld) world, pos.getX() + pX, pos.getY() + pY, pos.getZ() + pZ, vX - 0.5D,
-                            vY - 0.5D, vZ - 0.5D, state
+                            vY - 0.5D, vZ - 0.5D, state, pos
                         );
-                        particle.setBlockPos(pos);
                         if (sprite != null) {
                             particle.setSprite(new SingleSpriteProvider(sprite));
                         }
@@ -520,7 +518,7 @@ public abstract class AbstractPart {
         if (hardness == -1.0F) {
             return 0.0F;
         } else {
-            int mult = player.isUsingEffectiveTool(state) ? 30 : 100;
+            int mult = player.canHarvest(state) ? 30 : 100;
             return player.getBlockBreakingSpeed(state) / hardness / mult;
         }
     }

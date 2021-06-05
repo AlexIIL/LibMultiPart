@@ -7,8 +7,6 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import org.apache.logging.log4j.LogManager;
@@ -16,10 +14,10 @@ import org.apache.logging.log4j.Logger;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 
-import net.minecraft.block.Block;
+import net.minecraft.block.MapColor;
 import net.minecraft.block.Material;
-import net.minecraft.block.MaterialColor;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
@@ -50,7 +48,7 @@ public class LibMultiPart implements ModInitializer {
             );
         }
 
-        Material material = new Material.Builder(MaterialColor.BLACK).build();
+        Material material = new Material.Builder(MapColor.BLACK).build();
         BLOCK = new MultipartBlock(
             FabricBlockSettings.of(material)//
                 .dropsNothing()//
@@ -58,11 +56,10 @@ public class LibMultiPart implements ModInitializer {
                 .hardness(0.5f)//
                 .resistance(2.0f)//
                 .dynamicBounds()//
-                .lightLevel(state -> state.get(MultipartBlock.LUMINANCE))
+                .luminance(state -> state.get(MultipartBlock.LUMINANCE))
         );
 
-        Set<Block> blocks = Collections.singleton(BLOCK);
-        BLOCK_ENTITY = new BlockEntityType<>(MultipartBlockEntity::new, blocks, null);
+        BLOCK_ENTITY = FabricBlockEntityTypeBuilder.create(MultipartBlockEntity::new, BLOCK).build();
     }
 
     @Override

@@ -20,6 +20,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.ShapeContext;
 import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityTicker;
+import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -37,6 +39,8 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.BlockMirror;
+import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Hand;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
@@ -106,8 +110,27 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public BlockEntity createBlockEntity(BlockView var1) {
-        return new MultipartBlockEntity();
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return new MultipartBlockEntity(pos, state);
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+        World world, BlockState state, BlockEntityType<T> type
+    ) {
+        return type == LibMultiPart.BLOCK_ENTITY ? (w, p, s, be) -> ((MultipartBlockEntity) be).tick() : null;
+    }
+
+    @Override
+    public BlockState rotate(BlockState state, BlockRotation rotation) {
+        // This is really just a TODO for the block entity.rotate method
+        throw new UnsupportedOperationException("Need BlockEntity.rotate too pls mojang");
+    }
+
+    @Override
+    public BlockState mirror(BlockState state, BlockMirror mirror) {
+        // This is really just a TODO for the block entity.mirror method
+        throw new UnsupportedOperationException("Need BlockEntity.mirror too pls mojang");
     }
 
     @Override

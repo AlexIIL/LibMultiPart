@@ -10,8 +10,7 @@ package alexiil.mc.lib.multipart.impl;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
@@ -41,7 +40,7 @@ final class PosPartId {
         this(holder.getContainer().getMultipartPos(), holder.getUniqueId());
     }
 
-    PosPartId(PartContainer from, CompoundTag tag) {
+    PosPartId(PartContainer from, NbtCompound tag) {
         if (tag.contains("x")) {
             pos = new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z"));
         } else {
@@ -51,9 +50,9 @@ final class PosPartId {
         uid = tag.getLong("u");
     }
 
-    CompoundTag toTag(PartContainer from) {
+    NbtCompound toTag(PartContainer from) {
         BlockPos f = from.getMultipartPos();
-        CompoundTag tag = new CompoundTag();
+        NbtCompound tag = new NbtCompound();
         tag.putInt("a", pos.getX() - f.getX());
         tag.putInt("b", pos.getY() - f.getY());
         tag.putInt("c", pos.getZ() - f.getZ());
@@ -61,7 +60,7 @@ final class PosPartId {
         return tag;
     }
 
-    public static boolean isValid(CompoundTag tag) {
+    public static boolean isValid(NbtCompound tag) {
         Set<String> keys = tag.getKeys();
         return keys.size() == 4 && (keys.containsAll(OLD_EXACT_TAG_NAMES) || keys.containsAll(NEW_OFFSET_TAG_NAMES));
     }

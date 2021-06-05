@@ -11,8 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
-
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.Identifier;
 
 import alexiil.mc.lib.net.IMsgReadCtx;
@@ -46,7 +45,7 @@ public class PartDefinition {
     }
 
     /** Protected constructor for use by subclasses that override both
-     * {@link #readFromNbt(MultipartHolder, CompoundTag)} and
+     * {@link #readFromNbt(MultipartHolder, NbtCompound)} and
      * {@link #loadFromBuffer(MultipartHolder, NetByteBuf, IMsgReadCtx)}. */
     protected PartDefinition(Identifier identifier) {
         this.identifier = identifier;
@@ -65,7 +64,7 @@ public class PartDefinition {
         }
     }
 
-    public AbstractPart readFromNbt(MultipartHolder holder, CompoundTag nbt) {
+    public AbstractPart readFromNbt(MultipartHolder holder, NbtCompound nbt) {
         if (reader == null) {
             throw new IllegalStateException(getClass() + " needs to override readFromNbt(...)!");
         }
@@ -85,7 +84,7 @@ public class PartDefinition {
         /** Reads the pipe pluggable from NBT. Unlike {@link IPartNetLoader} (which is allowed to fail and throw an
          * exception if the wrong data is given) this should make a best effort to read the pluggable from nbt, or fall
          * back to sensible defaults. */
-        AbstractPart readFromNbt(PartDefinition definition, MultipartHolder holder, CompoundTag nbt);
+        AbstractPart readFromNbt(PartDefinition definition, MultipartHolder holder, NbtCompound nbt);
     }
 
     @FunctionalInterface

@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.resource.ResourceReloader;
 import net.minecraft.tag.BlockTags;
 import net.minecraft.tag.Tag;
 import net.minecraft.tag.TagGroupLoader;
@@ -21,8 +21,8 @@ public final class PartTags {
     private static TagGroupLoader<PartDefinition> container = new TagGroupLoader<>(id -> Optional.empty(), "", false, "");
     private static int reloadCount = 0;
 
-    public static ResourceReloadListener reloader() {
-        return new ResourceReloadListener() {
+    public static ResourceReloader reloader() {
+        return new ResourceReloader() {
             @Override
             public CompletableFuture<Void> reload(Synchronizer sync, ResourceManager manager, Profiler prof1,
                 Profiler prof2, Executor ex1, Executor ex2) {

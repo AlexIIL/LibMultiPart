@@ -7,6 +7,7 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,18 +16,18 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 import net.fabricmc.fabric.api.server.PlayerStream;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
-import net.minecraft.util.Tickable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -48,7 +49,7 @@ import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 
 public class MultipartBlockEntity extends BlockEntity
-    implements Tickable, IUnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
+    implements IUnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
     AttributeProviderBlockEntity
 {
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
@@ -59,28 +60,28 @@ public class MultipartBlockEntity extends BlockEntity
 
     PartContainer container;
 
-    public MultipartBlockEntity() {
-        super(LibMultiPart.BLOCK_ENTITY);
+    public MultipartBlockEntity(BlockPos pos, BlockState state) {
+        super(LibMultiPart.BLOCK_ENTITY, pos, state);
         container = new PartContainer(this);
     }
 
-    MultipartBlockEntity(PartContainer from) {
-        super(LibMultiPart.BLOCK_ENTITY);
+    MultipartBlockEntity(PartContainer from, BlockPos pos, BlockState state) {
+        super(LibMultiPart.BLOCK_ENTITY, pos, state);
         this.container = from;
         container.blockEntity = this;
     }
 
     @Override
-    public void fromTag(BlockState state, CompoundTag tag) {
-        super.fromTag(state, tag);
+    public void readNbt(NbtCompound tag) {
+        super.readNbt(tag);
         if (tag.contains("container")) {
             container.fromTag(tag.getCompound("container"));
         }
     }
 
     @Override
-    public CompoundTag toTag(CompoundTag tag) {
-        super.toTag(tag);
+    public NbtCompound writeNbt(NbtCompound tag) {
+        super.writeNbt(tag);
         tag.put("container", container.toTag());
         return tag;
     }
@@ -90,17 +91,13 @@ public class MultipartBlockEntity extends BlockEntity
         PartContainer.NET_INITIAL_RENDER_DATA.send(CoreMinecraftNetUtil.getConnection(to), container);
     }
 
-    @Override
     public void applyRotation(BlockRotation rotation) {
-        super.applyRotation(rotation);
         if (rotation != BlockRotation.NONE) {
             container.rotate(rotation);
         }
     }
 
-    @Override
     public void applyMirror(BlockMirror mirror) {
-        super.applyMirror(mirror);
         if (mirror != BlockMirror.NONE) {
             container.mirror(mirror);
         }
@@ -169,9 +166,8 @@ public class MultipartBlockEntity extends BlockEntity
         return CoreMinecraftNetUtil.getClientConnection();
     }
 
-    /** @return The {@link ActiveMinecraftConnection} to use to send to the specified player. */
-    public final List<PlayerEntity> getPlayersWatching() {
-        return PlayerStream.watching(this).collect(Collectors.toList());
+    public final Collection<ServerPlayerEntity> getPlayersWatching() {
+        return PlayerLookup.tracking(this);
     }
 
     /** Sends a network update update of the specified ID. */
@@ -220,7 +216,6 @@ public class MultipartBlockEntity extends BlockEntity
 
     // Events
 
-    @Override
     public void tick() {
         container.tick();
     }
