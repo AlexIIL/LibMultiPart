@@ -1,0 +1,4 @@
+Changes:
+
+* Updated to minecraft 1.17.
+* Deprecated UnloadableBlockEntity, as it has been moved to LibBlockAttributes.
