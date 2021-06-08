@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.6.0-pre.1"
+version = "0.6.0-pre.4"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
@@ -135,13 +135,17 @@ def allIncludes = [
     "assets/libmultipart/icon.png"
 ];
 
+def mavenDeps = [
+    ["com.google.code.findbugs", "jsr305", "3.0.1"]
+];
+
 def jarDeps = [ 
     ["alexiil.mc.lib", "libblockattributes-core", "$libblockattributes_version"],
     ["alexiil.mc.lib", "libnetworkstack-base", "$libnetworkstack_version"]
 ];
 
-generateJar("base", ["**"], [], true);
-generateJar("all", allIncludes, [], false, [], ["base"], [], jarDeps);
+generateJar("base", ["**"], [], true, [], [], mavenDeps);
+generateJar("all", allIncludes, [], false, [], ["base"], mavenDeps, jarDeps);
 // Don't generate a devonly fatjar - as there's only 1 module.
 
 tasks.withType(AbstractArchiveTask) {

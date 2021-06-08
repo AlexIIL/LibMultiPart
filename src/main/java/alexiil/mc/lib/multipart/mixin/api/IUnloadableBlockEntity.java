@@ -7,6 +7,12 @@
  */
 package alexiil.mc.lib.multipart.mixin.api;
 
-public interface IUnloadableBlockEntity {
+import alexiil.mc.lib.attributes.mixin.api.UnloadableBlockEntity;
+
+/** @deprecated Since LibBlockAttributes now has {@link UnloadableBlockEntity} */
+@Deprecated(since = "0.6.0", forRemoval = false)
+public interface IUnloadableBlockEntity extends UnloadableBlockEntity {
+
+    @Override
     void onChunkUnload();
 }

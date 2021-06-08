@@ -28,15 +28,14 @@ public class Client_BlockMixin {
 
     @Inject(
         method = "Lnet/minecraft/block/Block;shouldDrawSide(Lnet/minecraft/block/BlockState;Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;"
-            + "Lnet/minecraft/util/math/Direction;)Z",
+            + "Lnet/minecraft/util/math/Direction;Lnet/minecraft/util/math/BlockPos;)Z",
         cancellable = true,
         at = @At(value = "INVOKE", target = "Lnet/minecraft/block/BlockState;isOpaque()Z")
     )
     private static void shouldDrawSide(
-        BlockState state, BlockView view, BlockPos pos, Direction facing, CallbackInfoReturnable<Boolean> ci
+        BlockState state, BlockView view, BlockPos pos, Direction facing, BlockPos offset, CallbackInfoReturnable<Boolean> ci
     ) {
-        BlockPos oPos = pos.offset(facing);
-        BlockState oState = view.getBlockState(oPos);
+        BlockState oState = view.getBlockState(offset);
         Block block = state.getBlock();
         Block oBlock = oState.getBlock();
         if (
@@ -44,7 +43,7 @@ public class Client_BlockMixin {
                 || (oBlock instanceof IBlockDynamicCull && ((IBlockDynamicCull) oBlock).hasDynamicCull(oState))
         ) {
             VoxelShape voxelShape = state.getCullingFace(view, pos, facing);
-            VoxelShape voxelShape2 = oState.getCullingFace(view, oPos, facing.getOpposite());
+            VoxelShape voxelShape2 = oState.getCullingFace(view, offset, facing.getOpposite());
             ci.setReturnValue(VoxelShapes.matchesAnywhere(voxelShape, voxelShape2, BooleanBiFunction.ONLY_FIRST));
         }
     }

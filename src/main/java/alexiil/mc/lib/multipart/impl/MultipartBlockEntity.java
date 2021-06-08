@@ -8,8 +8,6 @@
 package alexiil.mc.lib.multipart.impl;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -18,7 +16,6 @@ import com.google.common.collect.ImmutableList;
 
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
-import net.fabricmc.fabric.api.server.PlayerStream;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -42,14 +39,14 @@ import alexiil.mc.lib.net.impl.McNetworkStack;
 
 import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProviderBlockEntity;
+import alexiil.mc.lib.attributes.mixin.api.UnloadableBlockEntity;
 
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
-import alexiil.mc.lib.multipart.mixin.api.IUnloadableBlockEntity;
 
 public class MultipartBlockEntity extends BlockEntity
-    implements IUnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
+    implements UnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
     AttributeProviderBlockEntity
 {
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
