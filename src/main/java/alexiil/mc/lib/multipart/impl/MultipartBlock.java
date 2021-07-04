@@ -555,16 +555,23 @@ public class MultipartBlock extends Block
                     }
                 }
 
-                VoxelShape shape = part.getOutlineShape();
-                for (Box box : shape.getBoundingBoxes()) {
-                    if (box.expand(0.01).contains(vec)) {
-                        return new TransientPartIdentifier(part);
-                    }
+                if (doesContain(part, vec)) {
+                    return new TransientPartIdentifier(part);
                 }
             }
         }
 
         return null;
+    }
+
+    static boolean doesContain(AbstractPart part, Vec3d vec) {
+        VoxelShape shape = part.getOutlineShape();
+        for (Box box : shape.getBoundingBoxes()) {
+            if (box.expand(0.01).contains(vec)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Nullable

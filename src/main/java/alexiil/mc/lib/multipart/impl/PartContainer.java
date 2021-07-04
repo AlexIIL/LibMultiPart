@@ -33,7 +33,9 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.World;
@@ -264,6 +266,17 @@ public class PartContainer implements MultipartContainer {
             AbstractPart part = holder.part;
             if (clazz.isInstance(part) && filter.test(clazz.cast(part))) {
                 return clazz.cast(part);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public AbstractPart getPart(Vec3d vec) {
+        for (PartHolder holder : parts) {
+            AbstractPart part = holder.part;
+            if (MultipartBlock.doesContain(part, vec)) {
+                return part;
             }
         }
         return null;
@@ -694,7 +707,6 @@ public class PartContainer implements MultipartContainer {
     public <T> void sendNetworkUpdateExcept(
         PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
     ) {
-
         blockEntity.sendNetworkUpdate(except, obj, netId, writer);
     }
 
@@ -744,7 +756,7 @@ public class PartContainer implements MultipartContainer {
         if (parts.isEmpty()) {
             nextId = 0;
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts is empty => nextId ← 0");
+                LibMultiPart.LOGGER.info("  parts is empty => nextId set to 0");
             }
         } else if (areIdsValid) {
             nextId++;
@@ -761,7 +773,7 @@ public class PartContainer implements MultipartContainer {
             nextId = ((long) new Random().nextInt() & 0x7fff_ffff) << 6l;
 
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId ← rand (nextId = " + nextId + ")");
+                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId set to rand (nextId = " + nextId + ")");
             }
 
             for (PartHolder holder : parts) {

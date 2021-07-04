@@ -17,19 +17,22 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
 
-import alexiil.mc.lib.attributes.Attribute;
-import alexiil.mc.lib.attributes.Attributes;
-import alexiil.mc.lib.multipart.api.event.MultipartEvent;
-import alexiil.mc.lib.multipart.api.event.PartTickEvent;
-import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.net.NetIdDataK;
 import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
 import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
+
+import alexiil.mc.lib.attributes.Attribute;
+import alexiil.mc.lib.attributes.Attributes;
+
+import alexiil.mc.lib.multipart.api.event.MultipartEvent;
+import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 
 public interface MultipartContainer {
 
@@ -112,6 +115,13 @@ public interface MultipartContainer {
         List<P> parts = getParts(clazz, filter);
         return parts.isEmpty() ? null : parts.get(0);
     }
+
+    /** Retrieves the part whose {@link AbstractPart#getOutlineShape()} contains the given {@link Vec3d}.
+     * 
+     * @param vec The vector. This should be in the range 0 to 1, rather than be local to this block.
+     * @return The part, or null if there is no part at that vector. */
+    @Nullable
+    AbstractPart getPart(Vec3d vec);
 
     /** @return The part that has the given {@link MultipartHolder#getUniqueId() container-only unique ID}, or null if
      *         no parts have that unique id. */

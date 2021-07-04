@@ -12,6 +12,7 @@ import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextType;
 
 import alexiil.mc.lib.multipart.impl.LibMultiPart;
+import alexiil.mc.lib.multipart.mixin.impl.LootContextTypesAccessor;
 
 /** Stores some {@link LootContextParameter}s for LMP. */
 public final class PartLootParams {
@@ -29,18 +30,19 @@ public final class PartLootParams {
     static {
         BROKEN_PART = new LootContextParameter<>(LibMultiPart.id("broken_part"));
         ADDITIONAL_PARTS = new LootContextParameter<>(LibMultiPart.id("additional_parts"));
-        PART_TYPE = new LootContextType.Builder()//
-            // Block
-            .require(LootContextParameters.BLOCK_STATE)//
-            .require(LootContextParameters.ORIGIN)//
-            .require(LootContextParameters.TOOL)//
-            .allow(LootContextParameters.THIS_ENTITY)//
-            .allow(LootContextParameters.BLOCK_ENTITY)//
-            .allow(LootContextParameters.EXPLOSION_RADIUS)//
-            // Ours
-            .require(BROKEN_PART)//
-            .require(ADDITIONAL_PARTS)//
-            .build();
+        PART_TYPE = LootContextTypesAccessor.register(
+            "libmultipart:part", builder -> builder//
+                // Block
+                .require(LootContextParameters.BLOCK_STATE)//
+                .require(LootContextParameters.ORIGIN)//
+                .require(LootContextParameters.TOOL)//
+                .allow(LootContextParameters.THIS_ENTITY)//
+                .allow(LootContextParameters.BLOCK_ENTITY)//
+                .allow(LootContextParameters.EXPLOSION_RADIUS)//
+                // Ours
+                .require(BROKEN_PART)//
+                .require(ADDITIONAL_PARTS)//
+        );
     }
 
     /** An {@link AbstractPart} that was broken.
