@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* Actually fIx a crash with the bugfix for #32 not working.

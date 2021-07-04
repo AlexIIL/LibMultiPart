@@ -30,7 +30,7 @@ public final class PartLootParams {
     static {
         BROKEN_PART = new LootContextParameter<>(LibMultiPart.id("broken_part"));
         ADDITIONAL_PARTS = new LootContextParameter<>(LibMultiPart.id("additional_parts"));
-        PART_TYPE = LootContextTypesAccessor.libmultipart_register(
+        PART_TYPE = LootContextTypesAccessor.callRegister(
             "libmultipart:part", builder -> builder//
                 // Block
                 .require(LootContextParameters.BLOCK_STATE)//

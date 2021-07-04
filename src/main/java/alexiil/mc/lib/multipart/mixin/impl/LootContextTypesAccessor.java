@@ -19,7 +19,7 @@ import net.minecraft.loot.context.LootContextTypes;
 public interface LootContextTypesAccessor {
 
     @Invoker
-    public static LootContextType libmultipart_register(String name, Consumer<LootContextType.Builder> type) {
+    public static LootContextType callRegister(String name, Consumer<LootContextType.Builder> type) {
         throw new NullPointerException("LMP");
     }
 }

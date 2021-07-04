@@ -1,7 +1,3 @@
-Changes:
-
-* Added MultipartContainer.getPart(Vec3d), which obtains the first part whose outline shape contains the vector.
-
 Bug Fixes:
 
-* [#31] Fix PartLootParams.PART_TYPE not being registered.
+* FIx a crash with the bugfix for #32 not working.
