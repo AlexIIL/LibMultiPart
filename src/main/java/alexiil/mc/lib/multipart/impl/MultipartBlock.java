@@ -8,6 +8,7 @@
 package alexiil.mc.lib.multipart.impl;
 
 import java.util.List;
+import java.util.Random;
 
 import javax.annotation.Nullable;
 
@@ -54,12 +55,17 @@ import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
+import net.minecraft.world.biome.Biome;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.AbstractPart.ItemDropTarget;
 import alexiil.mc.lib.multipart.api.PartLootParams;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
 import alexiil.mc.lib.multipart.api.event.PartEventEntityCollide;
+import alexiil.mc.lib.multipart.api.event.PartPrecipitationTickEvent;
+import alexiil.mc.lib.multipart.api.event.PartRandomDisplayTickEvent;
+import alexiil.mc.lib.multipart.api.event.PartRandomTickEvent;
+import alexiil.mc.lib.multipart.api.event.PartScheduledTickEvent;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
@@ -223,6 +229,38 @@ public class MultipartBlock extends Block
             }
         }
         return ItemStack.EMPTY;
+    }
+
+    @Override
+    public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity container) {
+            container.container.fireEvent(PartRandomTickEvent.INSTANCE);
+        }
+    }
+
+    @Override
+    public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity container) {
+            container.container.fireEvent(PartScheduledTickEvent.INSTANCE);
+        }
+    }
+
+    @Override
+    public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity container) {
+            container.container.fireEvent(PartRandomDisplayTickEvent.INSTANCE);
+        }
+    }
+
+    @Override
+    public void precipitationTick(BlockState state, World world, BlockPos pos, Biome.Precipitation precipitation) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity container) {
+            container.container.fireEvent(new PartPrecipitationTickEvent(precipitation));
+        }
     }
 
     // ###############
