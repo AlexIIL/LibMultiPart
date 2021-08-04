@@ -103,7 +103,7 @@ public class MultipartBlockEntityRenderer implements BlockEntityRenderer<Multipa
         @Override
         public void render(
             AbstractPart part, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
-            int breakProgress
+            int overlay
         ) {
             // NO-OP
         }

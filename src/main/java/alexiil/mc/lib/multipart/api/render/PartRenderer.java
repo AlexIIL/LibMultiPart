@@ -15,6 +15,6 @@ import alexiil.mc.lib.multipart.api.AbstractPart;
 public interface PartRenderer<P extends AbstractPart> {
     void render(
         P part, float tickDelta, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light,
-        int breakProgress
+        int overlay
     );
 }
