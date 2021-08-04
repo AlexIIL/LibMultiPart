@@ -56,6 +56,7 @@ public class LibMultiPart implements ModInitializer {
                 .hardness(0.5f)//
                 .resistance(2.0f)//
                 .dynamicBounds()//
+                .ticksRandomly()//
                 .luminance(state -> state.get(MultipartBlock.LUMINANCE))
         );
 
