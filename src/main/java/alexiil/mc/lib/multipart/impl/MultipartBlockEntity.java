@@ -69,18 +69,17 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     @Override
-    public void readNbt(NbtCompound tag) {
-        super.readNbt(tag);
-        if (tag.contains("container")) {
-            container.fromTag(tag.getCompound("container"));
+    public void readNbt(NbtCompound nbt) {
+        super.readNbt(nbt);
+        if (nbt.contains("container")) {
+            container.fromTag(nbt.getCompound("container"));
         }
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound tag) {
-        super.writeNbt(tag);
-        tag.put("container", container.toTag());
-        return tag;
+    public void writeNbt(NbtCompound nbt) {
+        super.writeNbt(nbt);
+        nbt.put("container", container.toTag());
     }
 
     @Override

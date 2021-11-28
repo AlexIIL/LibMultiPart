@@ -124,9 +124,9 @@ public final class MultipartModel
     }
 
     @Override
-    public Sprite getSprite() {
+    public Sprite getParticleSprite() {
         return MinecraftClient.getInstance().getBlockRenderManager().getModels().getModelManager().getMissingModel()
-            .getSprite();
+            .getParticleSprite();
     }
 
     @Override
