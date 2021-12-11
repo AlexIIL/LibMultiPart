@@ -1,0 +1,4 @@
+Bug Fixes:
+
+* Made multipart blocks auto-remove themselves on their next tick on the server if they have no parts.
+    (for example if you've removed mods that added parts). 

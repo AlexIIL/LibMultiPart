@@ -30,6 +30,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
@@ -38,7 +39,19 @@ import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.World;
 
+import alexiil.mc.lib.net.IMsgReadCtx;
+import alexiil.mc.lib.net.IMsgWriteCtx;
+import alexiil.mc.lib.net.InvalidInputDataException;
+import alexiil.mc.lib.net.NetByteBuf;
+import alexiil.mc.lib.net.NetIdDataK;
+import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
+import alexiil.mc.lib.net.NetIdSignalK;
+import alexiil.mc.lib.net.NetIdTyped;
+import alexiil.mc.lib.net.ParentNetIdDuel;
+import alexiil.mc.lib.net.ParentNetIdSingle;
+
 import alexiil.mc.lib.attributes.AttributeList;
+
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 import alexiil.mc.lib.multipart.api.MultipartEventBus;
@@ -55,16 +68,6 @@ import alexiil.mc.lib.multipart.api.property.MultipartProperty;
 import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
-import alexiil.mc.lib.net.IMsgReadCtx;
-import alexiil.mc.lib.net.IMsgWriteCtx;
-import alexiil.mc.lib.net.InvalidInputDataException;
-import alexiil.mc.lib.net.NetByteBuf;
-import alexiil.mc.lib.net.NetIdDataK;
-import alexiil.mc.lib.net.NetIdDataK.IMsgDataWriterK;
-import alexiil.mc.lib.net.NetIdSignalK;
-import alexiil.mc.lib.net.NetIdTyped;
-import alexiil.mc.lib.net.ParentNetIdDuel;
-import alexiil.mc.lib.net.ParentNetIdSingle;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -630,8 +633,9 @@ public class PartContainer implements MultipartContainer {
             }
             partModelKeys = list;
             // Just to make the world always re-render even though our state hasn't changed
-            blockEntity.world()
-                .scheduleBlockRerenderIfNeeded(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
+            blockEntity.world().scheduleBlockRerenderIfNeeded(
+                blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState()
+            );
         } else {
             sendNetworkUpdate(this, NET_REDRAW);
         }
@@ -744,7 +748,7 @@ public class PartContainer implements MultipartContainer {
         if (parts.isEmpty()) {
             nextId = 0;
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts is empty => nextId ← 0");
+                LibMultiPart.LOGGER.info("  parts is empty => nextId set to 0");
             }
         } else if (areIdsValid) {
             nextId++;
@@ -761,7 +765,7 @@ public class PartContainer implements MultipartContainer {
             nextId = ((long) new Random().nextInt() & 0x7fff_ffff) << 6l;
 
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId ← rand (nextId = " + nextId + ")");
+                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId set to random (nextId = " + nextId + ")");
             }
 
             for (PartHolder holder : parts) {
@@ -997,10 +1001,23 @@ public class PartContainer implements MultipartContainer {
     }
 
     void tick() {
+        if (parts.isEmpty() && !isClientWorld()) {
+            BlockPos pos = getMultipartPos();
+            World world = getMultipartWorld();
+
+            Identifier dimId = world.getRegistryKey().getValue();
+            world.removeBlock(pos, false);
+            LibMultiPart.LOGGER.warn("Removed empty multipart container at " + pos + " in " + dimId);
+            return;
+        }
+
         eventBus.fireEvent(PartTickEvent.INSTANCE);
         if (havePropertiesChanged) {
             havePropertiesChanged = false;
-            final BlockState oldState = getMultipartWorld().getBlockState(getMultipartPos());
+            BlockPos pos = getMultipartPos();
+            World world = getMultipartWorld();
+
+            final BlockState oldState = world.getBlockState(pos);
             BlockState state = oldState
                 .with(MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE));
             state = state.with(MultipartBlock.LUMINANCE, properties.getValue(MultipartProperties.LIGHT_VALUE));
@@ -1009,9 +1026,9 @@ public class PartContainer implements MultipartContainer {
                 state = state.with(Properties.WATERLOGGED, false);
             }
             if (state != oldState) {
-                getMultipartWorld().setBlockState(getMultipartPos(), state);
+                world.setBlockState(pos, state);
             } else {
-                getMultipartWorld().updateNeighbors(getMultipartPos(), LibMultiPart.BLOCK);
+                world.updateNeighbors(pos, LibMultiPart.BLOCK);
             }
         }
 
