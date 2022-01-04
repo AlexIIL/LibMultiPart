@@ -147,21 +147,23 @@ public class LibMultiPart implements ModInitializer {
 
     private static void checkType(Class<?> from, String field, Class<?> fieldType, Field fld) throws Error {
 
-        if (fld.getType().isPrimitive() && !fieldType.isPrimitive()) {
-            if (fld.getType() == Character.TYPE) fieldType = Character.class;
-            else if (fld.getType() == Boolean.TYPE) fieldType = Boolean.class;
-            else if (fld.getType() == Byte.TYPE) fieldType = Byte.class;
-            else if (fld.getType() == Short.TYPE) fieldType = Short.class;
-            else if (fld.getType() == Integer.TYPE) fieldType = Integer.class;
-            else if (fld.getType() == Long.TYPE) fieldType = Long.class;
-            else if (fld.getType() == Float.TYPE) fieldType = Float.class;
-            else if (fld.getType() == Double.TYPE) fieldType = Double.class;
+        Class<?> foundType = fld.getType();
+
+        if (foundType.isPrimitive() && !fieldType.isPrimitive()) {
+            if (foundType == Character.TYPE) foundType = Character.class;
+            else if (foundType == Boolean.TYPE) foundType = Boolean.class;
+            else if (foundType == Byte.TYPE) foundType = Byte.class;
+            else if (foundType == Short.TYPE) foundType = Short.class;
+            else if (foundType == Integer.TYPE) foundType = Integer.class;
+            else if (foundType == Long.TYPE) foundType = Long.class;
+            else if (foundType == Float.TYPE) foundType = Float.class;
+            else if (foundType == Double.TYPE) foundType = Double.class;
         }
 
-        if (fld.getType() != fieldType) {
+        if (foundType != fieldType) {
             throw new Error(
                 "LMP field type is different! (" + from + " ." + field + ": expecting " + fieldType + ", but got "
-                    + fld.getType() + ")"
+                    + foundType + ")"
             );
         }
     }
