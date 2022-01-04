@@ -84,7 +84,7 @@ public class LibMultiPart implements ModInitializer {
     /** Retrieves a value from a static LMP field that is annotated with {@link LmpInternalAccessible}. */
     public static <T> T getStaticApiField(Class<?> from, String field, Class<T> fieldType) {
         try {
-            Field fld = from.getField(field);
+            Field fld = from.getDeclaredField(field);
 
             if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
                 throw new Error(
@@ -112,7 +112,7 @@ public class LibMultiPart implements ModInitializer {
      * {@link LmpInternalAccessible}. */
     public static <C, F> Function<C, F> getInstanceApiField(Class<C> from, String field, Class<F> fieldType) {
         try {
-            Field fld = from.getField(field);
+            Field fld = from.getDeclaredField(field);
 
             if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
                 throw new Error(
