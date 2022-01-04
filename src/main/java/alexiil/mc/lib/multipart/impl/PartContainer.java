@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
@@ -33,30 +34,12 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.World;
 
-import alexiil.mc.lib.attributes.AttributeList;
-import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.MultipartContainer;
-import alexiil.mc.lib.multipart.api.MultipartEventBus;
-import alexiil.mc.lib.multipart.api.MultipartHolder;
-import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
-import alexiil.mc.lib.multipart.api.event.PartContainerState;
-import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
-import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
-import alexiil.mc.lib.multipart.api.event.PartTickEvent;
-import alexiil.mc.lib.multipart.api.property.MultipartProperties;
-import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
-import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
-import alexiil.mc.lib.multipart.api.property.MultipartProperty;
-import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
-import alexiil.mc.lib.multipart.api.render.PartModelKey;
-import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
 import alexiil.mc.lib.net.IMsgReadCtx;
 import alexiil.mc.lib.net.IMsgWriteCtx;
 import alexiil.mc.lib.net.InvalidInputDataException;
@@ -67,6 +50,27 @@ import alexiil.mc.lib.net.NetIdSignalK;
 import alexiil.mc.lib.net.NetIdTyped;
 import alexiil.mc.lib.net.ParentNetIdDuel;
 import alexiil.mc.lib.net.ParentNetIdSingle;
+
+import alexiil.mc.lib.attributes.AttributeList;
+
+import alexiil.mc.lib.multipart.api.AbstractPart;
+import alexiil.mc.lib.multipart.api.MultipartContainer;
+import alexiil.mc.lib.multipart.api.MultipartEventBus;
+import alexiil.mc.lib.multipart.api.MultipartHolder;
+import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
+import alexiil.mc.lib.multipart.api.event.PartContainerState;
+import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
+import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent;
+import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent.PartRedstonePowerEventFactory;
+import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
+import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartProperty;
+import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
+import alexiil.mc.lib.multipart.api.render.PartModelKey;
+import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -613,7 +617,7 @@ public class PartContainer implements MultipartContainer {
                 cachedOutlineShape = VoxelShapes.union(cachedOutlineShape, holder.part.getOutlineShape());
             }
             if (cachedOutlineShape.isEmpty()) {
-                cachedOutlineShape = MultipartBlock.MISSING_PARTS_SHAPE;
+                cachedOutlineShape = VoxelShapes.empty();
             }
         }
         return cachedOutlineShape;
@@ -643,8 +647,9 @@ public class PartContainer implements MultipartContainer {
             }
             partModelKeys = list;
             // Just to make the world always re-render even though our state hasn't changed
-            blockEntity.world()
-                .scheduleBlockRerenderIfNeeded(blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState());
+            blockEntity.world().scheduleBlockRerenderIfNeeded(
+                blockEntity.getPos(), Blocks.AIR.getDefaultState(), Blocks.VINE.getDefaultState()
+            );
         } else {
             sendNetworkUpdate(this, NET_REDRAW);
         }
@@ -1009,6 +1014,11 @@ public class PartContainer implements MultipartContainer {
     }
 
     void tick() {
+        if (!isClientWorld() && parts.isEmpty()) {
+            getMultipartWorld().removeBlock(getMultipartPos(), false);
+            return;
+        }
+
         eventBus.fireEvent(PartTickEvent.INSTANCE);
         if (havePropertiesChanged) {
             havePropertiesChanged = false;
@@ -1102,5 +1112,48 @@ public class PartContainer implements MultipartContainer {
         for (PartHolder holder : parts) {
             holder.part.addAllAttributes(list);
         }
+    }
+
+    // ############
+    // # Redstone #
+    // ############
+
+    private static final PartRedstonePowerEventFactory STRONG_EVENT_FACTORY, WEAK_EVENT_FACTORY;
+    private static final Function<PartRedstonePowerEvent, Integer> EVENT_VALUE;
+
+    static {
+        Class<PartRedstonePowerEvent> from = PartRedstonePowerEvent.class;
+        Class<PartRedstonePowerEventFactory> type = PartRedstonePowerEventFactory.class;
+        STRONG_EVENT_FACTORY = LibMultiPart.getStaticApiField(from, "STRONG_FACTORY", type);
+        WEAK_EVENT_FACTORY = LibMultiPart.getStaticApiField(from, "WEAK_FACTORY", type);
+        EVENT_VALUE = LibMultiPart.getInstanceApiField(from, "value", Integer.class);
+    }
+
+    int getStrongRedstonePower(Direction direction) {
+        int emitted = properties.getValue(MultipartProperties.getStrongRedstonePower(direction));
+        if (emitted == 15) {
+            return 15;
+        }
+        return getDynamicRedstone(direction, emitted, STRONG_EVENT_FACTORY);
+    }
+
+    int getWeakRedstonePower(Direction direction) {
+        StrongRedstonePowerProperty strongProp = MultipartProperties.getStrongRedstonePower(direction);
+        int strong = properties.getValue(strongProp);
+        if (strong == 15) {
+            // Optimisation: it's not possible to *reduce* this value.
+            return 15;
+        }
+        int emitted = Math.max(strong, properties.getValue(MultipartProperties.getWeakRedstonePower(direction)));
+        if (emitted == 15) {
+            return emitted;
+        }
+        return getDynamicRedstone(direction, emitted, WEAK_EVENT_FACTORY);
+    }
+
+    private int getDynamicRedstone(Direction direction, int emitted, PartRedstonePowerEventFactory factory) {
+        PartRedstonePowerEvent event = factory.create(emitted, direction);
+        fireEvent(event);
+        return EVENT_VALUE.apply(event);
     }
 }

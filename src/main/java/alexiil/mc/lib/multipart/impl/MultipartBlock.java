@@ -81,18 +81,6 @@ public class MultipartBlock extends Block
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
-    public static final VoxelShape MISSING_PARTS_SHAPE = VoxelShapes.union(
-        // X
-        createCuboidShape(0, 0, 0, 16, 4, 4), createCuboidShape(0, 12, 0, 16, 16, 4), //
-        createCuboidShape(0, 0, 12, 16, 4, 16), createCuboidShape(0, 12, 12, 16, 16, 16), //
-        // Y
-        createCuboidShape(0, 0, 0, 4, 16, 4), createCuboidShape(12, 0, 0, 16, 16, 4), //
-        createCuboidShape(0, 0, 12, 4, 16, 16), createCuboidShape(12, 0, 12, 16, 16, 16), //
-        // Z
-        createCuboidShape(0, 0, 0, 4, 4, 16), createCuboidShape(12, 0, 0, 16, 4, 16), //
-        createCuboidShape(0, 12, 0, 4, 16, 16), createCuboidShape(12, 12, 0, 16, 16, 16)//
-    );
-
     public MultipartBlock(Settings settings) {
         super(settings);
         setDefaultState(
@@ -146,7 +134,7 @@ public class MultipartBlock extends Block
             MultipartBlockEntity container = (MultipartBlockEntity) be;
             return container.container.getCollisionShape();
         }
-        return MISSING_PARTS_SHAPE;
+        return VoxelShapes.empty();
     }
 
     @Override
@@ -155,7 +143,7 @@ public class MultipartBlock extends Block
         if (be instanceof MultipartBlockEntity) {
             return ((MultipartBlockEntity) be).container.getOutlineShape();
         }
-        return MISSING_PARTS_SHAPE;
+        return VoxelShapes.empty();
     }
 
     @Override
@@ -277,9 +265,8 @@ public class MultipartBlock extends Block
     @Override
     public int getStrongRedstonePower(BlockState state, BlockView view, BlockPos pos, Direction oppositeFace) {
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            return ((MultipartBlockEntity) be).container.getProperties()
-                .getValue(MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite()));
+        if (be instanceof MultipartBlockEntity multiBE) {
+            return multiBE.container.getStrongRedstonePower(oppositeFace.getOpposite());
         }
         return 0;
     }
@@ -287,12 +274,8 @@ public class MultipartBlock extends Block
     @Override
     public int getWeakRedstonePower(BlockState state, BlockView view, BlockPos pos, Direction oppositeFace) {
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartPropertyContainer properties = ((MultipartBlockEntity) be).container.getProperties();
-            return Math.max(
-                properties.getValue(MultipartProperties.getStrongRedstonePower(oppositeFace.getOpposite())), //
-                properties.getValue(MultipartProperties.getWeakRedstonePower(oppositeFace.getOpposite()))
-            );
+        if (be instanceof MultipartBlockEntity multiBE) {
+            return multiBE.container.getWeakRedstonePower(oppositeFace.getOpposite());
         }
         return 0;
     }

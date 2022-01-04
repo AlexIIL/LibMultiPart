@@ -18,7 +18,7 @@ import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.event.MultipartEvent;
 import alexiil.mc.lib.multipart.api.event.PartListenerAdded;
 import alexiil.mc.lib.multipart.api.event.PartListenerRemoved;
-import alexiil.mc.lib.multipart.impl.SimpleEventBus.SingleListener;
+
 import it.unimi.dsi.fastutil.booleans.BooleanArrayList;
 import it.unimi.dsi.fastutil.booleans.BooleanList;
 
@@ -35,6 +35,8 @@ public class SimpleEventBus implements MultipartEventBus {
 
     private int eventCallLevel = 0;
     private boolean didListenersChange = false;
+
+//    private long classListenedFlagA, classListenedFlagB;
 
     private final List<SingleListener<?>> listenersChanged = new ArrayList<>();
     private final BooleanList listenerChangedToAdd = new BooleanArrayList();
@@ -90,8 +92,9 @@ public class SimpleEventBus implements MultipartEventBus {
     }
 
     @Override
-    public <E extends MultipartEvent> ListenerInfo<E> addListener(Object key, Class<E> clazz, EventListener<
-        E> listener) {
+    public <E extends MultipartEvent> ListenerInfo<E> addListener(
+        Object key, Class<E> clazz, EventListener<E> listener
+    ) {
         SingleListener<E> single = new SingleListener<>(key, clazz, listener);
         listeners.add(single);
         if (eventCallLevel > 0) {
@@ -193,6 +196,12 @@ public class SimpleEventBus implements MultipartEventBus {
         }
         return list;
     }
+
+//    @Override
+//    public boolean hasAnyListenersFor(Class<? extends MultipartEvent> clazz) {
+//        // TODO Auto-generated method stub
+//        throw new AbstractMethodError("// TODO: Implement this!");
+//    }
 
     @Override
     public List<? extends ListenerInfo<?>> getAllListeners() {

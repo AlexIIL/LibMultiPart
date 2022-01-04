@@ -26,6 +26,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.net.NetIdDataK;
@@ -42,6 +43,7 @@ import alexiil.mc.lib.attributes.AttributeProviderBlockEntity;
 import alexiil.mc.lib.attributes.mixin.api.UnloadableBlockEntity;
 
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
+import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
 

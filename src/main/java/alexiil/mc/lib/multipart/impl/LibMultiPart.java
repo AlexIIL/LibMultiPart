@@ -7,6 +7,9 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.logging.log4j.LogManager;
@@ -76,5 +79,90 @@ public class LibMultiPart implements ModInitializer {
 
     public static Identifier id(String path) {
         return new Identifier(NAMESPACE, path);
+    }
+
+    /** Retrieves a value from a static LMP field that is annotated with {@link LmpInternalAccessible}. */
+    public static <T> T getStaticApiField(Class<?> from, String field, Class<T> fieldType) {
+        try {
+            Field fld = from.getField(field);
+
+            if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
+                throw new Error(
+                    "Tried to access a non-internally exposed field! (" + from + " ." + field + " of " + fieldType + ")"
+                );
+            }
+
+            fld.setAccessible(true);
+            checkType(from, field, fieldType, fld);
+            if ((fld.getModifiers() & Modifier.STATIC) == 0) {
+                throw new Error(
+                    "LMP field is not static when we expected it to be static! (" + from + " ." + field + " of "
+                        + fieldType + ")"
+                );
+            }
+            return fieldType.cast(fld.get(null));
+        } catch (ReflectiveOperationException | SecurityException e) {
+            throw new Error(
+                "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
+            );
+        }
+    }
+
+    /** Retrieves a function that returns the value held in a non-static LMP field that is annotated with
+     * {@link LmpInternalAccessible}. */
+    public static <C, F> Function<C, F> getInstanceApiField(Class<C> from, String field, Class<F> fieldType) {
+        try {
+            Field fld = from.getField(field);
+
+            if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
+                throw new Error(
+                    "Tried to access a non-internally exposed field! (" + from + " ." + field + " of " + fieldType + ")"
+                );
+            }
+
+            fld.setAccessible(true);
+            checkType(from, field, fieldType, fld);
+            if ((fld.getModifiers() & Modifier.STATIC) == 0) {
+                throw new Error(
+                    "LMP field is static when we expected it not to be! (" + from + " ." + field + " of " + fieldType
+                        + ")"
+                );
+            }
+
+            return instance -> {
+                try {
+                    return fieldType.cast(fld.get(instance));
+                } catch (IllegalArgumentException | IllegalAccessException e) {
+                    throw new Error(
+                        "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
+                    );
+                }
+            };
+        } catch (ReflectiveOperationException | SecurityException e) {
+            throw new Error(
+                "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
+            );
+        }
+    }
+
+    private static void checkType(Class<?> from, String field, Class<?> fieldType, Field fld) throws Error {
+
+        if (fld.getType().isPrimitive() && !fieldType.isPrimitive()) {
+            if (fld.getType() == Character.TYPE) fieldType = Character.class;
+            else if (fld.getType() == Boolean.TYPE) fieldType = Boolean.class;
+            else if (fld.getType() == Byte.TYPE) fieldType = Byte.class;
+            else if (fld.getType() == Short.TYPE) fieldType = Short.class;
+            else if (fld.getType() == Integer.TYPE) fieldType = Integer.class;
+            else if (fld.getType() == Long.TYPE) fieldType = Long.class;
+            else if (fld.getType() == Float.TYPE) fieldType = Float.class;
+            else if (fld.getType() == Double.TYPE) fieldType = Double.class;
+        }
+
+        if (fld.getType() != fieldType) {
+            throw new Error(
+                "LMP field type is different! (" + from + " ." + field + ": expecting " + fieldType + ", but got "
+                    + fld.getType() + ")"
+            );
+        }
     }
 }
