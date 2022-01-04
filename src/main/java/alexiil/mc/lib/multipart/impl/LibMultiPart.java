@@ -122,7 +122,7 @@ public class LibMultiPart implements ModInitializer {
 
             fld.setAccessible(true);
             checkType(from, field, fieldType, fld);
-            if ((fld.getModifiers() & Modifier.STATIC) == 0) {
+            if ((fld.getModifiers() & Modifier.STATIC) != 0) {
                 throw new Error(
                     "LMP field is static when we expected it not to be! (" + from + " ." + field + " of " + fieldType
                         + ")"
@@ -145,11 +145,11 @@ public class LibMultiPart implements ModInitializer {
         }
     }
 
-    private static void checkType(Class<?> from, String field, Class<?> fieldType, Field fld) throws Error {
+    private static void checkType(Class<?> from, String field, Class<?> expectedType, Field fld) throws Error {
 
         Class<?> foundType = fld.getType();
 
-        if (foundType.isPrimitive() && !fieldType.isPrimitive()) {
+        if (foundType.isPrimitive() && !expectedType.isPrimitive()) {
             if (foundType == Character.TYPE) foundType = Character.class;
             else if (foundType == Boolean.TYPE) foundType = Boolean.class;
             else if (foundType == Byte.TYPE) foundType = Byte.class;
@@ -160,9 +160,9 @@ public class LibMultiPart implements ModInitializer {
             else if (foundType == Double.TYPE) foundType = Double.class;
         }
 
-        if (foundType != fieldType) {
+        if (foundType != expectedType) {
             throw new Error(
-                "LMP field type is different! (" + from + " ." + field + ": expecting " + fieldType + ", but got "
+                "LMP field type is different! (" + from + " ." + field + ": expecting " + expectedType + ", but got "
                     + foundType + ")"
             );
         }
