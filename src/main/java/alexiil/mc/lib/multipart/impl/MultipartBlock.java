@@ -184,6 +184,19 @@ public class MultipartBlock extends Block
     }
 
     @Override
+    public BlockState getStateForNeighborUpdate(
+        BlockState state, Direction direction, BlockState neighborState, WorldAccess world, BlockPos pos,
+        BlockPos neighborPos
+    ) {
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity container = (MultipartBlockEntity) be;
+            container.onNeighbourStateUpdate(direction, neighborPos, neighborState);
+        }
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
+    }
+
+    @Override
     public ActionResult onUse(
         BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit
     ) {

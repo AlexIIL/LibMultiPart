@@ -42,15 +42,14 @@ import alexiil.mc.lib.attributes.AttributeList;
 import alexiil.mc.lib.attributes.AttributeProviderBlockEntity;
 import alexiil.mc.lib.attributes.mixin.api.UnloadableBlockEntity;
 
+import alexiil.mc.lib.multipart.api.event.NeighbourStateUpdateEvent;
 import alexiil.mc.lib.multipart.api.event.NeighbourUpdateEvent;
-import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
 
 public class MultipartBlockEntity extends BlockEntity
     implements UnloadableBlockEntity, RenderAttachmentBlockEntity, BlockEntityInitialData,
-    AttributeProviderBlockEntity
-{
+    AttributeProviderBlockEntity {
     static final ParentNetIdSingle<MultipartBlockEntity> NET_KEY;
 
     static {
@@ -225,5 +224,9 @@ public class MultipartBlockEntity extends BlockEntity
 
     public void onNeighbourUpdate(BlockPos otherPos) {
         container.fireEvent(new NeighbourUpdateEvent(otherPos));
+    }
+
+    public void onNeighbourStateUpdate(Direction direction, BlockPos neighborPos, BlockState neighborState) {
+        container.fireEvent(new NeighbourStateUpdateEvent(direction, neighborPos, neighborState));
     }
 }
