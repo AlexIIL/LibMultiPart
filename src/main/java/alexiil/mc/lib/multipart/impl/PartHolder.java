@@ -278,6 +278,7 @@ public final class PartHolder implements MultipartHolder {
             ctxBuilder.optionalParameter(LootContextParameters.THIS_ENTITY, player);
         }
         ctxBuilder.parameter(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+        ctxBuilder.parameter(PartLootParams.ADDITIONAL_PARTS, new BrokenSinglePart[0]);
         LootContext context = ctxBuilder.build(PartLootParams.PART_TYPE);
         return context;
     }
