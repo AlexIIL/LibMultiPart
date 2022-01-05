@@ -7,6 +7,9 @@
     "LootContextTypesAccessor",
     "ServerPlayerInteractionManagerMixin"
   ],
+  "mixins_that_are_intentionally_disabled": [
+    "BlockEntityMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

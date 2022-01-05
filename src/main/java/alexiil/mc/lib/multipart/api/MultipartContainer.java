@@ -46,6 +46,8 @@ public interface MultipartContainer {
 
     BlockEntity getMultipartBlockEntity();
 
+    void markChunkDirty();
+
     default DimensionType getDimension() {
         return getMultipartWorld().getDimension();
     }

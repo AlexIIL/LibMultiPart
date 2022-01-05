@@ -392,6 +392,7 @@ public class PartContainer implements MultipartContainer {
         recalculateShape();
         eventBus.fireEvent(new PartAddedEvent(holder.part));
         blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
+        markChunkDirty();
     }
 
     private void readAddPart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
@@ -501,6 +502,7 @@ public class PartContainer implements MultipartContainer {
         } else {
             recalculateShape();
             blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
+            markChunkDirty();
         }
     }
 
@@ -575,6 +577,13 @@ public class PartContainer implements MultipartContainer {
             indices[i] = buffer.readUnsignedByte();
         }
         removeMultiple(indices);
+    }
+
+    @Override
+    public void markChunkDirty() {
+        if (!isClientWorld()) {
+            getMultipartWorld().markDirty(getMultipartPos());
+        }
     }
 
     @Override
@@ -732,9 +741,9 @@ public class PartContainer implements MultipartContainer {
 
     // Internals
 
-    void fromTag(NbtCompound tag) {
+    void fromNbt(NbtCompound tag) {
         if (LibMultiPart.DEBUG) {
-            LibMultiPart.LOGGER.info("PartContainer.fromTag( " + getMultipartPos() + " ) {");
+            LibMultiPart.LOGGER.info("PartContainer.fromNbt( " + getMultipartPos() + " ) {");
         }
         recalculateShape();
         nextId = Long.MIN_VALUE;
@@ -743,18 +752,16 @@ public class PartContainer implements MultipartContainer {
         for (int i = 0; i < allPartsTag.size(); i++) {
             NbtCompound partTag = allPartsTag.getCompound(i);
             PartHolder holder = new PartHolder(this, partTag);
-            if (holder.part != null) {
-                parts.add(holder);
-                if (!areIdsValid) {
-                    continue;
-                }
-                nextId = Math.max(nextId, holder.uniqueId);
-                PartHolder prev = partsByUid.put(holder.uniqueId, holder);
-                if (prev != null) {
-                    // Two parts with the same UID
-                    areIdsValid = false;
-                    partsByUid.clear();
-                }
+            parts.add(holder);
+            if (!areIdsValid) {
+                continue;
+            }
+            nextId = Math.max(nextId, holder.uniqueId);
+            PartHolder prev = partsByUid.put(holder.uniqueId, holder);
+            if (prev != null) {
+                // Two parts with the same UID
+                areIdsValid = false;
+                partsByUid.clear();
             }
         }
 
@@ -813,11 +820,11 @@ public class PartContainer implements MultipartContainer {
         }
     }
 
-    NbtCompound toTag() {
+    NbtCompound toNbt() {
         NbtCompound tag = new NbtCompound();
         NbtList partsTag = new NbtList();
         for (PartHolder part : parts) {
-            partsTag.add(part.toTag());
+            partsTag.add(part.toNbt());
         }
         tag.put("parts", partsTag);
         return tag;
@@ -1124,9 +1131,9 @@ public class PartContainer implements MultipartContainer {
     static {
         Class<PartRedstonePowerEvent> from = PartRedstonePowerEvent.class;
         Class<PartRedstonePowerEventFactory> type = PartRedstonePowerEventFactory.class;
-        STRONG_EVENT_FACTORY = LibMultiPart.getStaticApiField(from, "STRONG_FACTORY", type);
-        WEAK_EVENT_FACTORY = LibMultiPart.getStaticApiField(from, "WEAK_FACTORY", type);
-        EVENT_VALUE = LibMultiPart.getInstanceApiField(from, "value", Integer.class);
+        STRONG_EVENT_FACTORY = LmpReflection.getStaticApiField(from, "STRONG_FACTORY", type);
+        WEAK_EVENT_FACTORY = LmpReflection.getStaticApiField(from, "WEAK_FACTORY", type);
+        EVENT_VALUE = LmpReflection.getInstanceApiField(from, "value", Integer.class);
     }
 
     int getStrongRedstonePower(Direction direction) {

@@ -53,6 +53,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
@@ -67,7 +68,6 @@ import alexiil.mc.lib.multipart.api.event.PartRandomDisplayTickEvent;
 import alexiil.mc.lib.multipart.api.event.PartRandomTickEvent;
 import alexiil.mc.lib.multipart.api.event.PartScheduledTickEvent;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
-import alexiil.mc.lib.multipart.api.property.MultipartPropertyContainer;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.mixin.api.IBlockCustomParticles;
@@ -76,8 +76,8 @@ import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
 
 public class MultipartBlock extends Block
     implements BlockEntityProvider, IBlockMultipart<TransientPartIdentifier>, Waterloggable, IBlockDynamicCull,
-    IBlockCustomParticles
-{
+    IBlockCustomParticles {
+
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
@@ -420,8 +420,8 @@ public class MultipartBlock extends Block
         if (subpart.extra instanceof IdSubPart<?>) {
             afterSubpartBreak(player, stack, (IdSubPart<?>) subpart.extra);
         } else {
-            if (world instanceof ServerWorld) {
-                LootContext.Builder ctxBuilder = new LootContext.Builder((ServerWorld) world);
+            if (world instanceof ServerWorld sv) {
+                LootContext.Builder ctxBuilder = new LootContext.Builder(sv);
                 ctxBuilder.random(world.random);
                 ctxBuilder.parameter(LootContextParameters.BLOCK_STATE, state);
                 ctxBuilder.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
@@ -449,8 +449,11 @@ public class MultipartBlock extends Block
         extra.part.afterSubpartBreak(player, tool, extra.subpart);
     }
 
-    private static ItemDropTarget createDropTarget(AbstractPart part) {
+    static ItemDropTarget createDropTarget(AbstractPart part) {
         return new ItemDropTarget() {
+
+            final boolean canDrop
+                = part.holder.getContainer().getMultipartWorld().getGameRules().getBoolean(GameRules.DO_TILE_DROPS);
 
             Vec3d center = null;
 
@@ -461,6 +464,10 @@ public class MultipartBlock extends Block
 
             @Override
             public void drop(ItemStack stack) {
+                if (!canDrop) {
+                    return;
+                }
+
                 if (center == null) {
                     center = part.getOutlineShape().getBoundingBox().getCenter();
                     center = center.add(Vec3d.of(part.holder.getContainer().getMultipartPos()));
@@ -470,10 +477,15 @@ public class MultipartBlock extends Block
 
             @Override
             public void drop(ItemStack stack, Vec3d pos) {
+                if (!canDrop) {
+                    return;
+                }
+
                 World world = part.holder.getContainer().getMultipartWorld();
                 while (!stack.isEmpty()) {
                     ItemStack split = stack.split(world.random.nextInt(21) + 10);
                     ItemEntity ent = new ItemEntity(world, pos.x, pos.y, pos.z, split);
+                    ent.setToDefaultPickupDelay();
                     ent.setVelocity(
                         world.random.nextGaussian() * 0.05, //
                         world.random.nextGaussian() * 0.05 + 0.2, //
@@ -485,9 +497,14 @@ public class MultipartBlock extends Block
 
             @Override
             public void drop(ItemStack stack, Vec3d pos, Vec3d velocity) {
+                if (!canDrop) {
+                    return;
+                }
+
                 World world = part.holder.getContainer().getMultipartWorld();
                 ItemEntity ent = new ItemEntity(world, pos.x, pos.y, pos.z, stack);
                 ent.setVelocity(velocity);
+                ent.setToDefaultPickupDelay();
                 world.spawnEntity(ent);
             }
         };
@@ -505,27 +522,7 @@ public class MultipartBlock extends Block
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
 
-            ItemDropTarget target = new ItemDropTarget() {
-                @Override
-                public void drop(ItemStack stack) {
-                    drops.add(stack);
-                }
-
-                @Override
-                public void drop(ItemStack stack, Vec3d pos) {
-                    drops.add(stack);
-                }
-
-                @Override
-                public void drop(ItemStack stack, Vec3d pos, Vec3d velocity) {
-                    drops.add(stack);
-                }
-
-                @Override
-                public boolean dropsAsEntity() {
-                    return false;
-                }
-            };
+            ItemDropTarget target = new ItemDropCollector(drops);
 
             for (PartHolder holder : mpbe.container.parts) {
                 holder.part.addDrops(target, lootContext);
@@ -623,7 +620,7 @@ public class MultipartBlock extends Block
                 return sub;
             }
         }
-        return target.part.getDynamicShape(partialTicks);
+        return target.part.getDynamicShape(partialTicks, hitVec);
     }
 
     @Nullable

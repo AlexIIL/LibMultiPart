@@ -66,6 +66,7 @@ import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.api.render.PartModelBaker;
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
+import alexiil.mc.lib.multipart.impl.LmpInternalOnly;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
 import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
@@ -412,9 +413,18 @@ public abstract class AbstractPart {
     }
 
     /** @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. Unlike
-     *         {@link #getOutlineShape()} this is only called when rendering the box for this specific part. */
+     *         {@link #getOutlineShape()} this is only called when rendering the box for this specific part.
+     * @deprecated Use (and implement) {@link #getDynamicShape(float, Vec3d)} instead. */
+    @Deprecated
     public VoxelShape getDynamicShape(float partialTicks) {
         return getOutlineShape();
+    }
+
+    /** @param hitVec The exact position of the main block where... oh.
+     * @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. Unlike
+     *         {@link #getOutlineShape()} this is only called when rendering the box for this specific part. */
+    public VoxelShape getDynamicShape(float partialTicks, Vec3d hitVec) {
+        return getDynamicShape(partialTicks);
     }
 
     /** @return True if this pluggable should be an {@link AttributeList#obstruct(VoxelShape) obstacle} for attributes
@@ -552,4 +562,15 @@ public abstract class AbstractPart {
      *         will bake nothing. */
     @Nullable
     public abstract PartModelKey getModelKey();
+
+    // ############
+    // # Internal #
+    // ############
+
+    /** Workaround for {@link #playBreakSound()} being protected, but
+     * {@link MultipartHolder#remove(MultipartHolder.PartRemoval...)} needing to call it. */
+    @LmpInternalOnly
+    private final void callPlayBreakSound() {
+        playBreakSound();
+    }
 }

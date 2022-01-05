@@ -7,8 +7,6 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -64,6 +62,7 @@ public class LibMultiPart implements ModInitializer {
         );
 
         BLOCK_ENTITY = FabricBlockEntityTypeBuilder.create(MultipartBlockEntity::new, BLOCK).build();
+        // TODO: Add a debug item (or command?) to view "missing part" information
     }
 
     @Override
@@ -79,92 +78,5 @@ public class LibMultiPart implements ModInitializer {
 
     public static Identifier id(String path) {
         return new Identifier(NAMESPACE, path);
-    }
-
-    /** Retrieves a value from a static LMP field that is annotated with {@link LmpInternalAccessible}. */
-    public static <T> T getStaticApiField(Class<?> from, String field, Class<T> fieldType) {
-        try {
-            Field fld = from.getDeclaredField(field);
-
-            if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
-                throw new Error(
-                    "Tried to access a non-internally exposed field! (" + from + " ." + field + " of " + fieldType + ")"
-                );
-            }
-
-            fld.setAccessible(true);
-            checkType(from, field, fieldType, fld);
-            if ((fld.getModifiers() & Modifier.STATIC) == 0) {
-                throw new Error(
-                    "LMP field is not static when we expected it to be static! (" + from + " ." + field + " of "
-                        + fieldType + ")"
-                );
-            }
-            return fieldType.cast(fld.get(null));
-        } catch (ReflectiveOperationException | SecurityException e) {
-            throw new Error(
-                "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
-            );
-        }
-    }
-
-    /** Retrieves a function that returns the value held in a non-static LMP field that is annotated with
-     * {@link LmpInternalAccessible}. */
-    public static <C, F> Function<C, F> getInstanceApiField(Class<C> from, String field, Class<F> fieldType) {
-        try {
-            Field fld = from.getDeclaredField(field);
-
-            if (fld.getAnnotation(LmpInternalAccessible.class) == null) {
-                throw new Error(
-                    "Tried to access a non-internally exposed field! (" + from + " ." + field + " of " + fieldType + ")"
-                );
-            }
-
-            fld.setAccessible(true);
-            checkType(from, field, fieldType, fld);
-            if ((fld.getModifiers() & Modifier.STATIC) != 0) {
-                throw new Error(
-                    "LMP field is static when we expected it not to be! (" + from + " ." + field + " of " + fieldType
-                        + ")"
-                );
-            }
-
-            return instance -> {
-                try {
-                    return fieldType.cast(fld.get(instance));
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                    throw new Error(
-                        "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
-                    );
-                }
-            };
-        } catch (ReflectiveOperationException | SecurityException e) {
-            throw new Error(
-                "LMP failed to access it's own field?! (" + from + " ." + field + " of " + fieldType + ")", e
-            );
-        }
-    }
-
-    private static void checkType(Class<?> from, String field, Class<?> expectedType, Field fld) throws Error {
-
-        Class<?> foundType = fld.getType();
-
-        if (foundType.isPrimitive() && !expectedType.isPrimitive()) {
-            if (foundType == Character.TYPE) foundType = Character.class;
-            else if (foundType == Boolean.TYPE) foundType = Boolean.class;
-            else if (foundType == Byte.TYPE) foundType = Byte.class;
-            else if (foundType == Short.TYPE) foundType = Short.class;
-            else if (foundType == Integer.TYPE) foundType = Integer.class;
-            else if (foundType == Long.TYPE) foundType = Long.class;
-            else if (foundType == Float.TYPE) foundType = Float.class;
-            else if (foundType == Double.TYPE) foundType = Double.class;
-        }
-
-        if (foundType != expectedType) {
-            throw new Error(
-                "LMP field type is different! (" + from + " ." + field + ": expecting " + expectedType + ", but got "
-                    + foundType + ")"
-            );
-        }
     }
 }

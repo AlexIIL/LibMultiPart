@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 /** Indicates that a field or method is accessed reflectively by LMP. (This is just used to ensure we can make some
  * parts of the API not publicly accessible, but still have some safety when using reflection). */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.METHOD })
-public @interface LmpInternalAccessible {
+@Target({ ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR })
+public @interface LmpInternalOnly {
 
 }

@@ -52,7 +52,7 @@
  * Every part has 4 shape methods that they can override: {@link alexiil.mc.lib.multipart.api.AbstractPart#getShape()
  * getShape()}, {@link alexiil.mc.lib.multipart.api.AbstractPart#getCollisionShape() getCollisionShape()},
  * {@link alexiil.mc.lib.multipart.api.AbstractPart#getCullingShape() getCullingShape()}, and
- * {@link alexiil.mc.lib.multipart.api.AbstractPart#getDynamicShape(float) getDynamicShape()}. The first method
+ * {@link alexiil.mc.lib.multipart.api.AbstractPart#getDynamicShape(float, Vec3d) getDynamicShape()}. The first method
  * (getShape) is abstract, and is used for detecting if two parts occupy the same space inside a block. The second
  * method (getCollisionShape) is used for nearly everything else - calculating solidity logic and collisions with
  * entities. If this isn't overridden then it defaults to returning the main getShape(). The third method
@@ -186,3 +186,5 @@
  * {@link alexiil.mc.lib.multipart.api.MultipartUtil#turnIntoMultipart(net.minecraft.world.World, net.minecraft.util.math.BlockPos)
  * MultipartUtil#turnIntoMultipart()}. */
 package alexiil.mc.lib.multipart.api;
+
+import net.minecraft.util.math.Vec3d;

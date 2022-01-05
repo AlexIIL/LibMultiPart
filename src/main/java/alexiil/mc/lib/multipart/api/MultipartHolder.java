@@ -7,6 +7,10 @@
  */
 package alexiil.mc.lib.multipart.api;
 
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.collection.DefaultedList;
+
 import alexiil.mc.lib.multipart.api.MultipartEventBus.ListenerInfo;
 import alexiil.mc.lib.multipart.api.event.PartTickEvent;
 
@@ -15,12 +19,39 @@ public interface MultipartHolder {
 
     public static final long NOT_ADDED_UNIQUE_ID = Long.MIN_VALUE;
 
+    /** Argument for {@link MultipartHolder#remove(PartRemoval...)}. */
+    public enum PartRemoval {
+
+        /** Calls {@link MultipartHolder#dropItems(PlayerEntity)} with a null {@link PlayerEntity}. */
+        DROP_ITEMS,
+
+        /** Sends {@link AbstractPart#NET_SPAWN_BREAK_PARTICLES}. */
+        BREAK_PARTICLES,
+
+        /** Calls {@link AbstractPart#playBreakSound()}. */
+        BREAK_SOUND,
+    }
+
     MultipartContainer getContainer();
 
     AbstractPart getPart();
 
     /** Removes this {@link #getPart()} from the container. */
     void remove();
+
+    /** Calls {@link #remove()}, but also performs some actions before removing the part depending on what values are
+     * passed in. */
+    void remove(PartRemoval... options);
+
+    /** Drops items at the position of the {@link AbstractPart} (by default).
+     * 
+     * @param player The player entity, or null if no player is present. */
+    void dropItems(PlayerEntity player);
+
+    /** Collects all items that can drop from the part.
+     * 
+     * @param player The player, or null if no player is present. */
+    DefaultedList<ItemStack> collectDrops(PlayerEntity player);
 
     /** @return The (container-only) unique ID for this part holder, or {@link #NOT_ADDED_UNIQUE_ID} if this hasn't been
      *         added to it's container. */

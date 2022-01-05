@@ -61,8 +61,8 @@ public final class MultipartUtilImpl {
         }
 
         BlockState state = world.getBlockState(pos);
-        if (state.getBlock() instanceof NativeMultipart) {
-            NativeMultipart nativeBlock = (NativeMultipart) state.getBlock();
+        NativeMultipart nativeBlock = getNative(world, pos);
+        if (nativeBlock != null) {
             List<MultipartCreator> conversions = nativeBlock.getMultipartConversion(world, pos, state);
             if (conversions == null) {
                 return null;
@@ -79,11 +79,18 @@ public final class MultipartUtilImpl {
         return null;
     }
 
+    private static NativeMultipart getNative(World world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+        if (state.getBlock() instanceof NativeMultipart nativeBlock) {
+            return nativeBlock;
+        }
+        return NativeMultipart.LOOKUP.find(world, pos, null);
+    }
+
     @Nullable
     public static PartOffer offerNewPart(
         World world, BlockPos pos, MultipartCreator creator, boolean respectEntityBBs
     ) {
-
         // See if there's an existing multipart that we can add to
         PartContainer currentContainer = get(world, pos);
         if (currentContainer != null) {
@@ -97,8 +104,8 @@ public final class MultipartUtilImpl {
         }
 
         BlockState state = world.getBlockState(pos);
-        if (state.getBlock() instanceof NativeMultipart) {
-            NativeMultipart nativeBlock = (NativeMultipart) state.getBlock();
+        NativeMultipart nativeBlock = getNative(world, pos);
+        if (nativeBlock != null) {
             List<MultipartCreator> conversions = nativeBlock.getMultipartConversion(world, pos, state);
             if (conversions == null) {
                 return null;
@@ -146,7 +153,9 @@ public final class MultipartUtilImpl {
         World world, BlockPos pos, boolean hasWater, List<MultipartCreator> existing, MultipartCreator creatorB,
         boolean respectEntityBBs
     ) {
-        MultipartBlockEntity be = new MultipartBlockEntity(pos, LibMultiPart.BLOCK.getDefaultState().with(Properties.WATERLOGGED, hasWater));
+        MultipartBlockEntity be = new MultipartBlockEntity(
+            pos, LibMultiPart.BLOCK.getDefaultState().with(Properties.WATERLOGGED, hasWater)
+        );
         be.setWorld(world);
         PartContainer container = new PartContainer(be);
 

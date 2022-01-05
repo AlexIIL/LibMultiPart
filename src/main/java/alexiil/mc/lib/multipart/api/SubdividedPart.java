@@ -62,8 +62,8 @@ public interface SubdividedPart<Sub> {
      * {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)}. */
     void afterSubpartBreak(PlayerEntity player, ItemStack tool, Sub subpart);
 
-    /** Subpart equivalent to {@link AbstractPart#getDynamicShape(float)}. If the given part is invalid then this should
-     * return {@link AbstractPart#getDynamicShape(float)}. */
+    /** Subpart equivalent to {@link AbstractPart#getDynamicShape(float, Vec3d)}. If the given part is invalid then this should
+     * return {@link AbstractPart#getDynamicShape(float, Vec3d)}. */
     VoxelShape getSubpartDynamicShape(Vec3d hitVec, Sub subpart, float partialTicks);
 
     default boolean spawnBreakingParticles(Vec3d hitVec, Sub subpart, Direction side) {

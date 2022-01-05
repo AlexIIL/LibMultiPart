@@ -14,7 +14,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
-import alexiil.mc.lib.multipart.impl.LmpInternalAccessible;
+import alexiil.mc.lib.multipart.impl.LmpInternalOnly;
 
 /** Fired during {@link Block#getStrongRedstonePower(BlockState, BlockView,BlockPos, Direction)} and
  * {@link Block#getWeakRedstonePower(BlockState, BlockView, BlockPos, Direction)}, however the more specific classes
@@ -22,10 +22,10 @@ import alexiil.mc.lib.multipart.impl.LmpInternalAccessible;
  * method calls. */
 public abstract class PartRedstonePowerEvent extends MultipartEvent {
 
-    @LmpInternalAccessible
+    @LmpInternalOnly
     static final PartRedstonePowerEventFactory STRONG_FACTORY = PartStrongRedstonePowerEvent::new;
 
-    @LmpInternalAccessible
+    @LmpInternalOnly
     static final PartRedstonePowerEventFactory WEAK_FACTORY = PartWeakRedstonePowerEvent::new;
 
     /** The value in {@link MultipartProperties#getWeakRedstonePower(Direction)} (and
@@ -35,7 +35,7 @@ public abstract class PartRedstonePowerEvent extends MultipartEvent {
     /** @return The side of the block that is being */
     public final Direction side;
 
-    @LmpInternalAccessible
+    @LmpInternalOnly
     int value;
 
     private PartRedstonePowerEvent(int powerProperty, Direction side) {
