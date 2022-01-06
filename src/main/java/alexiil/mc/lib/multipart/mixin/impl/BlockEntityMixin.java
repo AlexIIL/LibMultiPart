@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 public class BlockEntityMixin {
 
     // Thanks to lambdas these are all static rather than non-static
-
+/*
     @Redirect(
         at = @At(value = "INVOKE",
             target = "Lorg/apache/logging/log4j/Logger;"
@@ -36,4 +36,5 @@ public class BlockEntityMixin {
             throw new Error((Throwable) second);
         }
     }
+*/
 }
