@@ -26,6 +26,8 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -342,17 +344,64 @@ public class MultipartBlock extends Block
                 }
             } else if (target.extra instanceof IdAdditional) {
                 for (AbstractPart extra : ((IdAdditional) target.extra).additional) {
-                    extra.spawnBreakingParticles(side);
+                    extra.spawnHitParticle(side);
                 }
             }
 
-            return target.part.spawnBreakingParticles(side);
+            return target.part.spawnHitParticle(side);
         }
         return false;
     }
 
     private static <Sub> boolean spawnSubBreakingParticles(Vec3d hitVec, Direction side, IdSubPart<Sub> extra) {
         return extra.part.spawnBreakingParticles(hitVec, extra.subpart, side);
+    }
+
+    @Override
+    @Environment(EnvType.CLIENT)
+    public boolean spawnSprintingParticles(World world, BlockPos pos, BlockState state, Entity sprintingEntity,
+                                           Random entityRandom) {
+        // Clearance always seems to be 0.2 for these entity-collision particles
+        TransientPartIdentifier colliding =
+                getMultipartColliding(state, world, pos, sprintingEntity.getBoundingBox(), 0.2);
+        if (colliding != null) {
+            return colliding.part.spawnSprintParticle(sprintingEntity, entityRandom);
+        }
+
+        // You pretty much always want to return true here, regardless of whether particles were actually spawned,
+        // because returning true prevents the missing-texture particles from being spawned.
+        return true;
+    }
+
+    @Override
+    @Environment(EnvType.CLIENT)
+    public boolean spawnIronGolemParticles(World world, BlockPos pos, BlockState state, IronGolemEntity ironGolem,
+                                           Random entityRandom) {
+        // Clearance always seems to be 0.2 for these entity-collision particles
+        TransientPartIdentifier colliding =
+                getMultipartColliding(state, world, pos, ironGolem.getBoundingBox(), 0.2);
+        if (colliding != null) {
+            return colliding.part.spawnIronGolemParticle(ironGolem, entityRandom);
+        }
+
+        // You pretty much always want to return true here, regardless of whether particles were actually spawned,
+        // because returning true prevents the missing-texture particles from being spawned.
+        return true;
+    }
+
+    @Override
+    public boolean spawnFallParticles(ServerWorld world, BlockPos pos, BlockState state, LivingEntity fallenEntity,
+                                      Random entityRandom) {
+        // Clearance always seems to be 0.2 for these entity-collision particles
+        TransientPartIdentifier colliding =
+                getMultipartColliding(state, world, pos, fallenEntity.getBoundingBox(), 0.2);
+        if (colliding != null) {
+            return colliding.part.onSpawnFallParticles(fallenEntity, entityRandom);
+        }
+
+        // You pretty much always want to return true here, regardless of whether particles were actually spawned,
+        // because returning true prevents the missing-texture particles from being spawned.
+        return true;
     }
 
     // ###############
@@ -612,6 +661,41 @@ public class MultipartBlock extends Block
             return new TransientPartIdentifier(part, subpart);
         }
         return null;
+    }
+
+    @Nullable
+    @Override
+    public TransientPartIdentifier getMultipartColliding(BlockState state, BlockView view, BlockPos pos,
+                                                         Box toCollideWith, double clearance) {
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity) {
+            MultipartBlockEntity multi = (MultipartBlockEntity) be;
+
+            toCollideWith = toCollideWith.offset(Vec3d.of(pos).negate()).expand(clearance);
+
+            for (PartHolder holder : multi.container.parts) {
+
+                AbstractPart part = holder.getPart();
+
+                // Presumably, sub-part collision shapes should be part of the parent-part collision shape
+
+                if (isCollidingWith(part, toCollideWith)) {
+                    return new TransientPartIdentifier(part);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    static boolean isCollidingWith(AbstractPart part, Box toCollideWith) {
+        VoxelShape shape = part.getCollisionShape();
+        for (Box box : shape.getBoundingBoxes()) {
+            if (box.intersects(toCollideWith)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
