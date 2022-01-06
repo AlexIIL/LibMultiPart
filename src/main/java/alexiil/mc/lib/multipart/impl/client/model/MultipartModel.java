@@ -173,7 +173,7 @@ public final class MultipartModel
                             subPart = ((IdSubPart<?>) identifier.extra).subpart;
                         }
                         BreakingPartRenderContext partContext
-                            = new BreakingPartRenderContext(context, false, part, subPart);
+                            = new BreakingPartRenderContext(context, false, randomSupplier, part, subPart);
                         if (modelKey != null) {
                             emitQuads(modelKey, modelKey.getClass(), partContext);
                         }
@@ -190,7 +190,7 @@ public final class MultipartModel
                 }
             }
 
-            PartRenderContext ctx = new NormalPartRenderContext(context, false);
+            PartRenderContext ctx = new NormalPartRenderContext(context, false, randomSupplier);
             ImmutableList<PartModelKey> keys = container.getPartModelKeys();
             if (blockView instanceof RenderAttachedBlockView) {
                 Object data = ((RenderAttachedBlockView) blockView).getBlockEntityRenderAttachment(pos);

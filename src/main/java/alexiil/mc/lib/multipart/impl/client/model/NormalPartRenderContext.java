@@ -7,6 +7,9 @@
  */
 package alexiil.mc.lib.multipart.impl.client.model;
 
+import java.util.Random;
+import java.util.function.Supplier;
+
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 
 import alexiil.mc.lib.multipart.api.render.PartBreakContext;
@@ -16,10 +19,12 @@ public final class NormalPartRenderContext implements PartRenderContext {
 
     public final RenderContext ctx;
     public final boolean shouldQuadsBeLit;
+    public final Supplier<Random> random;
 
-    public NormalPartRenderContext(RenderContext ctx, boolean shouldQuadsBeLit) {
+    public NormalPartRenderContext(RenderContext ctx, boolean shouldQuadsBeLit, Supplier<Random> random) {
         this.ctx = ctx;
         this.shouldQuadsBeLit = shouldQuadsBeLit;
+        this.random = random;
     }
 
     @Override
@@ -35,5 +40,10 @@ public final class NormalPartRenderContext implements PartRenderContext {
     @Override
     public boolean shouldQuadsBeLit() {
         return shouldQuadsBeLit;
+    }
+
+    @Override
+    public Supplier<Random> getRandomSupplier() {
+        return random;
     }
 }

@@ -14,7 +14,7 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.7.1-pre.7"
+version = "0.7.1-pre.8"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');

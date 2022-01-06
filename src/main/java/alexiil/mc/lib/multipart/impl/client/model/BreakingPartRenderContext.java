@@ -7,6 +7,9 @@
  */
 package alexiil.mc.lib.multipart.impl.client.model;
 
+import java.util.Random;
+import java.util.function.Supplier;
+
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
@@ -17,15 +20,18 @@ public final class BreakingPartRenderContext implements PartRenderContext, PartB
 
     public final RenderContext renderContext;
     public final boolean shouldQuadsBeLit;
+    public final Supplier<Random> random;
 
     public final AbstractPart breakPart;
     public final Object breakSubPart;
 
     public BreakingPartRenderContext(
-        RenderContext renderContext, boolean shouldQuadsBeLit, AbstractPart breakPart, Object breakSubPart
+        RenderContext renderContext, boolean shouldQuadsBeLit, Supplier<Random> random, AbstractPart breakPart,
+        Object breakSubPart
     ) {
         this.renderContext = renderContext;
         this.shouldQuadsBeLit = shouldQuadsBeLit;
+        this.random = random;
         this.breakPart = breakPart;
         this.breakSubPart = breakSubPart;
     }
@@ -43,6 +49,11 @@ public final class BreakingPartRenderContext implements PartRenderContext, PartB
     @Override
     public boolean shouldQuadsBeLit() {
         return shouldQuadsBeLit;
+    }
+
+    @Override
+    public Supplier<Random> getRandomSupplier() {
+        return random;
     }
 
     @Override

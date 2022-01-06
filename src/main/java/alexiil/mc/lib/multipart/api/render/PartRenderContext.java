@@ -7,15 +7,21 @@
  */
 package alexiil.mc.lib.multipart.api.render;
 
+import java.util.Random;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
 import net.fabricmc.fabric.api.renderer.v1.mesh.Mesh;
 import net.fabricmc.fabric.api.renderer.v1.mesh.QuadEmitter;
+import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockRenderView;
 
 public interface PartRenderContext extends RenderContext {
 
@@ -29,6 +35,15 @@ public interface PartRenderContext extends RenderContext {
     /** @return True if the quads emitted to this render context should be pre-lit according to their direction (for
      *         block models) or not (for item models). */
     boolean shouldQuadsBeLit();
+
+    /** @return The random supplier that is passed to
+     *         {@link FabricBakedModel#emitBlockQuads(BlockRenderView, BlockState, BlockPos, Supplier, RenderContext)} */
+    Supplier<Random> getRandomSupplier();
+
+    /** @return {@link #getRandomSupplier()}.{@link Supplier#get()} */
+    default Random getRandom() {
+        return getRandomSupplier().get();
+    }
 
     // RenderContext delegates
 

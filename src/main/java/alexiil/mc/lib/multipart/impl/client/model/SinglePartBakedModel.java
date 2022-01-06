@@ -61,15 +61,15 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
         BlockRenderView blockView, BlockState state, BlockPos pos, Supplier<Random> randomSupplier,
         RenderContext context
     ) {
-        emitQuads(context, true);
+        emitQuads(context, true, randomSupplier);
     }
 
     @Override
     public void emitItemQuads(ItemStack stack, Supplier<Random> randomSupplier, RenderContext context) {
-        emitQuads(context, false);
+        emitQuads(context, false, randomSupplier);
     }
 
-    private void emitQuads(RenderContext context, boolean shouldQuadsBeLit) {
+    private void emitQuads(RenderContext context, boolean shouldQuadsBeLit, Supplier<Random> randomSupplier) {
         if (key == null) {
             return;
         }
@@ -80,7 +80,7 @@ public class SinglePartBakedModel<K extends PartModelKey> implements BakedModel,
         }
         PartModelBaker<? super K> baker = (PartModelBaker<? super K>) ((MultipartModel) model).getBaker(key.getClass());
         if (baker != null) {
-            baker.emitQuads(key, new NormalPartRenderContext(context, shouldQuadsBeLit));
+            baker.emitQuads(key, new NormalPartRenderContext(context, shouldQuadsBeLit, randomSupplier));
         }
     }
 
