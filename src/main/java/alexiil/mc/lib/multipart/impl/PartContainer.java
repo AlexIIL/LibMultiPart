@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -152,10 +153,10 @@ public class PartContainer implements MultipartContainer {
     final Long2ObjectMap<PartHolder> partsByUid = new Long2ObjectOpenHashMap<>();
 
     MultipartBlockEntity blockEntity;
-    VoxelShape cachedShape = null;
-    VoxelShape cachedCollisionShape = null;
-    VoxelShape cachedCullingShape = null;
-    VoxelShape cachedOutlineShape = null;
+    AtomicReference<VoxelShape> cachedShape = new AtomicReference<>(null);
+    AtomicReference<VoxelShape> cachedCollisionShape = new AtomicReference<>(null);
+    AtomicReference<VoxelShape> cachedCullingShape = new AtomicReference<>(null);
+    AtomicReference<VoxelShape> cachedOutlineShape = new AtomicReference<>(null);
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
 
@@ -589,38 +590,45 @@ public class PartContainer implements MultipartContainer {
 
     @Override
     public VoxelShape getCurrentShape() {
+        VoxelShape cachedShape = this.cachedShape.get();
         if (cachedShape == null) {
             cachedShape = VoxelShapes.empty();
             for (PartHolder holder : parts) {
                 cachedShape = VoxelShapes.union(cachedShape, holder.part.getShape());
             }
+            this.cachedShape.set(cachedShape);
         }
         return cachedShape;
     }
 
     @Override
     public VoxelShape getCollisionShape() {
+        VoxelShape cachedCollisionShape = this.cachedCollisionShape.get();
         if (cachedCollisionShape == null) {
             cachedCollisionShape = VoxelShapes.empty();
             for (PartHolder holder : parts) {
                 cachedCollisionShape = VoxelShapes.union(cachedCollisionShape, holder.part.getCollisionShape());
             }
+            this.cachedCollisionShape.set(cachedCollisionShape);
         }
         return cachedCollisionShape;
     }
 
     public VoxelShape getCullingShape() {
+        VoxelShape cachedCullingShape = this.cachedCullingShape.get();
         if (cachedCullingShape == null) {
             cachedCullingShape = VoxelShapes.empty();
             for (PartHolder holder : parts) {
                 cachedCullingShape = VoxelShapes.union(cachedCullingShape, holder.part.getCullingShape());
             }
+            this.cachedCullingShape.set(cachedCullingShape);
         }
         return cachedCullingShape;
     }
 
     @Override
     public VoxelShape getOutlineShape() {
+        VoxelShape cachedOutlineShape = this.cachedOutlineShape.get();
         if (cachedOutlineShape == null) {
             cachedOutlineShape = VoxelShapes.empty();
             for (PartHolder holder : parts) {
@@ -629,16 +637,17 @@ public class PartContainer implements MultipartContainer {
             if (cachedOutlineShape.isEmpty()) {
                 cachedOutlineShape = VoxelShapes.empty();
             }
+            this.cachedOutlineShape.set(cachedOutlineShape);
         }
         return cachedOutlineShape;
     }
 
     @Override
     public void recalculateShape() {
-        cachedShape = null;
-        cachedCollisionShape = null;
-        cachedCullingShape = null;
-        cachedOutlineShape = null;
+        cachedShape.set(null);
+        cachedCollisionShape.set(null);
+        cachedCullingShape.set(null);
+        cachedOutlineShape.set(null);
     }
 
     @Override
