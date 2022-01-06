@@ -22,6 +22,7 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableList;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -391,7 +392,7 @@ public class PartContainer implements MultipartContainer {
         });
         recalculateShape();
         eventBus.fireEvent(new PartAddedEvent(holder.part));
-        blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
+        updateOwnNeighbours();
         markChunkDirty();
     }
 
@@ -501,7 +502,7 @@ public class PartContainer implements MultipartContainer {
             blockEntity.world().removeBlock(getMultipartPos(), false);
         } else {
             recalculateShape();
-            blockEntity.world().updateNeighbors(getMultipartPos(), blockEntity.getCachedState().getBlock());
+            updateOwnNeighbours();
             markChunkDirty();
         }
     }
@@ -1040,7 +1041,7 @@ public class PartContainer implements MultipartContainer {
             if (state != oldState) {
                 getMultipartWorld().setBlockState(getMultipartPos(), state);
             } else {
-                getMultipartWorld().updateNeighbors(getMultipartPos(), LibMultiPart.BLOCK);
+                updateOwnNeighbours();
             }
         }
 
@@ -1119,6 +1120,18 @@ public class PartContainer implements MultipartContainer {
         for (PartHolder holder : parts) {
             holder.part.addAllAttributes(list);
         }
+    }
+
+    private void updateOwnNeighbours() {
+        World world = getMultipartWorld();
+        BlockPos pos = getMultipartPos();
+        // These two different updateNeighbors methods are needed for
+        // two different block neighbour update methods.
+        // World.updateNeighbors calls Block.neighborUpdate, while
+        // BlockState.updateNeighbors calls Block.getStateForNeighborUpdate.
+        // World.setBlockState does both with Block.NOTIFY_ALL/the default flags.
+        world.updateNeighbors(pos, LibMultiPart.BLOCK);
+        blockEntity.getCachedState().updateNeighbors(world, pos, Block.NOTIFY_ALL);
     }
 
     // ############
