@@ -1104,7 +1104,7 @@ public class PartContainer implements MultipartContainer {
         }
 
         if (property instanceof RedstonePowerProperty) {
-            updateOwnNeighbours();
+            getMultipartWorld().updateNeighbors(getMultipartPos(), LibMultiPart.BLOCK);
 
             if (property instanceof StrongRedstonePowerProperty) {
                 for (Direction dir : Direction.values()) {
