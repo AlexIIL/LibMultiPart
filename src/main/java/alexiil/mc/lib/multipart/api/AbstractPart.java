@@ -455,7 +455,8 @@ public abstract class AbstractPart {
     }
 
     /** Called whenever this part is picked by the player (similar to
-     * {@link Block#getPickStack(BlockView, BlockPos, BlockState)}}
+     * {@link Block#getPickStack(BlockView, BlockPos, BlockState)} but with a {@link BlockHitResult} for picking pieces
+     * of parts).
      *
      * @param hitResult The hit result on the part being picked or {@code null} if being called form
      *                  {@link #addDrops(DefaultedList)}.
