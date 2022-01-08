@@ -6,8 +6,7 @@
     "BlockRenderManagerMixin",
     "Client_BlockMixin",
     "ClientPlayerInteractionManagerMixin",
-    "ParticleManagerMixin",
-    "WorldRendererMixin"
+    "ParticleManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
