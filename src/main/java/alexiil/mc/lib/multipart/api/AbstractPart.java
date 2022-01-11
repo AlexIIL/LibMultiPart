@@ -80,7 +80,7 @@ import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
  * <p>
  * Generally implementations will want to override (in addition to the abstract methods):
  * <ul>
- * <li>{@link #getPickStack()} (and optionally {@link #addDrops(DefaultedList)}}</li>
+ * <li>{@link #getPickStack(BlockHitResult)} (and optionally {@link #addDrops(DefaultedList)}}</li>
  * </ul>
  */
 public abstract class AbstractPart {
@@ -630,10 +630,23 @@ public abstract class AbstractPart {
 
     /** Called whenever this part is picked by the player (similar to
      * {@link Block#getPickStack(BlockView, BlockPos, BlockState)})
-     *
-     * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part. */
+     * 
+     * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part.
+     * @deprecated Use (and implement) {@link #getPickStack(BlockHitResult)} instead. */
+    @Deprecated
     public ItemStack getPickStack() {
         return ItemStack.EMPTY;
+    }
+
+    /** Called whenever this part is picked by the player (similar to
+     * {@link Block#getPickStack(BlockView, BlockPos, BlockState)} but with a {@link BlockHitResult} for picking pieces
+     * of parts).
+     *
+     * @param hitResult The hit result on the part being picked or {@code null} if being called form
+     *                  {@link #addDrops(DefaultedList)}.
+     * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part. */
+    public ItemStack getPickStack(@Nullable BlockHitResult hitResult) {
+        return getPickStack();
     }
 
     /** A target for retrieving item drops from {@link AbstractPart#addDrops(ItemDropTarget, LootContext)}. This will
@@ -673,7 +686,7 @@ public abstract class AbstractPart {
     /** @deprecated Replaced by {@link #addDrops(ItemDropTarget, LootContext)} */
     @Deprecated
     public void addDrops(DefaultedList<ItemStack> to) {
-        ItemStack pickStack = getPickStack();
+        ItemStack pickStack = getPickStack(null);
         if (!pickStack.isEmpty()) {
             to.add(pickStack);
         }

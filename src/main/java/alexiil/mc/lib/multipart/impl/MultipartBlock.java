@@ -225,10 +225,10 @@ public class MultipartBlock extends Block
     public ItemStack getPickStack(BlockView view, BlockPos pos, BlockState state) {
         MinecraftClient mc = MinecraftClient.getInstance();
         HitResult hit = mc.crosshairTarget;
-        if (view != null && view == mc.world && hit != null) {
+        if (view != null && view == mc.world && hit != null && hit.getType() == HitResult.Type.BLOCK) {
             TransientPartIdentifier target = getMultipartTarget(state, view, pos, hit.getPos());
             if (target != null) {
-                return target.part.getPickStack();
+                return target.part.getPickStack((BlockHitResult) hit);
             }
         }
         return ItemStack.EMPTY;
