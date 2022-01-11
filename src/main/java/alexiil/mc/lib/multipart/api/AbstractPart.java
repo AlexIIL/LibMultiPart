@@ -7,6 +7,7 @@
  */
 package alexiil.mc.lib.multipart.api;
 
+import java.util.Random;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
@@ -25,6 +26,9 @@ import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -84,6 +88,7 @@ public abstract class AbstractPart {
     public static final ParentNetIdSingle<AbstractPart> NET_ID;
     public static final NetIdDataK<AbstractPart> NET_RENDER_DATA;
     public static final NetIdSignalK<AbstractPart> NET_SPAWN_BREAK_PARTICLES;
+    public static final NetIdDataK<AbstractPart> NET_SPAWN_FALL_PARTICLES;
 
     static {
         NET_ID = PartContainer.NET_KEY_PART;
@@ -92,6 +97,8 @@ public abstract class AbstractPart {
         // never buffer break particles because otherwise the block will be removed before the particles can spawn
         NET_SPAWN_BREAK_PARTICLES = NET_ID.idSignal("spawn_break_particles").toClientOnly().withoutBuffering()
             .setReceiver(AbstractPart::spawnBreakParticles);
+        NET_SPAWN_FALL_PARTICLES = NET_ID.idData("spawn_fall_particles").toClientOnly()
+            .setReceiver(AbstractPart::spawnFallParticles);
     }
 
     public final PartDefinition definition;
@@ -144,7 +151,7 @@ public abstract class AbstractPart {
      * {@link BlockEntity#cancelRemoval()} or when it is manually added by an item.
      * <p>
      * Register event handlers (as methods) with {@link MultipartEventBus#addListener(Object, Class, EventListener)}.
-     * 
+     *
      * @param bus The event bus to register with. This is shorthand for
      *            <code>holder.getContainer().getEventBus()</code> */
     public void onAdded(MultipartEventBus bus) {
@@ -164,7 +171,7 @@ public abstract class AbstractPart {
 
     /** Called instead of {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)}, to play the broken sound,
      * and spawn break particles.
-     * 
+     *
      * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} from being
      *         called afterwards, false otherwise. */
     public boolean onBreak(PlayerEntity player) {
@@ -184,7 +191,7 @@ public abstract class AbstractPart {
 
     /** Called instead of {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)}, to play the broken sound,
      * and spawn break particles.
-     * 
+     *
      * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} from being
      *         called afterwards, false otherwise. */
     @Environment(EnvType.CLIENT)
@@ -225,7 +232,7 @@ public abstract class AbstractPart {
     }
 
     /** Spawns a single breaking particle.
-     * 
+     *
      * @param side The side that was hit
      * @return True to cancel the default breaking particle from spawning, false otherwise.
      * @deprecated This was renamed to {@link #spawnHitParticle(Direction)} */
@@ -236,7 +243,7 @@ public abstract class AbstractPart {
     }
 
     /** Spawns a single partial-break (hit) particle.
-     * 
+     *
      * @param side The side that was hit
      * @return True to cancel the default breaking particle from spawning, false otherwise. */
     @Environment(EnvType.CLIENT)
@@ -373,6 +380,182 @@ public abstract class AbstractPart {
         }
     }
 
+    /** Spawns a single sprint particle.
+     *
+     * @param sprintingEntity The entity doing the sprinting.
+     * @param entityRandom The entity's random for use in particle position &amp; velocity calculations.
+     * @return True to cancel the default sprinting particle from spawning, false otherwise. */
+    @Environment(EnvType.CLIENT)
+    public boolean spawnSprintParticle(Entity sprintingEntity, Random entityRandom) {
+        spawnSprintParticle(sprintingEntity, entityRandom, getClosestBlockState());
+        return true;
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state) {
+        spawnSprintParticle(sprintingEntity, entityRandom, state, (Sprite) null);
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
+        Sprite sprite;
+        if (spriteId == null) {
+            sprite = null;
+        } else {
+            sprite = getBlockAtlas().apply(spriteId);
+        }
+        spawnSprintParticle(sprintingEntity, entityRandom, state, sprite);
+    }
+
+    @Environment(EnvType.CLIENT)
+    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+        World world = holder.getContainer().getMultipartWorld();
+        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+
+        Vec3d velocity = sprintingEntity.getVelocity();
+        double width = sprintingEntity.getWidth();
+
+        double x = sprintingEntity.getX() + (entityRandom.nextDouble() - 0.5) * width;
+        double y = sprintingEntity.getY() + 0.1;
+        double z = sprintingEntity.getZ() + (entityRandom.nextDouble() - 0.5) * width;
+        double dx = velocity.x * -4.0;
+        double dy = 1.5;
+        double dz = velocity.z * -4.0;
+
+        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
+        if (sprite != null) {
+            particle.setSprite(new SingleSpriteProvider(sprite));
+        }
+        manager.addParticle(particle);
+    }
+
+    /** Spawns a single particle for when an iron golem walks on this part.
+     *
+     * @param ironGolem The iron golem doing the walking.
+     * @param entityRandom The iron golem's random for use in particle position &amp; velocity calculations.
+     * @return True to cancel the default iron golem walking particle from spawning, false otherwise. */
+    @Environment(EnvType.CLIENT)
+    public boolean spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom) {
+        spawnIronGolemParticle(ironGolem, entityRandom, getClosestBlockState());
+        return true;
+    }
+
+    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state) {
+        spawnIronGolemParticle(ironGolem, entityRandom, state, (Sprite) null);
+    }
+
+    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
+        Sprite sprite;
+        if (spriteId == null) {
+            sprite = null;
+        } else {
+            sprite = getBlockAtlas().apply(spriteId);
+        }
+        spawnIronGolemParticle(ironGolem, entityRandom, state, sprite);
+    }
+
+    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+        World world = holder.getContainer().getMultipartWorld();
+        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+
+        double width = ironGolem.getWidth();
+
+        double x = ironGolem.getX() + (entityRandom.nextDouble() - 0.5) * width;
+        double y = ironGolem.getY() + 0.1;
+        double z = ironGolem.getZ() + (entityRandom.nextDouble() - 0.5) * width;
+        double dx = (entityRandom.nextDouble() - 0.5) * 4.0;
+        double dy = 0.5;
+        double dz = (entityRandom.nextDouble() - 0.5) * 4.0;
+
+        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
+        if (sprite != null) {
+            particle.setSprite(new SingleSpriteProvider(sprite));
+        }
+        manager.addParticle(particle);
+    }
+
+    /** Called on the server when an entity has fallen on this part and is attempting to spawn particles for it.
+     *
+     * This is to send packets to clients to actually spawn the particles.
+     *
+     * @param fallenEntity The entity that has just landed on this part.
+     * @param entityRandom The entity's random for use in particle position &amp; velocity calculations.
+     * @return True to cancel the default fall particle from spawning, false otherwise. */
+    public boolean onSpawnFallParticles(LivingEntity fallenEntity, Random entityRandom) {
+        float f = MathHelper.ceil(fallenEntity.fallDistance - 3.0f);
+        double d = Math.min(0.2f + f / 15.0f, 2.5);
+        int count = (int)(150.0 * d);
+        sendSpawnFallParticles(fallenEntity.getPos(), count);
+        return true;
+    }
+
+    /** Actually Sends the packet from the server to the clients that spawns the fall particles.
+     *
+     * @param pos The position of the particles to spawn.
+     * @param count The number of particles to spawn. */
+    protected final void sendSpawnFallParticles(Vec3d pos, int count) {
+        sendNetworkUpdate(this, NET_SPAWN_FALL_PARTICLES, (obj, buffer, ctx) -> {
+            ctx.assertServerSide();
+            buffer.writeDouble(pos.x);
+            buffer.writeDouble(pos.y);
+            buffer.writeDouble(pos.z);
+            buffer.writeInt(count);
+        });
+    }
+
+    private void spawnFallParticles(NetByteBuf buf, IMsgReadCtx ctx) {
+        Vec3d pos = new Vec3d(buf.readDouble(), buf.readDouble(), buf.readDouble());
+        int count = buf.readInt();
+        spawnFallParticles(pos, count);
+    }
+
+    /** Called on the client to spawn fall particles.
+     *
+     * By default, this calls {@link #spawnFallParticles(Vec3d, int, BlockState)} with {@link #getClosestBlockState()}
+     * as its {@link BlockState} parameter.
+     *
+     * @param pos The position of the particles to spawn.
+     * @param count The number of particles to spawn. */
+    protected void spawnFallParticles(Vec3d pos, int count) {
+        spawnFallParticles(pos, count, getClosestBlockState());
+    }
+
+    protected final void spawnFallParticles(Vec3d pos, int count, BlockState state) {
+        spawnFallParticles(pos, count, state, (Sprite) null);
+    }
+
+    protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Identifier spriteId) {
+        Sprite sprite;
+        if (spriteId == null) {
+            sprite = null;
+        } else {
+            sprite = getBlockAtlas().apply(spriteId);
+        }
+        spawnFallParticles(pos, count, state, sprite);
+    }
+
+    protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Sprite sprite) {
+        World world = holder.getContainer().getMultipartWorld();
+        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        Random random = world.random;
+        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+
+        for (int i = 0; i < count; i++) {
+            double dx = random.nextGaussian() * 0.15;
+            double dy = random.nextGaussian() * 0.15;
+            double dz = random.nextGaussian() * 0.15;
+            BlockDustParticle particle = new BlockDustParticle(
+                    (ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
+            );
+            if (sprite != null) {
+                particle.setSprite(new SingleSpriteProvider(sprite));
+            }
+            manager.addParticle(particle);
+        }
+    }
+
     protected final void addRequiredPart(AbstractPart required) {
         holder.addRequiredPart(required);
     }
@@ -450,6 +633,7 @@ public abstract class AbstractPart {
      * 
      * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part.
      * @deprecated Use (and implement) {@link #getPickStack(BlockHitResult)} instead. */
+    @Deprecated
     public ItemStack getPickStack() {
         return ItemStack.EMPTY;
     }
@@ -552,14 +736,14 @@ public abstract class AbstractPart {
     }
 
     /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} is called on the containing block.
-     * 
+     *
      * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE} */
     public void rotate(BlockRotation rotation) {
 
     }
 
     /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} is called on the containing block.
-     * 
+     *
      * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE} */
     public void mirror(BlockMirror mirror) {
 
@@ -569,7 +753,7 @@ public abstract class AbstractPart {
      * {@link MultipartContainer#redrawIfChanged()}.
      * <p>
      * This is no longer called on the server.
-     * 
+     *
      * @return The {@link PartModelKey} for the {@link PartModelBaker} to use to emit a static model. Returning null
      *         will bake nothing. */
     @Nullable

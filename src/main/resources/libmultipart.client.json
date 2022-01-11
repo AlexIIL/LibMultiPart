@@ -5,9 +5,10 @@
   "client": [
     "BlockRenderManagerMixin",
     "Client_BlockMixin",
+    "Client_EntityMixin",
+    "Client_IronGolemEntityMixin",
     "ClientPlayerInteractionManagerMixin",
-    "ParticleManagerMixin",
-    "WorldRendererMixin"
+    "ParticleManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
