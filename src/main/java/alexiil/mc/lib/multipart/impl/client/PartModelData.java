@@ -9,13 +9,17 @@ package alexiil.mc.lib.multipart.impl.client;
 
 import com.google.common.collect.ImmutableList;
 
+import net.minecraft.util.shape.VoxelShape;
+
 import alexiil.mc.lib.multipart.api.render.PartModelKey;
 
 public final class PartModelData {
 
+    public final VoxelShape cullingShape;
     public final ImmutableList<PartModelKey> keys;
 
-    public PartModelData(ImmutableList<PartModelKey> keys) {
+    public PartModelData(VoxelShape cullingShape, ImmutableList<PartModelKey> keys) {
+        this.cullingShape = cullingShape;
         this.keys = keys;
     }
 }

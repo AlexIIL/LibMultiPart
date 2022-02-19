@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
@@ -72,6 +73,7 @@ import alexiil.mc.lib.multipart.api.event.PartScheduledTickEvent;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdAdditional;
 import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
+import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IBlockCustomParticles;
 import alexiil.mc.lib.multipart.mixin.api.IBlockDynamicCull;
 import alexiil.mc.lib.multipart.mixin.api.IBlockMultipart;
@@ -151,6 +153,12 @@ public class MultipartBlock extends Block
     @Override
     public VoxelShape getCullingShape(BlockState state, BlockView view, BlockPos pos) {
         BlockEntity be = view.getBlockEntity(pos);
+        if (view instanceof RenderAttachedBlockView renderView) {
+            Object data = renderView.getBlockEntityRenderAttachment(pos);
+            if (data instanceof PartModelData partData) {
+                return ((PartModelData) data).cullingShape;
+            }
+        }
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
             return container.container.getCullingShape();
