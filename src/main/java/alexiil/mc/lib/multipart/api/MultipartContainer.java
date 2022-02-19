@@ -20,6 +20,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.dimension.DimensionType;
 
 import alexiil.mc.lib.net.NetIdDataK;
@@ -46,6 +47,7 @@ public interface MultipartContainer {
 
     BlockEntity getMultipartBlockEntity();
 
+    /** Calls {@link WorldChunk#setShouldSave(boolean)}. */
     void markChunkDirty();
 
     default DimensionType getDimension() {

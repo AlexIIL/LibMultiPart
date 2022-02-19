@@ -103,10 +103,12 @@ public abstract class AbstractPart {
 
     public final PartDefinition definition;
     public final MultipartHolder holder;
+    public final MultipartContainer container;
 
     public AbstractPart(PartDefinition definition, MultipartHolder holder) {
         this.definition = definition;
         this.holder = holder;
+        this.container = holder.getContainer();
     }
 
     public NbtCompound toTag() {
@@ -124,19 +126,19 @@ public abstract class AbstractPart {
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart. */
     public final <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
-        holder.getContainer().sendNetworkUpdate(obj, netId);
+        container.sendNetworkUpdate(obj, netId);
     }
 
     /** Sends the given {@link NetIdDataK} to every player currently watching this multipart, with a custom
      * {@link IMsgDataWriterK}. */
     public final <T> void sendNetworkUpdate(T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer) {
-        holder.getContainer().sendNetworkUpdate(obj, netId, writer);
+        container.sendNetworkUpdate(obj, netId, writer);
     }
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart,
      * except for the given player. */
     public final <T> void sendNetworkUpdateExcept(@Nullable PlayerEntity except, T obj, NetIdTyped<T> netId) {
-        holder.getContainer().sendNetworkUpdateExcept(except, obj, netId);
+        container.sendNetworkUpdateExcept(except, obj, netId);
     }
 
     /** Sends the given {@link NetIdDataK} to every player currently watching this multipart, with a custom
@@ -144,7 +146,7 @@ public abstract class AbstractPart {
     public final <T> void sendNetworkUpdateExcept(
         @Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
     ) {
-        holder.getContainer().sendNetworkUpdateExcept(except, obj, netId, writer);
+        container.sendNetworkUpdateExcept(except, obj, netId, writer);
     }
 
     /** Called whenever this part was added to the {@link MultipartContainer}, either in
@@ -175,7 +177,7 @@ public abstract class AbstractPart {
      * @return True if this should prevent {@link Block#onBreak(World, BlockPos, BlockState, PlayerEntity)} from being
      *         called afterwards, false otherwise. */
     public boolean onBreak(PlayerEntity player) {
-        if (!holder.getContainer().isClientWorld()) {
+        if (!container.isClientWorld()) {
             playBreakSound();
             sendNetworkUpdate(this, NET_SPAWN_BREAK_PARTICLES);
         }
@@ -206,10 +208,10 @@ public abstract class AbstractPart {
     }
 
     protected final void playBreakSound(BlockState blockState) {
-        World world = holder.getContainer().getMultipartWorld();
+        World world = container.getMultipartWorld();
         BlockSoundGroup group = blockState.getSoundGroup();
         world.playSound(
-            null, holder.getContainer().getMultipartPos(),
+            null, container.getMultipartPos(),
             ((BlockSoundGroupAccessor) group).libmultipart_getBreakSound(), SoundCategory.BLOCKS,
             (group.getVolume() + 1.0F) / 2.0F, group.getPitch() * 0.8F
         );
@@ -221,7 +223,7 @@ public abstract class AbstractPart {
         MinecraftClient.getInstance().getSoundManager().play(
             new PositionedSoundInstance(
                 ((BlockSoundGroupAccessor) group).libmultipart_getHitSound(), SoundCategory.BLOCKS, //
-                (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F, holder.getContainer().getMultipartPos()
+                (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F, container.getMultipartPos()
             )
         );
     }
@@ -275,8 +277,8 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnHitParticle(Direction side, Box box, BlockState state, @Nullable Sprite sprite) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos pos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos pos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
         double x = pos.getX() + box.minX + pos(world, side, Direction.Axis.X, box.maxX - box.minX);
@@ -339,8 +341,8 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnBreakParticles(BlockState state, @Nullable Sprite sprite) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos pos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos pos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
         VoxelShape voxelShape = getOutlineShape();
         for (Box box : voxelShape.getBoundingBoxes()) {
@@ -409,8 +411,8 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos blockPos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
         Vec3d velocity = sprintingEntity.getVelocity();
@@ -456,8 +458,8 @@ public abstract class AbstractPart {
     }
 
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos blockPos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
         double width = ironGolem.getWidth();
@@ -537,8 +539,8 @@ public abstract class AbstractPart {
     }
 
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Sprite sprite) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos blockPos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos blockPos = container.getMultipartPos();
         Random random = world.random;
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
@@ -712,8 +714,8 @@ public abstract class AbstractPart {
 
     /** Calculates {@link #calculateBreakingDelta(PlayerEntity)} as if this part was the given block state instead. */
     public final float calculateBreakingDelta(PlayerEntity player, BlockState state) {
-        World world = holder.getContainer().getMultipartWorld();
-        BlockPos thisPos = holder.getContainer().getMultipartPos();
+        World world = container.getMultipartWorld();
+        BlockPos thisPos = container.getMultipartPos();
         float hardness = state.getHardness(new SingleReplacementBlockView(world, thisPos, state), thisPos);
         return calcBreakingDelta(player, state, hardness);
     }
