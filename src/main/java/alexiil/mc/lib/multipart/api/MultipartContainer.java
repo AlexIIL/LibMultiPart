@@ -47,7 +47,7 @@ public interface MultipartContainer {
 
     BlockEntity getMultipartBlockEntity();
 
-    /** Calls {@link WorldChunk#setShouldSave(boolean)}. */
+    /** Calls {@link WorldChunk#setNeedsSaving(boolean)}. */
     void markChunkDirty();
 
     default DimensionType getDimension() {

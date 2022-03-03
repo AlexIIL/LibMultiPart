@@ -1,0 +1,4 @@
+Changes:
+
+* Updated to minecraft 1.18.2
+    * This release still works on 1.18.1.

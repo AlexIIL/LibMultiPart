@@ -369,7 +369,7 @@ public class PartContainer implements MultipartContainer {
         if (respectEntityBBs && !collisionShape.isEmpty()) {
             BlockPos pos = getMultipartPos();
             VoxelShape offsetShape = collisionShape.offset(pos.getX(), pos.getY(), pos.getZ());
-            if (!getMultipartWorld().intersectsEntities(null, offsetShape)) {
+            if (!getMultipartWorld().doesNotIntersectEntities(null, offsetShape)) {
                 return false;
             }
         }

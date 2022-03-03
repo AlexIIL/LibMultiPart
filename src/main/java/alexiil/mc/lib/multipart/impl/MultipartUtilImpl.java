@@ -124,7 +124,7 @@ public final class MultipartUtilImpl {
         VoxelShape shape = holder.part.getCollisionShape();
 
         if (respectEntityBBs && !shape.isEmpty()) {
-            if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+            if (!world.doesNotIntersectEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
                 return null;
             }
         }
@@ -169,7 +169,7 @@ public final class MultipartUtilImpl {
 
             VoxelShape shape = holder.part.getCollisionShape();
             if (respectEntityBBs && !shape.isEmpty()) {
-                if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+                if (!world.doesNotIntersectEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
                     return null;
                 }
             }
@@ -180,7 +180,7 @@ public final class MultipartUtilImpl {
         if (offeredHolder != null) {
             VoxelShape shape = offeredHolder.part.getCollisionShape();
             if (respectEntityBBs && !shape.isEmpty()) {
-                if (!world.intersectsEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
+                if (!world.doesNotIntersectEntities(null, shape.offset(pos.getX(), pos.getY(), pos.getZ()))) {
                     return null;
                 }
             }

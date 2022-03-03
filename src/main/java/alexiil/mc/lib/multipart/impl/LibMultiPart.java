@@ -7,6 +7,7 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
+import java.lang.reflect.Method;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -17,6 +18,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 
+import net.minecraft.block.AbstractBlock.Settings;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.Material;
 import net.minecraft.block.entity.BlockEntityType;
@@ -51,14 +53,15 @@ public class LibMultiPart implements ModInitializer {
 
         Material material = new Material.Builder(MapColor.BLACK).build();
         BLOCK = new MultipartBlock(
+            callBreakByHand( // 1.18.1 compat method call
             FabricBlockSettings.of(material)//
                 .dropsNothing()//
-                .breakByHand(true)//
                 .hardness(0.5f)//
                 .resistance(2.0f)//
                 .dynamicBounds()//
                 .ticksRandomly()//
                 .luminance(state -> state.get(MultipartBlock.LUMINANCE))
+            )// 1.18.1 compat method exit
         );
 
         BLOCK_ENTITY = FabricBlockEntityTypeBuilder.create(MultipartBlockEntity::new, BLOCK).build();
@@ -78,5 +81,17 @@ public class LibMultiPart implements ModInitializer {
 
     public static Identifier id(String path) {
         return new Identifier(NAMESPACE, path);
+    }
+
+    /** Calls "FabricBlockSettings.breakByHand(true)", if it is present. This is part of the 1.18.1 compat code, since
+     * tool attributes were removed from fabric-api in 1.18.2. This is expected to be removed in 1.19.0. */
+    private static FabricBlockSettings callBreakByHand(FabricBlockSettings settings) {
+        try {
+            Method method = settings.getClass().getMethod("breakByHand", boolean.class);
+            method.invoke(settings, true);
+        } catch (ReflectiveOperationException e) {
+            // Ignored
+        }
+        return settings;
     }
 }
