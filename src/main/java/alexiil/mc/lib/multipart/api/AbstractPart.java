@@ -19,7 +19,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
@@ -65,7 +64,6 @@ import alexiil.mc.lib.multipart.api.event.EventListener;
 import alexiil.mc.lib.multipart.impl.LmpInternalOnly;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
-import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
 import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
 
 /** The base class for every part in a multipart block.
@@ -271,7 +269,7 @@ public abstract class AbstractPart {
     protected final void spawnHitParticle(Direction side, Box box, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos pos = container.getMultipartPos();
-        net.minecraft.client.particle.ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = net.minecraft.client.MinecraftClient.getInstance().particleManager;
 
         double x = pos.getX() + box.minX + pos(world, side, Direction.Axis.X, box.maxX - box.minX);
         double y = pos.getY() + box.minY + pos(world, side, Direction.Axis.Y, box.maxY - box.minY);
@@ -281,7 +279,7 @@ public abstract class AbstractPart {
         particle.move(0.2f);
         particle.scale(0.6f);
         if (sprite != null) {
-            particle.setSprite(new SingleSpriteProvider(sprite));
+            particle.setSprite(new alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider(sprite));
         }
         manager.addParticle(particle);
     }
@@ -365,7 +363,7 @@ public abstract class AbstractPart {
                             vY - 0.5D, vZ - 0.5D, state, pos
                         );
                         if (sprite != null) {
-                            particle.setSprite(new SingleSpriteProvider(sprite));
+                            particle.setSprite(new alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider(sprite));
                         }
                         manager.addParticle(particle);
                     }
@@ -419,7 +417,7 @@ public abstract class AbstractPart {
 
         net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle((net.minecraft.client.world.ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
         if (sprite != null) {
-            particle.setSprite(new SingleSpriteProvider(sprite));
+            particle.setSprite(new alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider(sprite));
         }
         manager.addParticle(particle);
     }
@@ -465,7 +463,7 @@ public abstract class AbstractPart {
 
         net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle((net.minecraft.client.world.ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
         if (sprite != null) {
-            particle.setSprite(new SingleSpriteProvider(sprite));
+            particle.setSprite(new alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider(sprite));
         }
         manager.addParticle(particle);
     }
@@ -544,7 +542,7 @@ public abstract class AbstractPart {
                     (net.minecraft.client.world.ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
             );
             if (sprite != null) {
-                particle.setSprite(new SingleSpriteProvider(sprite));
+                particle.setSprite(new alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider(sprite));
             }
             manager.addParticle(particle);
         }
@@ -624,7 +622,7 @@ public abstract class AbstractPart {
 
     /** Called whenever this part is picked by the player (similar to
      * {@link Block#getPickStack(BlockView, BlockPos, BlockState)})
-     * 
+     *
      * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part.
      * @deprecated Use (and implement) {@link #getPickStack(BlockHitResult)} instead. */
     @Deprecated
