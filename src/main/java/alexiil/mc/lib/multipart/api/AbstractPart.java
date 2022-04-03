@@ -20,12 +20,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.particle.BlockDustParticle;
-import net.minecraft.client.particle.ParticleManager;
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.texture.Sprite;
-import net.minecraft.client.texture.SpriteAtlasTexture;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
@@ -220,8 +214,8 @@ public abstract class AbstractPart {
     @Environment(EnvType.CLIENT)
     protected final void playHitSound(BlockState blockState) {
         BlockSoundGroup group = blockState.getSoundGroup();
-        MinecraftClient.getInstance().getSoundManager().play(
-            new PositionedSoundInstance(
+        net.minecraft.client.MinecraftClient.getInstance().getSoundManager().play(
+            new net.minecraft.client.sound.PositionedSoundInstance(
                 ((BlockSoundGroupAccessor) group).libmultipart_getHitSound(), SoundCategory.BLOCKS, //
                 (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F, container.getMultipartPos()
             )
@@ -256,12 +250,12 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnHitParticle(Direction side, BlockState state) {
-        spawnHitParticle(side, state, (Sprite) null);
+        spawnHitParticle(side, state, (net.minecraft.client.texture.Sprite) null);
     }
 
     @Environment(EnvType.CLIENT)
     protected final void spawnHitParticle(Direction side, BlockState state, @Nullable Identifier spriteId) {
-        Sprite sprite;
+        net.minecraft.client.texture.Sprite sprite;
         if (spriteId == null) {
             sprite = null;
         } else {
@@ -271,21 +265,21 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnHitParticle(Direction side, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnHitParticle(Direction side, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         spawnHitParticle(side, getOutlineShape().getBoundingBox(), state, sprite);
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnHitParticle(Direction side, Box box, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnHitParticle(Direction side, Box box, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos pos = container.getMultipartPos();
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
         double x = pos.getX() + box.minX + pos(world, side, Direction.Axis.X, box.maxX - box.minX);
         double y = pos.getY() + box.minY + pos(world, side, Direction.Axis.Y, box.maxY - box.minY);
         double z = pos.getZ() + box.minZ + pos(world, side, Direction.Axis.Z, box.maxZ - box.minZ);
 
-        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, 0, 0, 0, state, pos);
+        net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle((net.minecraft.client.world.ClientWorld) world, x, y, z, 0, 0, 0, state, pos);
         particle.move(0.2f);
         particle.scale(0.6f);
         if (sprite != null) {
@@ -312,8 +306,8 @@ public abstract class AbstractPart {
         }
     }
 
-    private static Function<Identifier, Sprite> getBlockAtlas() {
-        return MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
+    private static Function<Identifier, net.minecraft.client.texture.Sprite> getBlockAtlas() {
+        return net.minecraft.client.MinecraftClient.getInstance().getSpriteAtlas(net.minecraft.client.texture.SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
     }
 
     /** Called on the client to spawn break particles. This calls {@link #spawnBreakParticles(BlockState)} with
@@ -325,12 +319,12 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnBreakParticles(BlockState state) {
-        spawnBreakParticles(state, (Sprite) null);
+        spawnBreakParticles(state, (net.minecraft.client.texture.Sprite) null);
     }
 
     @Environment(EnvType.CLIENT)
     protected final void spawnBreakParticles(BlockState state, @Nullable Identifier spriteId) {
-        Sprite sprite;
+        net.minecraft.client.texture.Sprite sprite;
         if (spriteId == null) {
             sprite = null;
         } else {
@@ -340,10 +334,10 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnBreakParticles(BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnBreakParticles(BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos pos = container.getMultipartPos();
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = net.minecraft.client.MinecraftClient.getInstance().particleManager;
         VoxelShape voxelShape = getOutlineShape();
         for (Box box : voxelShape.getBoundingBoxes()) {
             double x0 = box.minX;
@@ -368,8 +362,8 @@ public abstract class AbstractPart {
                         double pX = vX * minX + x0;
                         double pY = vY * minY + y0;
                         double pZ = vZ * minZ + z0;
-                        BlockDustParticle particle = new BlockDustParticle(
-                            (ClientWorld) world, pos.getX() + pX, pos.getY() + pY, pos.getZ() + pZ, vX - 0.5D,
+                        net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle(
+                            (net.minecraft.client.world.ClientWorld) world, pos.getX() + pX, pos.getY() + pY, pos.getZ() + pZ, vX - 0.5D,
                             vY - 0.5D, vZ - 0.5D, state, pos
                         );
                         if (sprite != null) {
@@ -395,12 +389,12 @@ public abstract class AbstractPart {
 
     @Environment(EnvType.CLIENT)
     protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state) {
-        spawnSprintParticle(sprintingEntity, entityRandom, state, (Sprite) null);
+        spawnSprintParticle(sprintingEntity, entityRandom, state, (net.minecraft.client.texture.Sprite) null);
     }
 
     @Environment(EnvType.CLIENT)
     protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
-        Sprite sprite;
+        net.minecraft.client.texture.Sprite sprite;
         if (spriteId == null) {
             sprite = null;
         } else {
@@ -410,10 +404,10 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = net.minecraft.client.MinecraftClient.getInstance().particleManager;
 
         Vec3d velocity = sprintingEntity.getVelocity();
         double width = sprintingEntity.getWidth();
@@ -425,7 +419,7 @@ public abstract class AbstractPart {
         double dy = 1.5;
         double dz = velocity.z * -4.0;
 
-        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
+        net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle((net.minecraft.client.world.ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
         if (sprite != null) {
             particle.setSprite(new SingleSpriteProvider(sprite));
         }
@@ -444,11 +438,11 @@ public abstract class AbstractPart {
     }
 
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state) {
-        spawnIronGolemParticle(ironGolem, entityRandom, state, (Sprite) null);
+        spawnIronGolemParticle(ironGolem, entityRandom, state, (net.minecraft.client.texture.Sprite) null);
     }
 
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
-        Sprite sprite;
+        net.minecraft.client.texture.Sprite sprite;
         if (spriteId == null) {
             sprite = null;
         } else {
@@ -457,10 +451,10 @@ public abstract class AbstractPart {
         spawnIronGolemParticle(ironGolem, entityRandom, state, sprite);
     }
 
-    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = net.minecraft.client.MinecraftClient.getInstance().particleManager;
 
         double width = ironGolem.getWidth();
 
@@ -471,7 +465,7 @@ public abstract class AbstractPart {
         double dy = 0.5;
         double dz = (entityRandom.nextDouble() - 0.5) * 4.0;
 
-        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
+        net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle((net.minecraft.client.world.ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
         if (sprite != null) {
             particle.setSprite(new SingleSpriteProvider(sprite));
         }
@@ -525,11 +519,11 @@ public abstract class AbstractPart {
     }
 
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state) {
-        spawnFallParticles(pos, count, state, (Sprite) null);
+        spawnFallParticles(pos, count, state, (net.minecraft.client.texture.Sprite) null);
     }
 
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Identifier spriteId) {
-        Sprite sprite;
+        net.minecraft.client.texture.Sprite sprite;
         if (spriteId == null) {
             sprite = null;
         } else {
@@ -538,18 +532,18 @@ public abstract class AbstractPart {
         spawnFallParticles(pos, count, state, sprite);
     }
 
-    protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
         Random random = world.random;
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
+        net.minecraft.client.particle.ParticleManager manager = net.minecraft.client.MinecraftClient.getInstance().particleManager;
 
         for (int i = 0; i < count; i++) {
             double dx = random.nextGaussian() * 0.15;
             double dy = random.nextGaussian() * 0.15;
             double dz = random.nextGaussian() * 0.15;
-            BlockDustParticle particle = new BlockDustParticle(
-                    (ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
+            net.minecraft.client.particle.BlockDustParticle particle = new net.minecraft.client.particle.BlockDustParticle(
+                    (net.minecraft.client.world.ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
             );
             if (sprite != null) {
                 particle.setSprite(new SingleSpriteProvider(sprite));

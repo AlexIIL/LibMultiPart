@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.10-SNAPSHOT'
+    id 'fabric-loom' version '0.11-SNAPSHOT'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -14,14 +14,11 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.7.2"
+version = "0.7.3"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
     newLine = false;
-}
-
-minecraft {
 }
 
 dependencies {
@@ -96,9 +93,8 @@ tasks.withType(JavaCompile) {
 // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
 // if it is present.
 // If you remove this task, sources will not be generated.
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
+java {
+    withSourcesJar()
 }
 
 publishing {
