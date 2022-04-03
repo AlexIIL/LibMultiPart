@@ -312,6 +312,7 @@ public abstract class AbstractPart {
         }
     }
 
+    @Environment(EnvType.CLIENT)
     private static Function<Identifier, Sprite> getBlockAtlas() {
         return MinecraftClient.getInstance().getSpriteAtlas(SpriteAtlasTexture.BLOCK_ATLAS_TEXTURE);
     }
@@ -443,10 +444,12 @@ public abstract class AbstractPart {
         return true;
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state) {
         spawnIronGolemParticle(ironGolem, entityRandom, state, (Sprite) null);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
         Sprite sprite;
         if (spriteId == null) {
@@ -457,6 +460,7 @@ public abstract class AbstractPart {
         spawnIronGolemParticle(ironGolem, entityRandom, state, sprite);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
@@ -520,14 +524,17 @@ public abstract class AbstractPart {
      *
      * @param pos The position of the particles to spawn.
      * @param count The number of particles to spawn. */
+    @Environment(EnvType.CLIENT)
     protected void spawnFallParticles(Vec3d pos, int count) {
         spawnFallParticles(pos, count, getClosestBlockState());
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state) {
         spawnFallParticles(pos, count, state, (Sprite) null);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Identifier spriteId) {
         Sprite sprite;
         if (spriteId == null) {
@@ -538,6 +545,7 @@ public abstract class AbstractPart {
         spawnFallParticles(pos, count, state, sprite);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();

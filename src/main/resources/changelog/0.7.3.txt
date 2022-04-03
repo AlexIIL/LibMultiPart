@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* [#47] Fixed some AbstractPart methods not being marked as client-side-only.
