@@ -447,6 +447,7 @@ public abstract class AbstractPart {
         spawnIronGolemParticle(ironGolem, entityRandom, state, sprite);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
@@ -528,6 +529,7 @@ public abstract class AbstractPart {
         spawnFallParticles(pos, count, state, sprite);
     }
 
+    @Environment(EnvType.CLIENT)
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable net.minecraft.client.texture.Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
