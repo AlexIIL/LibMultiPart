@@ -62,8 +62,6 @@ import alexiil.mc.lib.attributes.AttributeList;
 
 import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.event.EventListener;
-import alexiil.mc.lib.multipart.api.render.PartModelBaker;
-import alexiil.mc.lib.multipart.api.render.PartModelKey;
 import alexiil.mc.lib.multipart.impl.LmpInternalOnly;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
@@ -750,10 +748,10 @@ public abstract class AbstractPart {
      * <p>
      * This is no longer called on the server.
      *
-     * @return The {@link PartModelKey} for the {@link PartModelBaker} to use to emit a static model. Returning null
+     * @return The {@link alexiil.mc.lib.multipart.api.render.PartModelKey} for the {@link alexiil.mc.lib.multipart.api.render.PartModelBaker} to use to emit a static model. Returning null
      *         will bake nothing. */
     @Nullable
-    public abstract PartModelKey getModelKey();
+    public abstract alexiil.mc.lib.multipart.api.render.PartModelKey getModelKey();
 
     // ############
     // # Internal #
