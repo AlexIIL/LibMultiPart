@@ -208,7 +208,8 @@ public class MultipartBlockEntity extends BlockEntity
         ImmutableList<PartModelKey> built = list.build();
         // Refresh this, just to be on the safe side.
         container.partModelKeys = built;
-        return new PartModelData(container.getCullingShape(), built);
+        return new PartModelData(container.getCullingShape(), container.getCollisionShape(),
+                container.getOutlineShape(), built);
     }
 
     // Events

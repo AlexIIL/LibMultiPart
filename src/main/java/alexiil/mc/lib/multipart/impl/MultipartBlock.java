@@ -133,6 +133,13 @@ public class MultipartBlock extends Block
 
     @Override
     public VoxelShape getCollisionShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
+        if (view instanceof RenderAttachedBlockView renderView) {
+            Object data = renderView.getBlockEntityRenderAttachment(pos);
+            if (data instanceof PartModelData partData) {
+                return partData.collisionShape;
+            }
+        }
+
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity container = (MultipartBlockEntity) be;
@@ -143,6 +150,13 @@ public class MultipartBlock extends Block
 
     @Override
     public VoxelShape getOutlineShape(BlockState state, BlockView view, BlockPos pos, ShapeContext ctx) {
+        if (view instanceof RenderAttachedBlockView renderView) {
+            Object data = renderView.getBlockEntityRenderAttachment(pos);
+            if (data instanceof PartModelData partData) {
+                return partData.outlineShape;
+            }
+        }
+
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             return ((MultipartBlockEntity) be).container.getOutlineShape();
