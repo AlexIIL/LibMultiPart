@@ -141,8 +141,7 @@ public class MultipartBlock extends Block
         }
 
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
+        if (be instanceof MultipartBlockEntity container) {
             return container.container.getCollisionShape();
         }
         return VoxelShapes.empty();
@@ -158,23 +157,23 @@ public class MultipartBlock extends Block
         }
 
         BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            return ((MultipartBlockEntity) be).container.getOutlineShape();
+        if (be instanceof MultipartBlockEntity container) {
+            return container.container.getOutlineShape();
         }
         return VoxelShapes.empty();
     }
 
     @Override
     public VoxelShape getCullingShape(BlockState state, BlockView view, BlockPos pos) {
-        BlockEntity be = view.getBlockEntity(pos);
         if (view instanceof RenderAttachedBlockView renderView) {
             Object data = renderView.getBlockEntityRenderAttachment(pos);
             if (data instanceof PartModelData partData) {
-                return ((PartModelData) data).cullingShape;
+                return partData.cullingShape;
             }
         }
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
+
+        BlockEntity be = view.getBlockEntity(pos);
+        if (be instanceof MultipartBlockEntity container) {
             return container.container.getCullingShape();
         }
         return super.getCullingShape(state, view, pos);
