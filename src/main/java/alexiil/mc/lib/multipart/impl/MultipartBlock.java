@@ -140,8 +140,7 @@ public class MultipartBlock extends Block
             }
         }
 
-        BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity container) {
+        if (view.getBlockEntity(pos) instanceof MultipartBlockEntity container) {
             return container.container.getCollisionShape();
         }
         return VoxelShapes.empty();
@@ -156,8 +155,7 @@ public class MultipartBlock extends Block
             }
         }
 
-        BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity container) {
+        if (view.getBlockEntity(pos) instanceof MultipartBlockEntity container) {
             return container.container.getOutlineShape();
         }
         return VoxelShapes.empty();
@@ -172,8 +170,7 @@ public class MultipartBlock extends Block
             }
         }
 
-        BlockEntity be = view.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity container) {
+        if (view.getBlockEntity(pos) instanceof MultipartBlockEntity container) {
             return container.container.getCullingShape();
         }
         return super.getCullingShape(state, view, pos);
