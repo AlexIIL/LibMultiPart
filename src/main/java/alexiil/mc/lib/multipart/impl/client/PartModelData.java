@@ -16,10 +16,14 @@ import alexiil.mc.lib.multipart.api.render.PartModelKey;
 public final class PartModelData {
 
     public final VoxelShape cullingShape;
+    public final VoxelShape collisionShape;
+    public final VoxelShape outlineShape;
     public final ImmutableList<PartModelKey> keys;
 
-    public PartModelData(VoxelShape cullingShape, ImmutableList<PartModelKey> keys) {
+    public PartModelData(VoxelShape cullingShape, VoxelShape collisionShape, VoxelShape outlineShape, ImmutableList<PartModelKey> keys) {
         this.cullingShape = cullingShape;
+        this.collisionShape = collisionShape;
+        this.outlineShape = outlineShape;
         this.keys = keys;
     }
 }
