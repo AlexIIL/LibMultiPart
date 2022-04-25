@@ -1,3 +1,4 @@
 Bug Fixes:
 
+* [#46] "block.libmultipart.container" showing instead of a more reasonable block name.
 * [#47] Fixed some AbstractPart methods not being marked as client-side-only.
