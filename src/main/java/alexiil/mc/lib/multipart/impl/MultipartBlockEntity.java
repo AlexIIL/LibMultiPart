@@ -56,6 +56,11 @@ public class MultipartBlockEntity extends BlockEntity
         NET_KEY = McNetworkStack.BLOCK_ENTITY.subType(MultipartBlockEntity.class, "libmultipart:container");
     }
 
+    public static void init() {
+        // Just to call clinit above
+        PartContainer.init();
+    }
+
     PartContainer container;
 
     public MultipartBlockEntity(BlockPos pos, BlockState state) {

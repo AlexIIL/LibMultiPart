@@ -145,6 +145,10 @@ public class PartContainer implements MultipartContainer {
         };
     }
 
+    public static void init() {
+        // Just to call clinit above
+    }
+
     public final SimpleEventBus eventBus = new SimpleEventBus(this);
     public final SimplePropertyContainer properties = new SimplePropertyContainer(this);
 
