@@ -1035,6 +1035,10 @@ public class PartContainer implements MultipartContainer {
         if (havePropertiesChanged) {
             havePropertiesChanged = false;
             final BlockState oldState = getMultipartWorld().getBlockState(getMultipartPos());
+            if (oldState.getBlock() != LibMultiPart.BLOCK) {
+                // The block was probably changed while we were ticking
+                return;
+            }
             BlockState state = oldState
                 .with(MultipartBlock.EMITS_REDSTONE, properties.getValue(MultipartProperties.CAN_EMIT_REDSTONE));
             state = state.with(MultipartBlock.LUMINANCE, properties.getValue(MultipartProperties.LIGHT_VALUE));
