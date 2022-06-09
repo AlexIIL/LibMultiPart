@@ -14,7 +14,6 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableList;
 
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachmentBlockEntity;
 
 import net.minecraft.block.BlockState;
@@ -169,7 +168,7 @@ public class MultipartBlockEntity extends BlockEntity
     }
 
     public final Collection<ServerPlayerEntity> getPlayersWatching() {
-        return PlayerLookup.tracking(this);
+        return BlockEntityInitialData.getPlayersWatching(this);
     }
 
     /** Sends a network update update of the specified ID. */
