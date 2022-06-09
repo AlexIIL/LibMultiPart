@@ -178,8 +178,12 @@ public class MultipartBlockEntity extends BlockEntity
             netId.send(getClientConnection(), obj);
         } else if (isServerWorld()) {
             for (PlayerEntity player : getPlayersWatching()) {
-                if (player != except) {
-                    netId.send(getPlayerConnection(player), obj);
+                if (player == except) {
+                    continue;
+                }
+                ActiveMinecraftConnection connection = getPlayerConnection(player);
+                if (connection != null) {
+                    netId.send(connection, obj);
                 }
             }
         }
@@ -189,13 +193,16 @@ public class MultipartBlockEntity extends BlockEntity
     final <T> void sendNetworkUpdate(
         @Nullable PlayerEntity except, T obj, NetIdDataK<T> netId, IMsgDataWriterK<T> writer
     ) {
-
         if (isClientWorld()) {
             netId.send(getClientConnection(), obj, writer);
         } else if (isServerWorld()) {
             for (PlayerEntity player : getPlayersWatching()) {
-                if (player != except) {
-                    netId.send(getPlayerConnection(player), obj, writer);
+                if (player == except) {
+                    continue;
+                }
+                ActiveMinecraftConnection connection = getPlayerConnection(player);
+                if (connection != null) {
+                    netId.send(connection, obj, writer);
                 }
             }
         }
@@ -213,8 +220,9 @@ public class MultipartBlockEntity extends BlockEntity
         ImmutableList<PartModelKey> built = list.build();
         // Refresh this, just to be on the safe side.
         container.partModelKeys = built;
-        return new PartModelData(container.getCullingShape(), container.getCollisionShape(),
-                container.getOutlineShape(), built);
+        return new PartModelData(
+            container.getCullingShape(), container.getCollisionShape(), container.getOutlineShape(), built
+        );
     }
 
     // Events
