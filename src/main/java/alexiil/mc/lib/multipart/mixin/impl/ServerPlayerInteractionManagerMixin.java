@@ -74,7 +74,7 @@ public class ServerPlayerInteractionManagerMixin {
     @Redirect(
         method = "Lnet/minecraft/server/network/ServerPlayerInteractionManager;processBlockBreakingAction("
             + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/network/packet/c2s/play/PlayerActionC2SPacket$Action;"
-            + "Lnet/minecraft/util/math/Direction;I)V",
+            + "Lnet/minecraft/util/math/Direction;II)V",
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
                 + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"))
