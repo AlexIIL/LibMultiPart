@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* Improved network handling, to reduce crashes.
