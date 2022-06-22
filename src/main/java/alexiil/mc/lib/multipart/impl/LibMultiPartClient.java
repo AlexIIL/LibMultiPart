@@ -9,16 +9,15 @@ package alexiil.mc.lib.multipart.impl;
 
 import java.util.function.Consumer;
 
-import alexiil.mc.lib.multipart.impl.client.render.MultipartOutlineRenderer;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.model.ModelLoadingRegistry;
 import net.fabricmc.fabric.api.client.model.ModelProviderContext;
 import net.fabricmc.fabric.api.client.model.ModelProviderException;
 import net.fabricmc.fabric.api.client.model.ModelVariantProvider;
-import net.fabricmc.fabric.api.client.rendereregistry.v1.BlockEntityRendererRegistry;
-
+import net.fabricmc.fabric.api.client.rendering.v1.BlockEntityRendererRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.model.UnbakedModel;
@@ -28,6 +27,7 @@ import net.minecraft.util.Identifier;
 
 import alexiil.mc.lib.multipart.impl.client.model.MultipartModel;
 import alexiil.mc.lib.multipart.impl.client.render.MultipartBlockEntityRenderer;
+import alexiil.mc.lib.multipart.impl.client.render.MultipartOutlineRenderer;
 
 public class LibMultiPartClient implements ClientModInitializer {
 
@@ -41,7 +41,7 @@ public class LibMultiPartClient implements ClientModInitializer {
         ModelLoadingRegistry.INSTANCE.registerVariantProvider(res -> varProvider());
         ModelLoadingRegistry.INSTANCE.registerModelProvider(LibMultiPartClient::requestModels);
         BlockRenderLayerMap.INSTANCE.putBlock(LibMultiPart.BLOCK, RenderLayer.getCutout());
-        BlockEntityRendererRegistry.INSTANCE.register(LibMultiPart.BLOCK_ENTITY, MultipartBlockEntityRenderer::new);
+        BlockEntityRendererRegistry.register(LibMultiPart.BLOCK_ENTITY, MultipartBlockEntityRenderer::new);
         WorldRenderEvents.BLOCK_OUTLINE.register(MultipartOutlineRenderer.INSTANCE);
     }
 

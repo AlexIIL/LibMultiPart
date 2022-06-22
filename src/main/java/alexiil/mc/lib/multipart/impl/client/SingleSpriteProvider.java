@@ -7,10 +7,9 @@
  */
 package alexiil.mc.lib.multipart.impl.client;
 
-import java.util.Random;
-
 import net.minecraft.client.particle.SpriteProvider;
 import net.minecraft.client.texture.Sprite;
+import net.minecraft.util.math.random.Random;
 
 public final class SingleSpriteProvider implements SpriteProvider {
     private final Sprite sprite;

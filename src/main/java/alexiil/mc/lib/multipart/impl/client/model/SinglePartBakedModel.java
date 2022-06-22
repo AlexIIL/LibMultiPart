@@ -9,7 +9,6 @@ package alexiil.mc.lib.multipart.impl.client.model;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.function.Supplier;
 
 import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
@@ -25,6 +24,7 @@ import net.minecraft.client.texture.Sprite;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;

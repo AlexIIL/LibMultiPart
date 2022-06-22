@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -796,7 +795,7 @@ public class PartContainer implements MultipartContainer {
             // reset the nextId to a random number and re-assign everything
             // (However always start way above 0 to make it less
             // likely to overlap with the previous - supposedly valid - values)
-            nextId = ((long) new Random().nextInt() & 0x7fff_ffff) << 6l;
+            nextId = ((long) new java.util.Random().nextInt() & 0x7fff_ffff) << 6l;
 
             if (LibMultiPart.DEBUG) {
                 LibMultiPart.LOGGER.info("  parts are NOT valid => nextId set to rand (nextId = " + nextId + ")");

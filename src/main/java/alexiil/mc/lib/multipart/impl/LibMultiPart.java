@@ -53,7 +53,6 @@ public class LibMultiPart implements ModInitializer {
 
         Material material = new Material.Builder(MapColor.BLACK).build();
         BLOCK = new MultipartBlock(
-            callBreakByHand( // 1.18.1 compat method call
             FabricBlockSettings.of(material)//
                 .dropsNothing()//
                 .hardness(0.5f)//
@@ -61,7 +60,6 @@ public class LibMultiPart implements ModInitializer {
                 .dynamicBounds()//
                 .ticksRandomly()//
                 .luminance(state -> state.get(MultipartBlock.LUMINANCE))
-            )// 1.18.1 compat method exit
         );
 
         BLOCK_ENTITY = FabricBlockEntityTypeBuilder.create(MultipartBlockEntity::new, BLOCK).build();
@@ -83,17 +81,5 @@ public class LibMultiPart implements ModInitializer {
 
     public static Identifier id(String path) {
         return new Identifier(NAMESPACE, path);
-    }
-
-    /** Calls "FabricBlockSettings.breakByHand(true)", if it is present. This is part of the 1.18.1 compat code, since
-     * tool attributes were removed from fabric-api in 1.18.2. This is expected to be removed in 1.19.0. */
-    private static FabricBlockSettings callBreakByHand(FabricBlockSettings settings) {
-        try {
-            Method method = settings.getClass().getMethod("breakByHand", boolean.class);
-            method.invoke(settings, true);
-        } catch (ReflectiveOperationException e) {
-            // Ignored
-        }
-        return settings;
     }
 }

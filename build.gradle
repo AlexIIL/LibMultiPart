@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.10-SNAPSHOT'
+    id 'fabric-loom' version '0.12-SNAPSHOT'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -14,14 +14,11 @@ repositories {
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.7.4"
+version = "0.8.0-pre.1"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');
     newLine = false;
-}
-
-minecraft {
 }
 
 dependencies {

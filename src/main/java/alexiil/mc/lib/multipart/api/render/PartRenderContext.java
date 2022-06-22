@@ -7,7 +7,6 @@
  */
 package alexiil.mc.lib.multipart.api.render;
 
-import java.util.Random;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -21,6 +20,7 @@ import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.world.BlockRenderView;
 
 public interface PartRenderContext extends RenderContext {

@@ -7,7 +7,6 @@
  */
 package alexiil.mc.lib.multipart.api;
 
-import java.util.Random;
 import java.util.function.Function;
 
 import javax.annotation.Nullable;
@@ -23,6 +22,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.particle.BlockDustParticle;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.client.sound.SoundInstance;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.texture.SpriteAtlasTexture;
 import net.minecraft.client.world.ClientWorld;
@@ -49,6 +49,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.AxisDirection;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -74,7 +75,6 @@ import alexiil.mc.lib.multipart.impl.LmpInternalOnly;
 import alexiil.mc.lib.multipart.impl.PartContainer;
 import alexiil.mc.lib.multipart.impl.SingleReplacementBlockView;
 import alexiil.mc.lib.multipart.impl.client.SingleSpriteProvider;
-import alexiil.mc.lib.multipart.mixin.impl.BlockSoundGroupAccessor;
 
 /** The base class for every part in a multipart block.
  * <p>
@@ -212,7 +212,7 @@ public abstract class AbstractPart {
         BlockSoundGroup group = blockState.getSoundGroup();
         world.playSound(
             null, container.getMultipartPos(),
-            ((BlockSoundGroupAccessor) group).libmultipart_getBreakSound(), SoundCategory.BLOCKS,
+            group.getBreakSound(), SoundCategory.BLOCKS,
             (group.getVolume() + 1.0F) / 2.0F, group.getPitch() * 0.8F
         );
     }
@@ -222,8 +222,9 @@ public abstract class AbstractPart {
         BlockSoundGroup group = blockState.getSoundGroup();
         MinecraftClient.getInstance().getSoundManager().play(
             new PositionedSoundInstance(
-                ((BlockSoundGroupAccessor) group).libmultipart_getHitSound(), SoundCategory.BLOCKS, //
-                (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F, container.getMultipartPos()
+                group.getHitSound(), SoundCategory.BLOCKS, //
+                (group.getVolume() + 1.0F) / 8.0F, group.getPitch() * 0.8F,
+                SoundInstance.createRandom(), container.getMultipartPos()
             )
         );
     }
@@ -549,7 +550,7 @@ public abstract class AbstractPart {
     protected final void spawnFallParticles(Vec3d pos, int count, BlockState state, @Nullable Sprite sprite) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
-        Random random = world.random;
+        net.minecraft.util.math.random.Random random = world.random;
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
 
         for (int i = 0; i < count; i++) {

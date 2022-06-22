@@ -7,10 +7,11 @@
  */
 package alexiil.mc.lib.multipart.impl.client.model;
 
-import java.util.Random;
 import java.util.function.Supplier;
 
 import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
+
+import net.minecraft.util.math.random.Random;
 
 import alexiil.mc.lib.multipart.api.render.PartBreakContext;
 import alexiil.mc.lib.multipart.api.render.PartRenderContext;
