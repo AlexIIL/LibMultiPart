@@ -118,6 +118,7 @@ apply from: "extra_jar_def.gradle"
 ext.mainName = "libmultipart"
 ext.mavenGroupId = "alexiil.mc.lib";
 
+ext.extra_jar_def__jarFile = zipTree(remapJar.archivePath);
 ext.extra_jar_def__optimised_compression = true;
 ext.extra_jar_def__decompress_external_included = true;
 ext.extra_jar_def__common_manifest.put(null, ['Sealed': 'true']);
