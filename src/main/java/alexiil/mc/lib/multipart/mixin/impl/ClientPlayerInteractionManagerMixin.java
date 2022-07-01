@@ -65,7 +65,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         at = @At(value = "INVOKE",
             target = "Lnet/minecraft/block/BlockState;onBlockBreakStart(Lnet/minecraft/world/World;"
                 + "Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/entity/player/PlayerEntity;)V"),
-        method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z")
+        method = "method_41930")
     void onBlockBreakStart(BlockState state, World world, BlockPos pos, PlayerEntity player) {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("[player-interaction] onBlockBreakStart( " + pos + " " + state + " )");
@@ -83,7 +83,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         at = @At(
             value = "INVOKE", target = "Lnet/minecraft/block/BlockState;calcBlockBreakingDelta(Lnet/minecraft/entity/player/PlayerEntity;"
                 + "Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;)F"
-        ), method = "attackBlock(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/util/math/Direction;)Z"
+        ), method = "method_41930"
     )
     float calcBlockBreakingDeltaAttack(BlockState state, PlayerEntity pl, BlockView view, BlockPos pos) {
         if (LibMultiPart.DEBUG) {
