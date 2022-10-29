@@ -17,6 +17,8 @@ import net.minecraft.util.math.BlockPos;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
+import net.minecraft.util.math.DirectionTransformation;
+import net.minecraft.util.math.Vec3f;
 
 /** Combined {@link BlockPos} + {@link PartHolder#uniqueId}. */
 final class PosPartId {
@@ -118,5 +120,19 @@ final class PosPartId {
             z = -z;
         }
         return new PosPartId(new BlockPos(x + f.getX(), pos.getY(), z + f.getZ()), uid);
+    }
+
+    public PosPartId transform(PartContainer from, DirectionTransformation transformation) {
+        if (transformation == DirectionTransformation.IDENTITY) {
+            return this;
+        }
+
+        BlockPos f = from.getMultipartPos();
+
+        Vec3f relPos = new Vec3f(pos.getX() - f.getX(), pos.getY() - f.getY(), pos.getZ() - f.getZ());
+        relPos.transform(transformation.getMatrix());
+        BlockPos transformedPos = new BlockPos(Math.round(relPos.getX()), Math.round(relPos.getY()), Math.round(relPos.getZ()));
+
+        return new PosPartId(transformedPos.add(f), uid);
     }
 }

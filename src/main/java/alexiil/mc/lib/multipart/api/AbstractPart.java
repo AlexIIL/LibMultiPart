@@ -43,12 +43,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.*;
 import net.minecraft.util.math.Direction.AxisDirection;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
 import net.minecraft.world.BlockView;
@@ -745,17 +741,49 @@ public abstract class AbstractPart {
         return ActionResult.PASS;
     }
 
-    /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} is called on the containing block.
+    /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} or {@link BlockState#rotate(BlockRotation)} is
+     * called on the containing block.
+     * <p>
+     * Note: This is only called when an applied transformation consists solely of a rotate transformation.
      *
      * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE} */
     public void rotate(BlockRotation rotation) {
 
     }
 
-    /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} is called on the containing block.
+    /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} or {@link BlockState#mirror(BlockMirror)} is called
+     * on the containing block.
+     * <p>
+     * Note: This is only called when an applied transformation consists solely of a mirror transformation.
      *
      * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE} */
     public void mirror(BlockMirror mirror) {
+
+    }
+
+    /** Called whenever a transformation (e.g. rotation, mirror, etc.) has been applied to this part's block.
+     * <p>
+     * Transformations can be applied to this part's block via the {@link BlockState#mirror(BlockMirror)},
+     * {@link BlockState#rotate(BlockRotation)},
+     * {@link BlockEntity#applyRotation(BlockRotation)},
+     * {@link BlockEntity#applyMirror(BlockMirror)},
+     * {@link BlockEntity#applyTransformation(DirectionTransformation)}.
+     * <p>
+     * Note: Only this method <b>or</b> the {@link #rotate(BlockRotation)}/{@link #mirror(BlockMirror)} pair should be
+     * implemented, as these methods will generally be called with duplicate events.
+     *
+     * @param transformation An arbitrary axis-aligned transformation. */
+    public void transform(DirectionTransformation transformation) {
+
+    }
+
+    /** Called before any kind of transformation (e.g. rotation, mirror, etc.). */
+    public void preTransform() {
+
+    }
+
+    /** Called after any kind of transformation (e.g. rotation, mirror, etc.). */
+    public void postTransform() {
 
     }
 

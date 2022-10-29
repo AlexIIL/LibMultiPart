@@ -36,6 +36,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -171,6 +172,15 @@ public class PartContainer implements MultipartContainer {
     VoxelShape cachedOutlineShape = null;
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
+
+    /** Used by {@link #setCachedState(BlockState)} to determine how the BlockState's transformation has changed.
+     * <p>
+     * All other methods that apply a transformation to this part container should use the BlockState's transformation
+     * as the source-of-truth for what the current transformation is, and make sure to update this value when updating
+     * the BlockState's transformation. If this value is not updated when the BlockState's transformation is updated,
+     * then {@link #setCachedState(BlockState)} will think that the BlockState had been updated externally and will
+     * attempt to apply the transformation all over again. */
+    DirectionTransformation cachedTransformation = DirectionTransformation.IDENTITY;
 
     /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
      * that packet to only the player's who actually need it. */
@@ -760,6 +770,12 @@ public class PartContainer implements MultipartContainer {
             LibMultiPart.LOGGER.info("PartContainer.fromNbt( " + getMultipartPos() + " ) {");
         }
         recalculateShape();
+
+        if (tag.contains("cachedTransformation")) {
+            cachedTransformation = MultipartBlock.TRANSFORMATION.parse(tag.getString("cachedTransformation"))
+                .orElse(DirectionTransformation.IDENTITY);
+        }
+
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
         NbtList allPartsTag = tag.getList("parts", new NbtCompound().getType());
@@ -836,6 +852,7 @@ public class PartContainer implements MultipartContainer {
 
     NbtCompound toNbt() {
         NbtCompound tag = new NbtCompound();
+        tag.putString("cachedTransformation", MultipartBlock.TRANSFORMATION.name(cachedTransformation));
         NbtList partsTag = new NbtList();
         for (PartHolder part : parts) {
             partsTag.add(part.toNbt());
@@ -863,14 +880,106 @@ public class PartContainer implements MultipartContainer {
     }
 
     void rotate(BlockRotation rotation) {
+        transformBlockState(rotation.getDirectionTransformation());
+        callPreTransform();
+        callRotate(rotation);
+        callTransform(rotation.getDirectionTransformation());
+        callPostTransform();
+    }
+
+    private void callRotate(BlockRotation rotation) {
         for (PartHolder holder : parts) {
-            holder.rotate(rotation);
+            // This is always called in conjunction with #callTransform which performs the appropriate PosPartId
+            // transformations.
+            holder.part.rotate(rotation);
         }
     }
 
     void mirror(BlockMirror mirror) {
+        transformBlockState(mirror.getDirectionTransformation());
+        callPreTransform();
+        callMirror(mirror);
+        callTransform(mirror.getDirectionTransformation());
+        callPostTransform();
+    }
+
+    private void callMirror(BlockMirror mirror) {
         for (PartHolder holder : parts) {
-            holder.mirror(mirror);
+            // This is always called in conjunction with #callTransform which performs the appropriate PosPartId
+            // transformations.
+            holder.part.mirror(mirror);
+        }
+    }
+
+    void transform(DirectionTransformation transformation) {
+        transformBlockState(transformation);
+        callPreTransform();
+        tryCallSimplifiedTransform(transformation);
+        callTransform(transformation);
+        callPostTransform();
+    }
+
+    private void callTransform(DirectionTransformation transformation) {
+        for (PartHolder holder : parts) {
+            holder.transform(transformation);
+        }
+    }
+
+    private void callPreTransform() {
+        for (PartHolder holder : parts) {
+            holder.part.preTransform();
+        }
+    }
+
+    private void callPostTransform() {
+        for (PartHolder holder : parts) {
+            holder.part.postTransform();
+        }
+    }
+
+    private void tryCallSimplifiedTransform(DirectionTransformation transformation) {
+        switch (transformation) {
+            case ROT_90_Y_NEG -> callRotate(BlockRotation.CLOCKWISE_90);
+            case ROT_180_FACE_XZ -> callRotate(BlockRotation.CLOCKWISE_180);
+            case ROT_90_Y_POS -> callRotate(BlockRotation.COUNTERCLOCKWISE_90);
+            // Why is BlockMirror like this? I guess LEFT_RIGHT means mirroring across a line from left to right?
+            case INVERT_Z -> callMirror(BlockMirror.LEFT_RIGHT);
+            case INVERT_X -> callMirror(BlockMirror.FRONT_BACK);
+            default -> {
+                // Do nothing with un-handleable values.
+            }
+        }
+    }
+
+    /** Applies a new transformation to this container's corresponding block's BlockState and then updates this
+     * container's cached transformation value to match. */
+    private void transformBlockState(DirectionTransformation transformation) {
+        World world = blockEntity.world();
+        BlockPos pos = blockEntity.getPos();
+        BlockState state = world.getBlockState(pos);
+        DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
+        DirectionTransformation newTransform = stateTransform.prepend(transformation);
+        cachedTransformation = newTransform;
+        world.setBlockState(pos, state.with(MultipartBlock.TRANSFORMATION, newTransform));
+    }
+
+    /** Used for tracking transformation changes and notifying contained parts if need be. */
+    void setCachedState(BlockState state) {
+        DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
+        if (stateTransform != cachedTransformation) {
+            // A: cached transformation
+            // X: delta transformation prepended to blockstate while we weren't looking
+            // A^-1: A.inverse()
+            //
+            // Currently the blockstate holds a transformation 'XA' but we really only want to find X.
+            // To find X, we just prepend the blockstate's transformation to A^-1 to get: XAA^-1 = X.
+            DirectionTransformation deltaTransform = cachedTransformation.inverse().prepend(stateTransform);
+            cachedTransformation = stateTransform;
+
+            callPreTransform();
+            tryCallSimplifiedTransform(deltaTransform);
+            callTransform(deltaTransform);
+            callPostTransform();
         }
     }
 

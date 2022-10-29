@@ -26,6 +26,7 @@ import net.minecraft.util.BlockRotation;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.collection.DefaultedList;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.Vec3d;
 
 import alexiil.mc.lib.net.IMsgReadCtx;
@@ -439,6 +440,23 @@ public final class PartHolder implements MultipartHolder {
         Set<PosPartId> to = identityHashSet();
         for (PosPartId pos : parts) {
             to.add(pos.mirror(container, mirror));
+        }
+        return to;
+    }
+
+    void transform(DirectionTransformation transformation) {
+        part.transform(transformation);
+        unloadedRequiredParts = transform(unloadedRequiredParts, transformation);
+        unloadedInverseRequiredParts = transform(unloadedInverseRequiredParts, transformation);
+    }
+
+    private Set<PosPartId> transform(Set<PosPartId> parts, DirectionTransformation transformation) {
+        if (parts == null) {
+            return null;
+        }
+        Set<PosPartId> to = identityHashSet();
+        for (PosPartId pos : parts) {
+            to.add(pos.transform(container, transformation));
         }
         return to;
     }
