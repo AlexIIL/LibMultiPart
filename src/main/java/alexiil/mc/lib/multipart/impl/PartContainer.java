@@ -182,6 +182,10 @@ public class PartContainer implements MultipartContainer {
      * attempt to apply the transformation all over again. */
     DirectionTransformation cachedTransformation = DirectionTransformation.IDENTITY;
 
+    /** Stores the transformation supplied when the BlockEntity is first constructed. This is used to determine if any
+     * transformations have been applied before the BlockEntity has been loaded from NBT. */
+    final DirectionTransformation initialTransformation;
+
     /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
      * that packet to only the player's who actually need it. */
     boolean hasInitialisedFromRemote = false;
@@ -191,9 +195,10 @@ public class PartContainer implements MultipartContainer {
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
-    public PartContainer(MultipartBlockEntity blockEntity) {
+    public PartContainer(MultipartBlockEntity blockEntity, DirectionTransformation initialTransformation) {
         assert blockEntity != null : "The given blockEntity was null!";
         this.blockEntity = blockEntity;
+        this.initialTransformation = initialTransformation;
     }
 
     // MultipartContainer
@@ -867,6 +872,10 @@ public class PartContainer implements MultipartContainer {
             holder.part.onAdded(eventBus);
         }
         eventBus.fireEvent(PartContainerState.VALIDATE);
+
+        // Now that we've (potentially) loaded from NBT, let's apply
+        // any transformations that were done before we loaded.
+        updateTransform(initialTransformation);
     }
 
     void invalidate() {
@@ -966,6 +975,10 @@ public class PartContainer implements MultipartContainer {
     /** Used for tracking transformation changes and notifying contained parts if need be. */
     void setCachedState(BlockState state) {
         DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
+        updateTransform(stateTransform);
+    }
+
+    private void updateTransform(DirectionTransformation stateTransform) {
         if (stateTransform != cachedTransformation) {
             // A: cached transformation
             // X: delta transformation prepended to blockstate while we weren't looking

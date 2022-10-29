@@ -65,7 +65,7 @@ public class MultipartBlockEntity extends BlockEntity
 
     public MultipartBlockEntity(BlockPos pos, BlockState state) {
         super(LibMultiPart.BLOCK_ENTITY, pos, state);
-        container = new PartContainer(this);
+        container = new PartContainer(this, state.get(MultipartBlock.TRANSFORMATION));
     }
 
     MultipartBlockEntity(PartContainer from, BlockPos pos, BlockState state) {
