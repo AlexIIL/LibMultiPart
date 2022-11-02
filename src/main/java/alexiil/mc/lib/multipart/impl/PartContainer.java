@@ -888,11 +888,27 @@ public class PartContainer implements MultipartContainer {
         delinkOtherBlockRequired();
     }
 
+    /** Checks if a transformation is valid for all parts in this container. */
+    boolean transformInvalid(DirectionTransformation transformation) {
+        for (PartHolder holder : parts) {
+            if (!holder.part.canTransform(transformation)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void rotate(BlockRotation rotation) {
-        transformBlockState(rotation.getDirectionTransformation());
+        DirectionTransformation transformation = rotation.getDirectionTransformation();
+        if (transformInvalid(transformation)) {
+            return;
+        }
+
+        transformBlockState(transformation);
         callPreTransform();
         callRotate(rotation);
-        callTransform(rotation.getDirectionTransformation());
+        callTransform(transformation);
         callPostTransform();
     }
 
@@ -905,10 +921,15 @@ public class PartContainer implements MultipartContainer {
     }
 
     void mirror(BlockMirror mirror) {
-        transformBlockState(mirror.getDirectionTransformation());
+        DirectionTransformation transformation = mirror.getDirectionTransformation();
+        if (transformInvalid(transformation)) {
+            return;
+        }
+
+        transformBlockState(transformation);
         callPreTransform();
         callMirror(mirror);
-        callTransform(mirror.getDirectionTransformation());
+        callTransform(transformation);
         callPostTransform();
     }
 
@@ -921,6 +942,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     void transform(DirectionTransformation transformation) {
+        if (transformInvalid(transformation)) {
+            return;
+        }
+
         transformBlockState(transformation);
         callPreTransform();
         tryCallSimplifiedTransform(transformation);
@@ -988,6 +1013,13 @@ public class PartContainer implements MultipartContainer {
             // To find X, we just prepend the blockstate's transformation to A^-1 to get: XAA^-1 = X.
             DirectionTransformation deltaTransform = cachedTransformation.inverse().prepend(stateTransform);
             cachedTransformation = stateTransform;
+
+            // The actual value of the blockstate transform is meaningless, only the difference between it and the
+            // cached transform is used. This means we can just ignore invalid transformations without having to revert
+            // the blockstate or anything.
+            if (transformInvalid(deltaTransform)) {
+                return;
+            }
 
             callPreTransform();
             tryCallSimplifiedTransform(deltaTransform);

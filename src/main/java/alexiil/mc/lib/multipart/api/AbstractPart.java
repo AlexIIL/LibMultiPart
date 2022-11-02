@@ -741,6 +741,19 @@ public abstract class AbstractPart {
         return ActionResult.PASS;
     }
 
+    /** Called when about to perform a transformation to see if this part can actually be transformed by the given
+     * transformation.
+     * <p>
+     * A transformation is only applied if all parts in the block return true from this method for the given
+     * transformation.
+     *
+     * @param transformation The transformation that would be applied.
+     * @return <code>true</code> if this transformation is something this part can be transformed by, <code>false</code>
+     * otherwise. */
+    public boolean canTransform(DirectionTransformation transformation) {
+        return true;
+    }
+
     /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} or {@link BlockState#rotate(BlockRotation)} is
      * called on the containing block.
      * <p>
