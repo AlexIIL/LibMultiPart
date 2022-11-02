@@ -905,7 +905,6 @@ public class PartContainer implements MultipartContainer {
             return;
         }
 
-        transformBlockState(transformation);
         callPreTransform();
         callRotate(rotation);
         callTransform(transformation);
@@ -926,7 +925,6 @@ public class PartContainer implements MultipartContainer {
             return;
         }
 
-        transformBlockState(transformation);
         callPreTransform();
         callMirror(mirror);
         callTransform(transformation);
@@ -946,7 +944,6 @@ public class PartContainer implements MultipartContainer {
             return;
         }
 
-        transformBlockState(transformation);
         callPreTransform();
         tryCallSimplifiedTransform(transformation);
         callTransform(transformation);
@@ -983,18 +980,6 @@ public class PartContainer implements MultipartContainer {
                 // Do nothing with un-handleable values.
             }
         }
-    }
-
-    /** Applies a new transformation to this container's corresponding block's BlockState and then updates this
-     * container's cached transformation value to match. */
-    private void transformBlockState(DirectionTransformation transformation) {
-        World world = blockEntity.world();
-        BlockPos pos = blockEntity.getPos();
-        BlockState state = world.getBlockState(pos);
-        DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
-        DirectionTransformation newTransform = stateTransform.prepend(transformation);
-        cachedTransformation = newTransform;
-        world.setBlockState(pos, state.with(MultipartBlock.TRANSFORMATION, newTransform));
     }
 
     /** Used for tracking transformation changes and notifying contained parts if need be. */
