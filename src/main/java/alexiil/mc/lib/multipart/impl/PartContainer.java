@@ -186,6 +186,15 @@ public class PartContainer implements MultipartContainer {
      * transformations have been applied before the BlockEntity has been loaded from NBT. */
     final DirectionTransformation initialTransformation;
 
+    /** Whether {@link #validate()} has been called.
+     * <p>
+     * This is used in determining whether parts should be initialized immediately upon loading from
+     * {@link #fromNbt(NbtCompound)} or if this container should wait until {@link #validate()} is called. If this value
+     * is <codd>true</codd>, then that means this container has already been validated and any subsequent calls to
+     * {@link #fromNbt(NbtCompound)} are being invoked on an already valid container and that
+     * {@link AbstractPart#onAdded(MultipartEventBus)} should be invoked immediately. */
+    boolean validated = false;
+
     /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
      * that packet to only the player's who actually need it. */
     boolean hasInitialisedFromRemote = false;
@@ -853,6 +862,11 @@ public class PartContainer implements MultipartContainer {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("}");
         }
+
+        // If we're already valid, then we can initialize parts now
+        if (validated) {
+            initParts();
+        }
     }
 
     NbtCompound toNbt() {
@@ -867,11 +881,18 @@ public class PartContainer implements MultipartContainer {
     }
 
     void validate() {
+        validated = true;
+        initParts();
+        eventBus.fireEvent(PartContainerState.VALIDATE);
+    }
+
+    /** Actually handles calling {@link AbstractPart#onAdded(MultipartEventBus)} as well as applying any not-yet-applied
+     * transformations. */
+    private void initParts() {
         eventBus.clearListeners();
         for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
         }
-        eventBus.fireEvent(PartContainerState.VALIDATE);
 
         // Now that we've (potentially) loaded from NBT, let's apply
         // any transformations that were done before we loaded.
@@ -879,6 +900,7 @@ public class PartContainer implements MultipartContainer {
     }
 
     void invalidate() {
+        validated = false;
         eventBus.fireEvent(PartContainerState.INVALIDATE);
         delinkOtherBlockRequired();
     }
