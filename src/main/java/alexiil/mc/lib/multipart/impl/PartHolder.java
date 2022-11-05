@@ -35,7 +35,6 @@ import alexiil.mc.lib.net.InvalidInputDataException;
 import alexiil.mc.lib.net.NetByteBuf;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
-import alexiil.mc.lib.multipart.api.AbstractPart.ItemDropTarget;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 import alexiil.mc.lib.multipart.api.MultipartContainer.MultipartCreator;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
@@ -410,8 +409,7 @@ public final class PartHolder implements MultipartHolder {
         assert requiredParts == null : "Required Parts (" + requiredParts + ") wasn't fully cleared!";
     }
 
-    void rotate(BlockRotation rotation) {
-        part.rotate(rotation);
+    void rotateRequiredParts(BlockRotation rotation) {
         unloadedRequiredParts = rotate(unloadedRequiredParts, rotation);
         unloadedInverseRequiredParts = rotate(unloadedInverseRequiredParts, rotation);
     }
@@ -427,8 +425,7 @@ public final class PartHolder implements MultipartHolder {
         return to;
     }
 
-    void mirror(BlockMirror mirror) {
-        part.mirror(mirror);
+    void mirrorRequiredParts(BlockMirror mirror) {
         unloadedRequiredParts = mirror(unloadedRequiredParts, mirror);
         unloadedInverseRequiredParts = mirror(unloadedInverseRequiredParts, mirror);
     }
@@ -444,8 +441,7 @@ public final class PartHolder implements MultipartHolder {
         return to;
     }
 
-    void transform(DirectionTransformation transformation) {
-        part.transform(transformation);
+    void transformRequiredParts(DirectionTransformation transformation) {
         unloadedRequiredParts = transform(unloadedRequiredParts, transformation);
         unloadedInverseRequiredParts = transform(unloadedInverseRequiredParts, transformation);
     }

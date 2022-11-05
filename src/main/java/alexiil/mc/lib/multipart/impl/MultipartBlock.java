@@ -83,13 +83,15 @@ public class MultipartBlock extends Block
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
-    /** BlockState-side transformation property, used for detecting when the BlockState has been transformed without the
+    /** BlockState-side transformation property used for detecting when the BlockState has been transformed without the
      * MultipartBlockEntity being involved.
      * <p>
      * The actual value of this property is meaningless. Only the difference between this and the block-entity's cached
-     * transformation is meaningful. And even then, a difference only means that the block-entity should call its
-     * parts' appropriate transformation methods when it gets the chance. A part's orientation and transformation
-     * should *always* be stored in the part itself. */
+     * transformation is meaningful. And even then, a difference only means that the block-entity should fire the
+     * appropriate transformation events when it gets the chance. A part's orientation and transformation should
+     * *always* be stored in the part itself.
+     *
+     * @see alexiil.mc.lib.multipart.api.event.PartTransformEvent */
     public static final EnumProperty<DirectionTransformation> TRANSFORMATION = EnumProperty.of("transformation", DirectionTransformation.class);
 
     public MultipartBlock(Settings settings) {

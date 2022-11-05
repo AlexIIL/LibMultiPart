@@ -741,25 +741,14 @@ public abstract class AbstractPart {
         return ActionResult.PASS;
     }
 
-    /** Called when about to perform a transformation to see if this part can actually be transformed by the given
-     * transformation.
-     * <p>
-     * A transformation is only applied if all parts in the block return true from this method for the given
-     * transformation.
-     *
-     * @param transformation The transformation that would be applied.
-     * @return <code>true</code> if this transformation is something this part can be transformed by, <code>false</code>
-     * otherwise. */
-    public boolean canTransform(DirectionTransformation transformation) {
-        return true;
-    }
-
     /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} or {@link BlockState#rotate(BlockRotation)} is
      * called on the containing block.
      * <p>
      * Note: This is only called when an applied transformation consists solely of a rotate transformation.
      *
-     * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE} */
+     * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE}
+     * @deprecated Please use the {@link alexiil.mc.lib.multipart.api.event.PartTransformEvent.Rotate} event instead. */
+    @Deprecated
     public void rotate(BlockRotation rotation) {
 
     }
@@ -769,34 +758,10 @@ public abstract class AbstractPart {
      * <p>
      * Note: This is only called when an applied transformation consists solely of a mirror transformation.
      *
-     * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE} */
+     * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE}
+     * @deprecated Please use the {@link alexiil.mc.lib.multipart.api.event.PartTransformEvent.Mirror} event instead. */
+    @Deprecated
     public void mirror(BlockMirror mirror) {
-
-    }
-
-    /** Called whenever a transformation (e.g. rotation, mirror, etc.) has been applied to this part's block.
-     * <p>
-     * Transformations can be applied to this part's block via the {@link BlockState#mirror(BlockMirror)},
-     * {@link BlockState#rotate(BlockRotation)},
-     * {@link BlockEntity#applyRotation(BlockRotation)},
-     * {@link BlockEntity#applyMirror(BlockMirror)},
-     * {@link BlockEntity#applyTransformation(DirectionTransformation)}.
-     * <p>
-     * Note: Only this method <b>or</b> the {@link #rotate(BlockRotation)}/{@link #mirror(BlockMirror)} pair should be
-     * implemented, as these methods will generally be called with duplicate events.
-     *
-     * @param transformation An arbitrary axis-aligned transformation. */
-    public void transform(DirectionTransformation transformation) {
-
-    }
-
-    /** Called before any kind of transformation (e.g. rotation, mirror, etc.). */
-    public void preTransform() {
-
-    }
-
-    /** Called after any kind of transformation (e.g. rotation, mirror, etc.). */
-    public void postTransform() {
 
     }
 
