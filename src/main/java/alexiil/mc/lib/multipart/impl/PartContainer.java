@@ -20,8 +20,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import alexiil.mc.lib.multipart.api.event.*;
-import alexiil.mc.lib.multipart.api.misc.DirectionTransformationUtil;
 import com.google.common.collect.ImmutableList;
 
 import net.minecraft.block.Block;
@@ -61,7 +59,9 @@ import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 import alexiil.mc.lib.multipart.api.MultipartEventBus;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
+import alexiil.mc.lib.multipart.api.event.*;
 import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent.PartRedstonePowerEventFactory;
+import alexiil.mc.lib.multipart.api.misc.DirectionTransformationUtil;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
@@ -907,7 +907,7 @@ public class PartContainer implements MultipartContainer {
     }
 
     /** Checks if a transformation is valid for all parts in this container. */
-    boolean transformInvalid(DirectionTransformation transformation) {
+    boolean isTransformInvalid(DirectionTransformation transformation) {
         PartTransformCheckEvent event = new PartTransformCheckEvent(transformation);
         eventBus.fireEvent(event);
         return event.isInvalid();
@@ -915,7 +915,7 @@ public class PartContainer implements MultipartContainer {
 
     void rotate(BlockRotation rotation) {
         DirectionTransformation transformation = rotation.getDirectionTransformation();
-        if (transformInvalid(transformation)) {
+        if (isTransformInvalid(transformation)) {
             return;
         }
 
@@ -928,15 +928,14 @@ public class PartContainer implements MultipartContainer {
 
     private void callRotate(BlockRotation rotation) {
         for (PartHolder holder : parts) {
-            // This is always called in conjunction with #callTransform which performs the appropriate PosPartId
-            // transformations.
+            // Call the deprecated rotate method for backwards compatibility.
             holder.part.rotate(rotation);
         }
     }
 
     void mirror(BlockMirror mirror) {
         DirectionTransformation transformation = mirror.getDirectionTransformation();
-        if (transformInvalid(transformation)) {
+        if (isTransformInvalid(transformation)) {
             return;
         }
 
@@ -949,14 +948,13 @@ public class PartContainer implements MultipartContainer {
 
     private void callMirror(BlockMirror mirror) {
         for (PartHolder holder : parts) {
-            // This is always called in conjunction with #callTransform which performs the appropriate PosPartId
-            // transformations.
+            // Call the deprecated mirror method for backwards compatibility.
             holder.part.mirror(mirror);
         }
     }
 
     void transform(DirectionTransformation transformation) {
-        if (transformInvalid(transformation)) {
+        if (isTransformInvalid(transformation)) {
             return;
         }
 
@@ -999,7 +997,7 @@ public class PartContainer implements MultipartContainer {
             // The actual value of the blockstate transform is meaningless, only the difference between it and the
             // cached transform is used. This means we can just ignore invalid transformations without having to revert
             // the blockstate or anything.
-            if (transformInvalid(deltaTransform)) {
+            if (isTransformInvalid(deltaTransform)) {
                 return;
             }
 
