@@ -39,6 +39,7 @@ import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.EnumProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.ActionResult;
@@ -51,6 +52,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.util.shape.VoxelShape;
@@ -85,6 +87,17 @@ public class MultipartBlock extends Block
     public static final IntProperty LUMINANCE = IntProperty.of("luminance", 0, 15);
     public static final BooleanProperty EMITS_REDSTONE = BooleanProperty.of("emits_redstone");
 
+    /** BlockState-side transformation property used for detecting when the BlockState has been transformed without the
+     * MultipartBlockEntity being involved.
+     * <p>
+     * The actual value of this property is meaningless. Only the difference between this and the block-entity's cached
+     * transformation is meaningful. And even then, a difference only means that the block-entity should fire the
+     * appropriate transformation events when it gets the chance. A part's orientation and transformation should
+     * *always* be stored in the part itself.
+     *
+     * @see alexiil.mc.lib.multipart.api.event.PartTransformEvent */
+    public static final EnumProperty<DirectionTransformation> TRANSFORMATION = EnumProperty.of("transformation", DirectionTransformation.class);
+
     public MultipartBlock(Settings settings) {
         super(settings);
         setDefaultState(
@@ -92,6 +105,7 @@ public class MultipartBlock extends Block
                 .with(LUMINANCE, 0)//
                 .with(EMITS_REDSTONE, false)//
                 .with(Properties.WATERLOGGED, false)//
+                .with(TRANSFORMATION, DirectionTransformation.IDENTITY)//
         );
     }
 
@@ -104,7 +118,7 @@ public class MultipartBlock extends Block
     @Override
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(LUMINANCE, EMITS_REDSTONE, Properties.WATERLOGGED);
+        builder.add(LUMINANCE, EMITS_REDSTONE, Properties.WATERLOGGED, TRANSFORMATION);
     }
 
     @Override
@@ -121,14 +135,12 @@ public class MultipartBlock extends Block
 
     @Override
     public BlockState rotate(BlockState state, BlockRotation rotation) {
-        // This is really just a TODO for the block entity.rotate method
-        throw new UnsupportedOperationException("Need BlockEntity.rotate too pls mojang");
+        return state.with(TRANSFORMATION, state.get(TRANSFORMATION).prepend(rotation.getDirectionTransformation()));
     }
 
     @Override
     public BlockState mirror(BlockState state, BlockMirror mirror) {
-        // This is really just a TODO for the block entity.mirror method
-        throw new UnsupportedOperationException("Need BlockEntity.mirror too pls mojang");
+        return state.with(TRANSFORMATION, state.get(TRANSFORMATION).prepend(mirror.getDirectionTransformation()));
     }
 
     @Override
