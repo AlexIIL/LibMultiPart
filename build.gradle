@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'fabric-loom' version '1.0-SNAPSHOT'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -11,6 +11,7 @@ targetCompatibility = JavaVersion.VERSION_17
 repositories {
     mavenLocal()
     maven { name="BuildCraft"; url="https://mod-buildcraft.com/maven" }
+    maven { url="https://maven.pkom.ml/" }
 }
 
 archivesBaseName = "LibMultiPart"

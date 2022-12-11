@@ -7,26 +7,21 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
-import java.lang.reflect.Method;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import alexiil.mc.lib.multipart.api.misc.FloatSupplier;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-
-import net.minecraft.block.AbstractBlock.Settings;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.Material;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import alexiil.mc.lib.multipart.api.misc.FloatSupplier;
+import java.util.function.Predicate;
 
 public class LibMultiPart implements ModInitializer {
 
@@ -69,8 +64,8 @@ public class LibMultiPart implements ModInitializer {
     @Override
     public void onInitialize() {
         // For now always register everything
-        register(Registry.BLOCK, BLOCK, "container");
-        register(Registry.BLOCK_ENTITY_TYPE, BLOCK_ENTITY, "container");
+        register(Registries.BLOCK, BLOCK, "container");
+        register(Registries.BLOCK_ENTITY_TYPE, BLOCK_ENTITY, "container");
 
         MultipartBlockEntity.init();
     }
