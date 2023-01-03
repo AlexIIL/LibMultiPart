@@ -36,6 +36,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -58,13 +59,9 @@ import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartContainer;
 import alexiil.mc.lib.multipart.api.MultipartEventBus;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
-import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
-import alexiil.mc.lib.multipart.api.event.PartContainerState;
-import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
-import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent;
+import alexiil.mc.lib.multipart.api.event.*;
 import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent.PartRedstonePowerEventFactory;
-import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
-import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.api.misc.DirectionTransformationUtil;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
@@ -166,6 +163,28 @@ public class PartContainer implements MultipartContainer {
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
 
+    /** Used by {@link #setCachedState(BlockState)} to determine how the BlockState's transformation has changed.
+     * <p>
+     * All other methods that apply a transformation to this part container should use the BlockState's transformation
+     * as the source-of-truth for what the current transformation is, and make sure to update this value when updating
+     * the BlockState's transformation. If this value is not updated when the BlockState's transformation is updated,
+     * then {@link #setCachedState(BlockState)} will think that the BlockState had been updated externally and will
+     * attempt to apply the transformation all over again. */
+    DirectionTransformation cachedTransformation = DirectionTransformation.IDENTITY;
+
+    /** Stores the transformation supplied when the BlockEntity is first constructed. This is used to determine if any
+     * transformations have been applied before the BlockEntity has been loaded from NBT. */
+    final DirectionTransformation initialTransformation;
+
+    /** Whether {@link #validate()} has been called.
+     * <p>
+     * This is used in determining whether parts should be initialized immediately upon loading from
+     * {@link #fromNbt(NbtCompound)} or if this container should wait until {@link #validate()} is called. If this value
+     * is <codd>true</codd>, then that means this container has already been validated and any subsequent calls to
+     * {@link #fromNbt(NbtCompound)} are being invoked on an already valid container and that
+     * {@link AbstractPart#onAdded(MultipartEventBus)} should be invoked immediately. */
+    boolean validated = false;
+
     /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
      * that packet to only the player's who actually need it. */
     boolean hasInitialisedFromRemote = false;
@@ -175,9 +194,10 @@ public class PartContainer implements MultipartContainer {
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
-    public PartContainer(MultipartBlockEntity blockEntity) {
+    public PartContainer(MultipartBlockEntity blockEntity, DirectionTransformation initialTransformation) {
         assert blockEntity != null : "The given blockEntity was null!";
         this.blockEntity = blockEntity;
+        this.initialTransformation = initialTransformation;
     }
 
     // MultipartContainer
@@ -754,6 +774,12 @@ public class PartContainer implements MultipartContainer {
             LibMultiPart.LOGGER.info("PartContainer.fromNbt( " + getMultipartPos() + " ) {");
         }
         recalculateShape();
+
+        if (tag.contains("cachedTransformation")) {
+            cachedTransformation = MultipartBlock.TRANSFORMATION.parse(tag.getString("cachedTransformation"))
+                .orElse(DirectionTransformation.IDENTITY);
+        }
+
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
         NbtList allPartsTag = tag.getList("parts", new NbtCompound().getType());
@@ -826,10 +852,16 @@ public class PartContainer implements MultipartContainer {
         if (LibMultiPart.DEBUG) {
             LibMultiPart.LOGGER.info("}");
         }
+
+        // If we're already valid, then we can initialize parts now
+        if (validated) {
+            initParts();
+        }
     }
 
     NbtCompound toNbt() {
         NbtCompound tag = new NbtCompound();
+        tag.putString("cachedTransformation", MultipartBlock.TRANSFORMATION.name(cachedTransformation));
         NbtList partsTag = new NbtList();
         for (PartHolder part : parts) {
             partsTag.add(part.toNbt());
@@ -839,14 +871,26 @@ public class PartContainer implements MultipartContainer {
     }
 
     void validate() {
+        validated = true;
+        initParts();
+        eventBus.fireEvent(PartContainerState.VALIDATE);
+    }
+
+    /** Actually handles calling {@link AbstractPart#onAdded(MultipartEventBus)} as well as applying any not-yet-applied
+     * transformations. */
+    private void initParts() {
         eventBus.clearListeners();
         for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
         }
-        eventBus.fireEvent(PartContainerState.VALIDATE);
+
+        // Now that we've (potentially) loaded from NBT, let's apply
+        // any transformations that were done before we loaded.
+        updateTransform(initialTransformation);
     }
 
     void invalidate() {
+        validated = false;
         eventBus.fireEvent(PartContainerState.INVALIDATE);
         delinkOtherBlockRequired();
     }
@@ -856,15 +900,106 @@ public class PartContainer implements MultipartContainer {
         delinkOtherBlockRequired();
     }
 
+    /** Checks if a transformation is valid for all parts in this container. */
+    boolean isTransformInvalid(DirectionTransformation transformation) {
+        PartTransformCheckEvent event = new PartTransformCheckEvent(transformation);
+        eventBus.fireEvent(event);
+        return event.isInvalid();
+    }
+
     void rotate(BlockRotation rotation) {
+        DirectionTransformation transformation = rotation.getDirectionTransformation();
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        callRotate(rotation);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void callRotate(BlockRotation rotation) {
         for (PartHolder holder : parts) {
-            holder.rotate(rotation);
+            // Call the deprecated rotate method for backwards compatibility.
+            holder.part.rotate(rotation);
         }
     }
 
     void mirror(BlockMirror mirror) {
+        DirectionTransformation transformation = mirror.getDirectionTransformation();
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        callMirror(mirror);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void callMirror(BlockMirror mirror) {
         for (PartHolder holder : parts) {
-            holder.mirror(mirror);
+            // Call the deprecated mirror method for backwards compatibility.
+            holder.part.mirror(mirror);
+        }
+    }
+
+    void transform(DirectionTransformation transformation) {
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        tryCallSimplifiedTransform(transformation);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void transformRequiredParts(DirectionTransformation transformation) {
+        for (PartHolder holder : parts) {
+            holder.transformRequiredParts(transformation);
+        }
+    }
+
+    private void tryCallSimplifiedTransform(DirectionTransformation transformation) {
+        BlockRotation rotation = DirectionTransformationUtil.getRotation(transformation);
+        if (rotation != null) {
+            callRotate(rotation);
+        }
+
+        BlockMirror mirror = DirectionTransformationUtil.getMirror(transformation);
+        if (mirror != null) {
+            callMirror(mirror);
+        }
+    }
+
+    /** Used for tracking transformation changes and notifying contained parts if need be. */
+    void setCachedState(BlockState state) {
+        DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
+        updateTransform(stateTransform);
+    }
+
+    private void updateTransform(DirectionTransformation stateTransform) {
+        if (stateTransform != cachedTransformation) {
+            DirectionTransformation deltaTransform = DirectionTransformationUtil.getRelativeTransformation(cachedTransformation, stateTransform);
+            cachedTransformation = stateTransform;
+
+            // The actual value of the blockstate transform is meaningless, only the difference between it and the
+            // cached transform is used. This means we can just ignore invalid transformations without having to revert
+            // the blockstate or anything.
+            if (isTransformInvalid(deltaTransform)) {
+                return;
+            }
+
+            eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+            tryCallSimplifiedTransform(deltaTransform);
+            eventBus.fireEvent(PartTransformEvent.create(deltaTransform));
+            transformRequiredParts(deltaTransform);
+            eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
         }
     }
 
