@@ -131,12 +131,6 @@ public class PartContainer implements MultipartContainer {
             @Override
             protected AbstractPart readContext(NetByteBuf buffer, IMsgReadCtx ctx, PartContainer parentValue)
                 throws InvalidInputDataException {
-
-                if (!parentValue.hasInitialisedFromRemote) {
-                    ctx.drop("This MultiPartBlock [" + parentValue.getMultipartPos().toShortString() + "] hasn't initialised from the server yet!");
-                    return null;
-                }
-
                 int index = buffer.readUnsignedByte();
                 List<PartHolder> parts = parentValue.parts;
                 if (index >= parts.size()) {
