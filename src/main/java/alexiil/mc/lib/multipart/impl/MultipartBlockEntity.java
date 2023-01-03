@@ -26,6 +26,7 @@ import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.world.World;
 
 import alexiil.mc.lib.net.NetIdDataK;
@@ -64,7 +65,7 @@ public class MultipartBlockEntity extends BlockEntity
 
     public MultipartBlockEntity(BlockPos pos, BlockState state) {
         super(LibMultiPart.BLOCK_ENTITY, pos, state);
-        container = new PartContainer(this);
+        container = new PartContainer(this, state.isOf(LibMultiPart.BLOCK) ? state.get(MultipartBlock.TRANSFORMATION) : DirectionTransformation.IDENTITY);
     }
 
     MultipartBlockEntity(PartContainer from, BlockPos pos, BlockState state) {
@@ -102,6 +103,18 @@ public class MultipartBlockEntity extends BlockEntity
         if (mirror != BlockMirror.NONE) {
             container.mirror(mirror);
         }
+    }
+
+    public void applyTransformation(DirectionTransformation transformation) {
+        if (transformation != DirectionTransformation.IDENTITY) {
+            container.transform(transformation);
+        }
+    }
+
+    @Override
+    public void setCachedState(BlockState state) {
+        super.setCachedState(state);
+        container.setCachedState(state);
     }
 
     @Nonnull

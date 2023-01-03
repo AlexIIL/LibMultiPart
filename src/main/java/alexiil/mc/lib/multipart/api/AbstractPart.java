@@ -746,16 +746,26 @@ public abstract class AbstractPart {
         return ActionResult.PASS;
     }
 
-    /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} is called on the containing block.
+    /** Called whenever {@link BlockEntity#applyRotation(BlockRotation)} or {@link BlockState#rotate(BlockRotation)} is
+     * called on the containing block.
+     * <p>
+     * Note: This is only called when an applied transformation consists solely of a rotate transformation.
      *
-     * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE} */
+     * @param rotation A rotation. LMP never calls this with {@link BlockRotation#NONE}
+     * @deprecated Please use the {@link alexiil.mc.lib.multipart.api.event.PartTransformEvent.Rotate} event instead. */
+    @Deprecated
     public void rotate(BlockRotation rotation) {
 
     }
 
-    /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} is called on the containing block.
+    /** Called whenever {@link BlockEntity#applyMirror(BlockMirror)} or {@link BlockState#mirror(BlockMirror)} is called
+     * on the containing block.
+     * <p>
+     * Note: This is only called when an applied transformation consists solely of a mirror transformation.
      *
-     * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE} */
+     * @param mirror A mirror. LMP never calls this with {@link BlockMirror#NONE}
+     * @deprecated Please use the {@link alexiil.mc.lib.multipart.api.event.PartTransformEvent.Mirror} event instead. */
+    @Deprecated
     public void mirror(BlockMirror mirror) {
 
     }
