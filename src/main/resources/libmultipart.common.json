@@ -3,7 +3,6 @@
   "package": "alexiil.mc.lib.multipart.mixin.impl",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "BlockSoundGroupAccessor",
     "LivingEntityMixin",
     "LootContextTypesAccessor",
     "ServerPlayerInteractionManagerMixin"
