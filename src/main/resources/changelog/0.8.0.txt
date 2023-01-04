@@ -3,3 +3,4 @@ Changes:
 * Updated to 1.19.
 * Added multipart rotation/mirroring/transformation support.
 * [#61] Fixed `CHUNK_UNLOAD` event never being fired.
+* [#60] Fixed `REMOVE` event being fired when the multipart block was not being removed.

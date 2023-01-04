@@ -195,10 +195,12 @@ public class MultipartBlock extends Block
 
     @Override
     public void onStateReplaced(BlockState oldState, World world, BlockPos pos, BlockState newState, boolean bool) {
-        BlockEntity be = world.getBlockEntity(pos);
-        if (be instanceof MultipartBlockEntity) {
-            MultipartBlockEntity container = (MultipartBlockEntity) be;
-            container.onRemoved();
+        if (newState.getBlock() != this) {
+            BlockEntity be = world.getBlockEntity(pos);
+            if (be instanceof MultipartBlockEntity) {
+                MultipartBlockEntity container = (MultipartBlockEntity) be;
+                container.onRemoved();
+            }
         }
         super.onStateReplaced(oldState, world, pos, newState, bool);
     }
