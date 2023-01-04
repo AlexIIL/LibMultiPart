@@ -740,9 +740,6 @@ public class PartContainer implements MultipartContainer {
                 );
             }
         }
-        for (PartHolder holder : parts) {
-            holder.part.onAdded(eventBus);
-        }
         validate();
         recalculateShape();
         redrawIfChanged();
