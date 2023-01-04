@@ -10,7 +10,7 @@ targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenLocal()
-    maven { name="BuildCraft"; url="https://mod-buildcraft.com/maven" }
+    maven { name="AlexIIL"; url="https://alexiil.uk/maven" }
 }
 
 archivesBaseName = "LibMultiPart"
