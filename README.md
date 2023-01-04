@@ -10,7 +10,7 @@ You can depend on this by adding this to your build.gradle:
 repositories {
     maven {
         name = "AlexIIL"
-        url = "https://alexiil.uk/maven"
+        url = "https://maven.alexiil.uk/"
     }
 }
 

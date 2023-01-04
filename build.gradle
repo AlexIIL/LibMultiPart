@@ -10,7 +10,7 @@ targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenLocal()
-    maven { name="AlexIIL"; url="https://alexiil.uk/maven" }
+    maven { name="AlexIIL"; url="https://maven.alexiil.uk/" }
 }
 
 archivesBaseName = "LibMultiPart"
