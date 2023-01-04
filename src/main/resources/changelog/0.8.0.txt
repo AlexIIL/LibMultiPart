@@ -1,0 +1,4 @@
+Changes:
+
+* Updated to 1.19.
+* Added multipart rotation/mirroring/transformation support.
