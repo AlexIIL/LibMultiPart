@@ -49,6 +49,9 @@ public class ServerPlayerInteractionManagerMixin {
     @Shadow
     boolean mining;
 
+    @Shadow
+    boolean failedToMine;
+
     @Unique
     Object multipartKey;
 
@@ -107,7 +110,13 @@ public class ServerPlayerInteractionManagerMixin {
                 log("onBlockBreakStart(): rayTrace = " + rayTrace);
             }
             if (rayTrace == null) {
-                // This shouldn't really happen... lets just fail.
+                // This sometimes happens when the client sends duplicate break packets or when the server decides
+                // we're not done breaking the multipart block because the block is technically still there
+                this.multipartKey = null;
+                // Sometimes this gets stuck and this is really the only place we can tell that we *should* reset it
+                // because the part we were looking at *is* gone
+                this.mining = false;
+                this.failedToMine = false;
                 return;
             }
             vec = rayTrace.getPos();
@@ -121,7 +130,8 @@ public class ServerPlayerInteractionManagerMixin {
         }
 
         if (bestKey == null) {
-            // TODO!
+            // Should only happen if multipart block's cached outline is invalid
+            this.multipartKey = null;
         } else {
             this.multipartKey = bestKey;
             block.onBlockBreakStart(state, w, pos, pl, bestKey);
