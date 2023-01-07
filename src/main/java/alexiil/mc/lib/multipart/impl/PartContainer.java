@@ -91,6 +91,7 @@ public class PartContainer implements MultipartContainer {
     static final NetIdDataK<PartContainer> NET_ADD_PART;
     static final NetIdDataK<PartContainer> NET_REMOVE_PART;
     static final NetIdDataK<PartContainer> NET_REMOVE_PARTS;
+    static final NetIdSignalK<PartContainer> NET_ENSURE_EMPTY;
     static final NetIdSignalK<PartContainer> NET_REDRAW;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
@@ -112,6 +113,8 @@ public class PartContainer implements MultipartContainer {
         NET_REMOVE_PART = NET_KEY.idData("remove_part").toClientOnly().setReceiver(PartContainer::readRemovePart);
         NET_REMOVE_PARTS
             = NET_KEY.idData("remove_part_multi").toClientOnly().setReceiver(PartContainer::readRemoveParts);
+        NET_ENSURE_EMPTY = NET_KEY.idSignal("ensure_empty").toClientOnly().withoutBuffering()
+            .setReceiver(PartContainer::readEnsureEmpty);
         NET_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").toClientOnly()
             .setReadWrite(PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData);
         NET_REDRAW = NET_KEY.idSignal("redraw").toClientOnly().setReceiver(PartContainer::receiveRedraw);
@@ -558,6 +561,8 @@ public class PartContainer implements MultipartContainer {
                 log("postRemovePart(): removing multipart block");
             }
 
+            sendNetworkUpdate(this, NET_ENSURE_EMPTY);
+
             blockEntity.world().removeBlock(getMultipartPos(), false);
         } else {
             recalculateShape();
@@ -586,6 +591,34 @@ public class PartContainer implements MultipartContainer {
         eventBus.fireEvent(new PartRemovedEvent(removed.part));
         recalculateShape();
         redrawIfChanged();
+    }
+
+    private void readEnsureEmpty(IMsgReadCtx ctx) {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_ENSURE_EMPTY");
+        }
+
+        int partCount = parts.size();
+        PartHolder[] removedHolders = new PartHolder[partCount];
+
+        for (int i = 0; i < partCount; i++) {
+            PartHolder holder = removedHolders[i] = parts.get(i);
+            holder.clearRequiredParts();
+            PartHolder removedById = partsByUid.remove(holder.uniqueId);
+            assert removedById == holder;
+        }
+
+        for (PartHolder holder : removedHolders) {
+            eventBus.removeListeners(holder.part);
+        }
+
+        for (PartHolder holder : removedHolders) {
+            holder.part.onRemoved();
+        }
+
+        for (PartHolder holder : removedHolders) {
+            properties.clearValues(holder.part);
+        }
     }
 
     private void removeMultiple(int[] indices) {
