@@ -5,3 +5,5 @@ Changes:
 * [#61] Fixed `CHUNK_UNLOAD` event never being fired.
 * [#60] Fixed `REMOVE` event being fired when the multipart block was not being removed.
 * [#55] Fixed calling client-side parts' `onAdded` twice when the world is loaded.
+* [#64] Fixed client-side parts' `onRemoved` never being called for the last part in a multipart block.
+* [#65] Fixed `AbstractPart#onBreak` being called multiple times for insta-break parts, causing error log-spam.
