@@ -14,6 +14,8 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.DirectionTransformation;
+import net.minecraft.util.math.Vec3f;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
@@ -111,12 +113,29 @@ final class PosPartId {
         BlockPos f = from.getMultipartPos();
         int x = pos.getX() - f.getX();
         int z = pos.getZ() - f.getZ();
+
+        // For some reason, BlockMirror.LEFT_RIGHT corresponds to inverting the Z-axis and BlockMirror.FRONT_BACK
+        // corresponds to inverting the X-axis.
         if (mirror == BlockMirror.LEFT_RIGHT) {
-            x = -x;
+            z = -z;
         } else {
             assert mirror == BlockMirror.FRONT_BACK;
-            z = -z;
+            x = -x;
         }
         return new PosPartId(new BlockPos(x + f.getX(), pos.getY(), z + f.getZ()), uid);
+    }
+
+    public PosPartId transform(PartContainer from, DirectionTransformation transformation) {
+        if (transformation == DirectionTransformation.IDENTITY) {
+            return this;
+        }
+
+        BlockPos f = from.getMultipartPos();
+
+        Vec3f relPos = new Vec3f(pos.getX() - f.getX(), pos.getY() - f.getY(), pos.getZ() - f.getZ());
+        relPos.transform(transformation.getMatrix());
+        BlockPos transformedPos = new BlockPos(Math.round(relPos.getX()), Math.round(relPos.getY()), Math.round(relPos.getZ()));
+
+        return new PosPartId(transformedPos.add(f), uid);
     }
 }

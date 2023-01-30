@@ -10,12 +10,11 @@ targetCompatibility = JavaVersion.VERSION_17
 
 repositories {
     mavenLocal()
-    maven { name="BuildCraft"; url="https://mod-buildcraft.com/maven" }
-    maven { url="https://maven.pkom.ml/" }
+    maven { name="AlexIIL"; url="https://maven.alexiil.uk/" }
 }
 
 archivesBaseName = "LibMultiPart"
-version = "0.8.0-pre.2"
+version = "0.9.0"
 
 license {
     header = project.file('misc/LICENSE_HEADER.txt');

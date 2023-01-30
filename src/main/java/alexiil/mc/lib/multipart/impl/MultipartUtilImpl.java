@@ -18,6 +18,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
@@ -119,7 +120,7 @@ public final class MultipartUtilImpl {
 
         MultipartBlockEntity be = new MultipartBlockEntity(pos, state);
         be.setWorld(world);
-        PartContainer container = new PartContainer(be);
+        PartContainer container = new PartContainer(be, DirectionTransformation.IDENTITY);
         PartHolder holder = new PartHolder(container, creator);
         VoxelShape shape = holder.part.getCollisionShape();
 
@@ -157,7 +158,7 @@ public final class MultipartUtilImpl {
             pos, LibMultiPart.BLOCK.getDefaultState().with(Properties.WATERLOGGED, hasWater)
         );
         be.setWorld(world);
-        PartContainer container = new PartContainer(be);
+        PartContainer container = new PartContainer(be, DirectionTransformation.IDENTITY);
 
         List<PartHolder> existingHolders = new ArrayList<>();
         for (MultipartCreator creator : existing) {

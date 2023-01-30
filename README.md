@@ -9,13 +9,13 @@ You can depend on this by adding this to your build.gradle:
 ```
 repositories {
     maven {
-        name = "BuildCraft"
-        url = "https://mod-buildcraft.com/maven"
+        name = "AlexIIL"
+        url = "https://maven.alexiil.uk/"
     }
 }
 
 dependencies {
-    modCompile "alexiil.mc.lib:libmultipart-all:0.3.4"
+    modCompile "alexiil.mc.lib:libmultipart-all:0.8.0"
 }
 ```
 

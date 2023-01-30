@@ -35,6 +35,7 @@ import net.minecraft.util.Util;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.DirectionTransformation;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.util.shape.VoxelShapes;
@@ -60,10 +61,15 @@ import alexiil.mc.lib.multipart.api.MultipartHolder;
 import alexiil.mc.lib.multipart.api.event.PartAddedEvent;
 import alexiil.mc.lib.multipart.api.event.PartContainerState;
 import alexiil.mc.lib.multipart.api.event.PartOfferedEvent;
+import alexiil.mc.lib.multipart.api.event.PartPostTransformEvent;
+import alexiil.mc.lib.multipart.api.event.PartPreTransformEvent;
 import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent;
 import alexiil.mc.lib.multipart.api.event.PartRedstonePowerEvent.PartRedstonePowerEventFactory;
 import alexiil.mc.lib.multipart.api.event.PartRemovedEvent;
 import alexiil.mc.lib.multipart.api.event.PartTickEvent;
+import alexiil.mc.lib.multipart.api.event.PartTransformCheckEvent;
+import alexiil.mc.lib.multipart.api.event.PartTransformEvent;
+import alexiil.mc.lib.multipart.api.misc.DirectionTransformationUtil;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.RedstonePowerProperty;
 import alexiil.mc.lib.multipart.api.property.MultipartProperties.StrongRedstonePowerProperty;
@@ -85,6 +91,7 @@ public class PartContainer implements MultipartContainer {
     static final NetIdDataK<PartContainer> NET_ADD_PART;
     static final NetIdDataK<PartContainer> NET_REMOVE_PART;
     static final NetIdDataK<PartContainer> NET_REMOVE_PARTS;
+    static final NetIdSignalK<PartContainer> NET_ENSURE_EMPTY;
     static final NetIdSignalK<PartContainer> NET_REDRAW;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
@@ -106,6 +113,8 @@ public class PartContainer implements MultipartContainer {
         NET_REMOVE_PART = NET_KEY.idData("remove_part").toClientOnly().setReceiver(PartContainer::readRemovePart);
         NET_REMOVE_PARTS
             = NET_KEY.idData("remove_part_multi").toClientOnly().setReceiver(PartContainer::readRemoveParts);
+        NET_ENSURE_EMPTY = NET_KEY.idSignal("ensure_empty").toClientOnly().withoutBuffering()
+            .setReceiver(PartContainer::readEnsureEmpty);
         NET_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").toClientOnly()
             .setReadWrite(PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData);
         NET_REDRAW = NET_KEY.idSignal("redraw").toClientOnly().setReceiver(PartContainer::receiveRedraw);
@@ -165,6 +174,28 @@ public class PartContainer implements MultipartContainer {
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
 
+    /** Used by {@link #setCachedState(BlockState)} to determine how the BlockState's transformation has changed.
+     * <p>
+     * All other methods that apply a transformation to this part container should use the BlockState's transformation
+     * as the source-of-truth for what the current transformation is, and make sure to update this value when updating
+     * the BlockState's transformation. If this value is not updated when the BlockState's transformation is updated,
+     * then {@link #setCachedState(BlockState)} will think that the BlockState had been updated externally and will
+     * attempt to apply the transformation all over again. */
+    DirectionTransformation cachedTransformation = DirectionTransformation.IDENTITY;
+
+    /** Stores the transformation supplied when the BlockEntity is first constructed. This is used to determine if any
+     * transformations have been applied before the BlockEntity has been loaded from NBT. */
+    final DirectionTransformation initialTransformation;
+
+    /** Whether {@link #validate()} has been called.
+     * <p>
+     * This is used in determining whether parts should be initialized immediately upon loading from
+     * {@link #fromNbt(NbtCompound)} or if this container should wait until {@link #validate()} is called. If this value
+     * is <codd>true</codd>, then that means this container has already been validated and any subsequent calls to
+     * {@link #fromNbt(NbtCompound)} are being invoked on an already valid container and that
+     * {@link AbstractPart#onAdded(MultipartEventBus)} should be invoked immediately. */
+    boolean validated = false;
+
     /** Used by {@link #readInitialRenderData(NetByteBuf, IMsgReadCtx)} only as the server (for some reason) cannot send
      * that packet to only the player's who actually need it. */
     boolean hasInitialisedFromRemote = false;
@@ -174,9 +205,18 @@ public class PartContainer implements MultipartContainer {
 
     ImmutableList<PartModelKey> partModelKeys = ImmutableList.of();
 
-    public PartContainer(MultipartBlockEntity blockEntity) {
+    public PartContainer(MultipartBlockEntity blockEntity, DirectionTransformation initialTransformation) {
         assert blockEntity != null : "The given blockEntity was null!";
         this.blockEntity = blockEntity;
+        this.initialTransformation = initialTransformation;
+    }
+
+    private void log(String text) {
+        LibMultiPart.LOGGER.info("[part-container] @ " + getMultipartPos() + " " + text);
+    }
+
+    private void warn(String text) {
+        LibMultiPart.LOGGER.warn("[part-container] @ " + getMultipartPos() + " " + text);
     }
 
     // MultipartContainer
@@ -403,6 +443,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void readAddPart(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_ADD_PART");
+        }
+
         PartHolder holder = new PartHolder(this, buffer, ctx);
         assert holder.part != null;
         parts.add(holder);
@@ -420,6 +464,10 @@ public class PartContainer implements MultipartContainer {
 
     @Override
     public boolean removePart(AbstractPart part) {
+        if (LibMultiPart.DEBUG) {
+            log("removePart(" + part +")");
+        }
+
         PartHolder holder = (PartHolder) part.holder;
         int index = parts.indexOf(holder);
         if (index < 0) {
@@ -483,6 +531,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void removeSingle(int index) {
+        if (LibMultiPart.DEBUG) {
+            log("removeSingle(" + index + ")");
+        }
+
         PartHolder removed = parts.remove(index);
         assert removed != null;
         PartHolder removedById = partsByUid.remove(removed.uniqueId);
@@ -505,6 +557,12 @@ public class PartContainer implements MultipartContainer {
 
     private void postRemovePart() {
         if (parts.isEmpty()) {
+            if (LibMultiPart.DEBUG) {
+                log("postRemovePart(): removing multipart block");
+            }
+
+            sendNetworkUpdate(this, NET_ENSURE_EMPTY);
+
             blockEntity.world().removeBlock(getMultipartPos(), false);
         } else {
             recalculateShape();
@@ -519,6 +577,10 @@ public class PartContainer implements MultipartContainer {
             throw new InvalidInputDataException("Invalid part index " + index + " - we've probably got desynced!");
         }
 
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_REMOVE_PART(" + index + ")");
+        }
+
         PartHolder removed = parts.remove(index);
         assert removed != null;
         PartHolder removedById = partsByUid.remove(removed.uniqueId);
@@ -531,7 +593,39 @@ public class PartContainer implements MultipartContainer {
         redrawIfChanged();
     }
 
+    private void readEnsureEmpty(IMsgReadCtx ctx) {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_ENSURE_EMPTY");
+        }
+
+        int partCount = parts.size();
+        PartHolder[] removedHolders = new PartHolder[partCount];
+
+        for (int i = 0; i < partCount; i++) {
+            PartHolder holder = removedHolders[i] = parts.get(i);
+            holder.clearRequiredParts();
+            PartHolder removedById = partsByUid.remove(holder.uniqueId);
+            assert removedById == holder;
+        }
+
+        for (PartHolder holder : removedHolders) {
+            eventBus.removeListeners(holder.part);
+        }
+
+        for (PartHolder holder : removedHolders) {
+            holder.part.onRemoved();
+        }
+
+        for (PartHolder holder : removedHolders) {
+            properties.clearValues(holder.part);
+        }
+    }
+
     private void removeMultiple(int[] indices) {
+        if (LibMultiPart.DEBUG) {
+            log("removeMultiple(" + Arrays.toString(indices) + ")");
+        }
+
         Arrays.sort(indices);
         ArrayUtil.reverse(indices);
 
@@ -583,6 +677,11 @@ public class PartContainer implements MultipartContainer {
         for (int i = 0; i < count; i++) {
             indices[i] = buffer.readUnsignedByte();
         }
+
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_REMOVE_PARTS(" + Arrays.toString(indices) + ")");
+        }
+
         removeMultiple(indices);
     }
 
@@ -672,6 +771,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void receiveRedraw(IMsgReadCtx ctx) throws InvalidInputDataException {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_REDRAW");
+        }
+
         redrawIfChanged();
     }
 
@@ -680,6 +783,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void writeInitialRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {
+        if (LibMultiPart.DEBUG) {
+            log("W: NET_INITIAL_RENDER_DATA");
+        }
+
         ctx.assertServerSide();
         buffer.writeByte(parts.size());
         for (PartHolder holder : parts) {
@@ -688,6 +795,10 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void readInitialRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_INITIAL_RENDER_DATA");
+        }
+
         ctx.assertClientSide();
         if (hasInitialisedFromRemote || !parts.isEmpty()) {
             ctx.drop("Already initialised");
@@ -710,9 +821,6 @@ public class PartContainer implements MultipartContainer {
                         + parts + "\n vs " + partsByUid
                 );
             }
-        }
-        for (PartHolder holder : parts) {
-            holder.part.onAdded(eventBus);
         }
         validate();
         recalculateShape();
@@ -750,9 +858,15 @@ public class PartContainer implements MultipartContainer {
 
     void fromNbt(NbtCompound tag) {
         if (LibMultiPart.DEBUG) {
-            LibMultiPart.LOGGER.info("PartContainer.fromNbt( " + getMultipartPos() + " ) {");
+            log("fromNbt( " + tag + " ) {");
         }
         recalculateShape();
+
+        if (tag.contains("cachedTransformation")) {
+            cachedTransformation = MultipartBlock.TRANSFORMATION.parse(tag.getString("cachedTransformation"))
+                .orElse(DirectionTransformation.IDENTITY);
+        }
+
         nextId = Long.MIN_VALUE;
         boolean areIdsValid = true;
         NbtList allPartsTag = tag.getList("parts", new NbtCompound().getType());
@@ -775,12 +889,12 @@ public class PartContainer implements MultipartContainer {
         if (parts.isEmpty()) {
             nextId = 0;
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts is empty => nextId set to 0");
+                log("  parts is empty => nextId set to 0");
             }
         } else if (areIdsValid) {
             nextId++;
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts are valid => nextId++ (nextId = " + nextId + ")");
+                log("  parts are valid => nextId++ (nextId = " + nextId + ")");
             }
         } else {
             // One part had duplicate ID's.
@@ -792,7 +906,7 @@ public class PartContainer implements MultipartContainer {
             nextId = ((long) new java.util.Random().nextInt() & 0x7fff_ffff) << 6l;
 
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info("  parts are NOT valid => nextId set to rand (nextId = " + nextId + ")");
+                log("  parts are NOT valid => nextId set to rand (nextId = " + nextId + ")");
             }
 
             for (PartHolder holder : parts) {
@@ -810,7 +924,7 @@ public class PartContainer implements MultipartContainer {
                         PartHolder other = partsByUid.get(id.uid);
                         if (other == null) {
                             // TODO: How can we handle this?
-                            LibMultiPart.LOGGER.warn("Failed to resolve a part to part requirement! " + id);
+                            warn("Failed to resolve a part to part requirement! " + id);
                         } else {
                             holder.addRequiredPart0(other);
                         }
@@ -823,12 +937,18 @@ public class PartContainer implements MultipartContainer {
         }
 
         if (LibMultiPart.DEBUG) {
-            LibMultiPart.LOGGER.info("}");
+            log("}");
+        }
+
+        // If we're already valid, then we can initialize parts now
+        if (validated) {
+            initParts();
         }
     }
 
     NbtCompound toNbt() {
         NbtCompound tag = new NbtCompound();
+        tag.putString("cachedTransformation", MultipartBlock.TRANSFORMATION.name(cachedTransformation));
         NbtList partsTag = new NbtList();
         for (PartHolder part : parts) {
             partsTag.add(part.toNbt());
@@ -838,14 +958,26 @@ public class PartContainer implements MultipartContainer {
     }
 
     void validate() {
+        validated = true;
+        initParts();
+        eventBus.fireEvent(PartContainerState.VALIDATE);
+    }
+
+    /** Actually handles calling {@link AbstractPart#onAdded(MultipartEventBus)} as well as applying any not-yet-applied
+     * transformations. */
+    private void initParts() {
         eventBus.clearListeners();
         for (PartHolder holder : parts) {
             holder.part.onAdded(eventBus);
         }
-        eventBus.fireEvent(PartContainerState.VALIDATE);
+
+        // Now that we've (potentially) loaded from NBT, let's apply
+        // any transformations that were done before we loaded.
+        updateTransform(initialTransformation);
     }
 
     void invalidate() {
+        validated = false;
         eventBus.fireEvent(PartContainerState.INVALIDATE);
         delinkOtherBlockRequired();
     }
@@ -855,15 +987,106 @@ public class PartContainer implements MultipartContainer {
         delinkOtherBlockRequired();
     }
 
+    /** Checks if a transformation is valid for all parts in this container. */
+    boolean isTransformInvalid(DirectionTransformation transformation) {
+        PartTransformCheckEvent event = new PartTransformCheckEvent(transformation);
+        eventBus.fireEvent(event);
+        return event.isInvalid();
+    }
+
     void rotate(BlockRotation rotation) {
+        DirectionTransformation transformation = rotation.getDirectionTransformation();
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        callRotate(rotation);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void callRotate(BlockRotation rotation) {
         for (PartHolder holder : parts) {
-            holder.rotate(rotation);
+            // Call the deprecated rotate method for backwards compatibility.
+            holder.part.rotate(rotation);
         }
     }
 
     void mirror(BlockMirror mirror) {
+        DirectionTransformation transformation = mirror.getDirectionTransformation();
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        callMirror(mirror);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void callMirror(BlockMirror mirror) {
         for (PartHolder holder : parts) {
-            holder.mirror(mirror);
+            // Call the deprecated mirror method for backwards compatibility.
+            holder.part.mirror(mirror);
+        }
+    }
+
+    void transform(DirectionTransformation transformation) {
+        if (isTransformInvalid(transformation)) {
+            return;
+        }
+
+        eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+        tryCallSimplifiedTransform(transformation);
+        eventBus.fireEvent(PartTransformEvent.create(transformation));
+        transformRequiredParts(transformation);
+        eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+    }
+
+    private void transformRequiredParts(DirectionTransformation transformation) {
+        for (PartHolder holder : parts) {
+            holder.transformRequiredParts(transformation);
+        }
+    }
+
+    private void tryCallSimplifiedTransform(DirectionTransformation transformation) {
+        BlockRotation rotation = DirectionTransformationUtil.getRotation(transformation);
+        if (rotation != null) {
+            callRotate(rotation);
+        }
+
+        BlockMirror mirror = DirectionTransformationUtil.getMirror(transformation);
+        if (mirror != null) {
+            callMirror(mirror);
+        }
+    }
+
+    /** Used for tracking transformation changes and notifying contained parts if need be. */
+    void setCachedState(BlockState state) {
+        DirectionTransformation stateTransform = state.get(MultipartBlock.TRANSFORMATION);
+        updateTransform(stateTransform);
+    }
+
+    private void updateTransform(DirectionTransformation stateTransform) {
+        if (stateTransform != cachedTransformation) {
+            DirectionTransformation deltaTransform = DirectionTransformationUtil.getRelativeTransformation(cachedTransformation, stateTransform);
+            cachedTransformation = stateTransform;
+
+            // The actual value of the blockstate transform is meaningless, only the difference between it and the
+            // cached transform is used. This means we can just ignore invalid transformations without having to revert
+            // the blockstate or anything.
+            if (isTransformInvalid(deltaTransform)) {
+                return;
+            }
+
+            eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
+            tryCallSimplifiedTransform(deltaTransform);
+            eventBus.fireEvent(PartTransformEvent.create(deltaTransform));
+            transformRequiredParts(deltaTransform);
+            eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
         }
     }
 
@@ -920,14 +1143,14 @@ public class PartContainer implements MultipartContainer {
 
     private void linkOtherBlockRequired() {
         if (LibMultiPart.DEBUG) {
-            LibMultiPart.LOGGER.info("PartContainer.link_req( " + getMultipartPos() + " ) {");
+            log("link_req() {");
         }
         Map<BlockPos, PartContainer> others = new HashMap<>();
         World world = getMultipartWorld();
         for (PartHolder holder : parts) {
 
             if (LibMultiPart.DEBUG) {
-                LibMultiPart.LOGGER.info(" Holder " + holder.uniqueId + " " + holder.part.getClass());
+                log(" Holder " + holder.uniqueId + " " + holder.part.getClass());
             }
 
             if (holder.unloadedRequiredParts != null) {
@@ -935,11 +1158,11 @@ public class PartContainer implements MultipartContainer {
                 while (iterator.hasNext()) {
                     PosPartId req = iterator.next();
                     if (LibMultiPart.DEBUG) {
-                        LibMultiPart.LOGGER.info("  Required " + req);
+                        log("  Required " + req);
                     }
                     if (!world.isChunkLoaded(req.pos)) {
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.info("    -- not loaded.");
+                            log("    -- not loaded.");
                         }
                         continue;
                     }
@@ -948,7 +1171,7 @@ public class PartContainer implements MultipartContainer {
                     if (other == null) {
                         // TODO: Log an error
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                            warn("    -- not a multipart container");
                         }
                         continue;
                     }
@@ -956,9 +1179,9 @@ public class PartContainer implements MultipartContainer {
                     if (otherPart == null) {
                         // TODO: Log an error
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                            warn("    -- didn't find uid!");
                         } else {
-                            LibMultiPart.LOGGER.warn(
+                            warn(
                                 "[PartContainer.linkOtherBlockRequired] Failed to find the required part " + req.uid
                                     + " in " + other.parts + "!"
                             );
@@ -973,11 +1196,11 @@ public class PartContainer implements MultipartContainer {
                 while (iterator.hasNext()) {
                     PosPartId invreq = iterator.next();
                     if (LibMultiPart.DEBUG) {
-                        LibMultiPart.LOGGER.info("  InvReq " + invreq);
+                        log("  InvReq " + invreq);
                     }
                     if (!world.isChunkLoaded(invreq.pos)) {
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.info("    -- not loaded.");
+                            log("    -- not loaded.");
                         }
                         continue;
                     }
@@ -986,7 +1209,7 @@ public class PartContainer implements MultipartContainer {
                     if (other == null) {
                         // TODO: Log an error
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.warn("    -- not a multipart container");
+                            warn("    -- not a multipart container");
                         }
                         continue;
                     }
@@ -994,9 +1217,9 @@ public class PartContainer implements MultipartContainer {
                     if (otherPart == null) {
                         // TODO: Log an error
                         if (LibMultiPart.DEBUG) {
-                            LibMultiPart.LOGGER.warn("    -- didn't find uid!");
+                            warn("    -- didn't find uid!");
                         } else {
-                            LibMultiPart.LOGGER.warn(
+                            warn(
                                 "[PartContainer.linkOtherBlockRequired] Failed to find the required part " + invreq.uid
                                     + " in " + other.parts + "!"
                             );
@@ -1011,7 +1234,7 @@ public class PartContainer implements MultipartContainer {
         }
 
         if (LibMultiPart.DEBUG) {
-            LibMultiPart.LOGGER.info("}");
+            log("}");
         }
     }
 
