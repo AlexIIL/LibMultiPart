@@ -26,11 +26,7 @@ import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.model.BakedModel;
-import net.minecraft.client.render.model.BakedQuad;
-import net.minecraft.client.render.model.ModelBakeSettings;
-import net.minecraft.client.render.model.ModelLoader;
-import net.minecraft.client.render.model.UnbakedModel;
+import net.minecraft.client.render.model.*;
 import net.minecraft.client.render.model.json.ModelOverrideList;
 import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.texture.Sprite;
@@ -55,6 +51,7 @@ import alexiil.mc.lib.multipart.impl.TransientPartIdentifier.IdSubPart;
 import alexiil.mc.lib.multipart.impl.client.PartModelData;
 import alexiil.mc.lib.multipart.mixin.api.IBlockRenderManagerMixin;
 import alexiil.mc.lib.multipart.mixin.api.IClientPlayerInteractionManagerMixin;
+import org.jetbrains.annotations.Nullable;
 
 public final class MultipartModel
     implements BakedModel, FabricBakedModel, PartStaticModelRegisterEvent.StaticModelRenderer {
@@ -234,17 +231,12 @@ public final class MultipartModel
         }
 
         @Override
-        public Collection<SpriteIdentifier> getTextureDependencies(
-            Function<Identifier, UnbakedModel> unbakedModelGetter, Set<Pair<String, String>> unresolvedTextureReferences
-        ) {
-            return Collections.emptySet();
+        public void setParents(Function<Identifier, UnbakedModel> modelLoader) {
+
         }
 
         @Override
-        public BakedModel bake(
-            ModelLoader loader, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer,
-            Identifier modelId
-        ) {
+        public BakedModel bake(Baker baker, Function<SpriteIdentifier, Sprite> textureGetter, ModelBakeSettings rotationContainer, Identifier modelId) {
             if (model == null) {
                 model = new MultipartModel(textureGetter);
             }
