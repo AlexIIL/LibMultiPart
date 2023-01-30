@@ -15,7 +15,7 @@ import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.DirectionTransformation;
-import net.minecraft.util.math.Vec3f;
+import org.joml.Vector3f;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
 import alexiil.mc.lib.multipart.api.MultipartHolder;
@@ -132,9 +132,9 @@ final class PosPartId {
 
         BlockPos f = from.getMultipartPos();
 
-        Vec3f relPos = new Vec3f(pos.getX() - f.getX(), pos.getY() - f.getY(), pos.getZ() - f.getZ());
-        relPos.transform(transformation.getMatrix());
-        BlockPos transformedPos = new BlockPos(Math.round(relPos.getX()), Math.round(relPos.getY()), Math.round(relPos.getZ()));
+        Vector3f relPos = new Vector3f(pos.getX() - f.getX(), pos.getY() - f.getY(), pos.getZ() - f.getZ());
+        transformation.getMatrix().transform(relPos);
+        BlockPos transformedPos = new BlockPos(Math.round(relPos.x), Math.round(relPos.y), Math.round(relPos.z));
 
         return new PosPartId(transformedPos.add(f), uid);
     }
