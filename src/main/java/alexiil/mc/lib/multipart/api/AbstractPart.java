@@ -149,6 +149,30 @@ public abstract class AbstractPart {
         container.sendNetworkUpdateExcept(except, obj, netId, writer);
     }
 
+    /** Redraws this part's block if need be.
+     * <p>
+     * This can be invoked on the server to send a message to the client to redraw if needed.
+     * <p>
+     * This is a convenience method for invoking {@link MultipartContainer#redrawIfChanged()}. */
+    public final void redrawIfChanged() {
+        container.redrawIfChanged();
+    }
+
+    /** Clears this part's block's shape caches.
+     * <p>
+     * This is a convenience method for invoking {@link MultipartContainer#recalculateShape()}. */
+    public final void recalculateShape() {
+        container.recalculateShape();
+    }
+
+    /** Should be called on the server to ensure this part's block's shape caches are cleared on both the client and the
+     * server.
+     * <p>
+     * This is a convenience method for invoking {@link MultipartContainer#recalculateShapeSynced()}. */
+    public final void recalculateShapeSynced() {
+        container.recalculateShapeSynced();
+    }
+
     /** Called whenever this part was added to the {@link MultipartContainer}, either in
      * {@link BlockEntity#cancelRemoval()} or when it is manually added by an item.
      * <p>
