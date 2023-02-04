@@ -1,0 +1,4 @@
+Changes:
+
+* Added convenience methods for client/server synchronized shape recalculation.
+* Added convenience methods to AbstractPart for redrawing and recalculating shapes on the MultipartContainer.

@@ -218,9 +218,15 @@ public interface MultipartContainer {
     /** @return A complete {@link VoxelShape} of every contained {@link AbstractPart#getOutlineShape()} */
     VoxelShape getOutlineShape();
 
-    /** Recalculates {@link #getCurrentShape()} and {@link #getCollisionShape()}. {@link AbstractPart}'s should call
-     * this when their own shape changes. */
+    /** Recalculates {@link #getCurrentShape()}, {@link #getCollisionShape()}, and {@link #getOutlineShape()}.
+     * {@link AbstractPart}'s should call this when their own shape changes.
+     * <p>
+     * This only recalculates shapes for on the client/server side that it was called from. */
     void recalculateShape();
+
+    /** Should be called on the server to ensure {@link #recalculateShape()} is called on both the server and the
+     * client. */
+    void recalculateShapeSynced();
 
     // Networking
 

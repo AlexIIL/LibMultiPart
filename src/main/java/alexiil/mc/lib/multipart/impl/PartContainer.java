@@ -93,6 +93,7 @@ public class PartContainer implements MultipartContainer {
     static final NetIdDataK<PartContainer> NET_REMOVE_PARTS;
     static final NetIdSignalK<PartContainer> NET_ENSURE_EMPTY;
     static final NetIdSignalK<PartContainer> NET_REDRAW;
+    static final NetIdSignalK<PartContainer> NET_RECALCULATE_SHAPE;
     public static final ParentNetIdSingle<AbstractPart> NET_KEY_PART;
 
     static PartHolder extractPartHolder(AbstractPart value) {
@@ -118,6 +119,7 @@ public class PartContainer implements MultipartContainer {
         NET_INITIAL_RENDER_DATA = NET_KEY.idData("initial_render_data").toClientOnly()
             .setReadWrite(PartContainer::readInitialRenderData, PartContainer::writeInitialRenderData);
         NET_REDRAW = NET_KEY.idSignal("redraw").toClientOnly().setReceiver(PartContainer::receiveRedraw);
+        NET_RECALCULATE_SHAPE = NET_KEY.idSignal("recalculate_shape").toClientOnly().setReceiver(PartContainer::receiveRecalculateShape);
         NET_KEY_PART = new ParentNetIdDuel<PartContainer, AbstractPart>(NET_KEY, "holder", AbstractPart.class) {
             @Override
             protected PartContainer extractParent(AbstractPart value) {
@@ -747,6 +749,20 @@ public class PartContainer implements MultipartContainer {
     }
 
     @Override
+    public void recalculateShapeSynced() {
+        recalculateShape();
+        sendNetworkUpdate(this, NET_RECALCULATE_SHAPE);
+    }
+
+    private void receiveRecalculateShape(IMsgReadCtx ctx) throws InvalidInputDataException {
+        if (LibMultiPart.DEBUG) {
+            log("R: NET_RECALCULATE_SHAPE");
+        }
+
+        recalculateShape();
+    }
+
+    @Override
     public void redrawIfChanged() {
         if (isClientWorld()) {
             ImmutableList.Builder<PartModelKey> builder = ImmutableList.builder();
@@ -1087,6 +1103,16 @@ public class PartContainer implements MultipartContainer {
             eventBus.fireEvent(PartTransformEvent.create(deltaTransform));
             transformRequiredParts(deltaTransform);
             eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+
+            // Re-send render data because every part is likely to have changed
+            for (PartHolder holder : parts) {
+                holder.part.sendNetworkUpdate(holder.part, AbstractPart.NET_RENDER_DATA);
+            }
+
+            // Recalculate & redraw (on both client and server) because not all parts automatically redraw when they
+            // receive render data
+            recalculateShapeSynced();
+            redrawIfChanged();
         }
     }
 
