@@ -1021,6 +1021,7 @@ public class PartContainer implements MultipartContainer {
         eventBus.fireEvent(PartTransformEvent.create(transformation));
         transformRequiredParts(transformation);
         eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+        syncAndRedraw();
     }
 
     private void callRotate(BlockRotation rotation) {
@@ -1041,6 +1042,7 @@ public class PartContainer implements MultipartContainer {
         eventBus.fireEvent(PartTransformEvent.create(transformation));
         transformRequiredParts(transformation);
         eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+        syncAndRedraw();
     }
 
     private void callMirror(BlockMirror mirror) {
@@ -1060,6 +1062,7 @@ public class PartContainer implements MultipartContainer {
         eventBus.fireEvent(PartTransformEvent.create(transformation));
         transformRequiredParts(transformation);
         eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
+        syncAndRedraw();
     }
 
     private void transformRequiredParts(DirectionTransformation transformation) {
@@ -1094,26 +1097,20 @@ public class PartContainer implements MultipartContainer {
             // The actual value of the blockstate transform is meaningless, only the difference between it and the
             // cached transform is used. This means we can just ignore invalid transformations without having to revert
             // the blockstate or anything.
-            if (isTransformInvalid(deltaTransform)) {
-                return;
-            }
-
-            eventBus.fireEvent(PartPreTransformEvent.INSTANCE);
-            tryCallSimplifiedTransform(deltaTransform);
-            eventBus.fireEvent(PartTransformEvent.create(deltaTransform));
-            transformRequiredParts(deltaTransform);
-            eventBus.fireEvent(PartPostTransformEvent.INSTANCE);
-
-            // Re-send render data because every part is likely to have changed
-            for (PartHolder holder : parts) {
-                holder.part.sendNetworkUpdate(holder.part, AbstractPart.NET_RENDER_DATA);
-            }
-
-            // Recalculate & redraw (on both client and server) because not all parts automatically redraw when they
-            // receive render data
-            recalculateShapeSynced();
-            redrawIfChanged();
+            transform(deltaTransform);
         }
+    }
+
+    private void syncAndRedraw() {
+        // Re-send render data because every part is likely to have changed
+        for (PartHolder holder : parts) {
+            holder.part.sendNetworkUpdate(holder.part, AbstractPart.NET_RENDER_DATA);
+        }
+
+        // Recalculate & redraw (on both client and server) because not all parts automatically redraw when they
+        // receive render data
+        recalculateShapeSynced();
+        redrawIfChanged();
     }
 
     private void delinkOtherBlockRequired() {
