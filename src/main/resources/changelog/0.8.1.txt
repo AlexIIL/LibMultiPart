@@ -3,3 +3,4 @@ Changes:
 * Added convenience methods for client/server synchronized shape recalculation.
 * Added convenience methods to AbstractPart for redrawing and recalculating shapes on the MultipartContainer.
 * Made PartContainer redraw and recalculate its shape after a rotation/mirror/transformation, as this should pretty much always happen.
+* Fixed issue where blocks being converted to multiparts would break blocks depending on them.
