@@ -630,6 +630,11 @@ public abstract class AbstractPart {
         return getCollisionShape();
     }
 
+    /** @return The shape that side solidness tests are performed against. */
+    public VoxelShape getSidesShape() {
+        return getCollisionShape();
+    }
+
     /** @return The (potentially dynamic) shape for rendering bounding boxes and ray tracing. Unlike
      *         {@link #getOutlineShape()} this is only called when rendering the box for this specific part.
      * @deprecated Use (and implement) {@link #getDynamicShape(float, Vec3d)} instead. */

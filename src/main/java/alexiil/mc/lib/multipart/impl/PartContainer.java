@@ -173,6 +173,7 @@ public class PartContainer implements MultipartContainer {
     VoxelShape cachedCollisionShape = null;
     VoxelShape cachedCullingShape = null;
     VoxelShape cachedOutlineShape = null;
+    VoxelShape cachedSidesShape = null;
     boolean havePropertiesChanged = false;
     boolean hasTicked = false;
 
@@ -740,12 +741,26 @@ public class PartContainer implements MultipartContainer {
         return cachedOutlineShape;
     }
 
+    public VoxelShape getSidesShape() {
+        if (cachedSidesShape == null) {
+            cachedSidesShape = VoxelShapes.empty();
+            for (PartHolder holder : parts) {
+                cachedSidesShape = VoxelShapes.union(cachedSidesShape, holder.part.getSidesShape());
+            }
+            if (cachedSidesShape.isEmpty()) {
+                cachedSidesShape = VoxelShapes.empty();
+            }
+        }
+        return cachedSidesShape;
+    }
+
     @Override
     public void recalculateShape() {
         cachedShape = null;
         cachedCollisionShape = null;
         cachedCullingShape = null;
         cachedOutlineShape = null;
+        cachedSidesShape = null;
     }
 
     @Override
