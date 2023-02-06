@@ -233,7 +233,8 @@ public class MultipartBlockEntity extends BlockEntity
         // Refresh this, just to be on the safe side.
         container.partModelKeys = built;
         return new PartModelData(
-            container.getCullingShape(), container.getCollisionShape(), container.getOutlineShape(), built
+            container.getCullingShape(), container.getCollisionShape(), container.getOutlineShape(),
+            container.getSidesShape(), built
         );
     }
 

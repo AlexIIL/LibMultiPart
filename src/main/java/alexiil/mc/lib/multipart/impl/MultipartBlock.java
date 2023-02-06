@@ -189,6 +189,21 @@ public class MultipartBlock extends Block
     }
 
     @Override
+    public VoxelShape getSidesShape(BlockState state, BlockView view, BlockPos pos) {
+        if (view instanceof RenderAttachedBlockView renderView) {
+            Object data = renderView.getBlockEntityRenderAttachment(pos);
+            if (data instanceof PartModelData partData) {
+                return partData.sidesShape;
+            }
+        }
+
+        if (view.getBlockEntity(pos) instanceof MultipartBlockEntity container) {
+            return container.container.getSidesShape();
+        }
+        return super.getSidesShape(state, view, pos);
+    }
+
+    @Override
     public boolean hasDynamicCull(BlockState state) {
         return true;
     }
