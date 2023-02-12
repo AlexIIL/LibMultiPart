@@ -138,22 +138,15 @@ public final class MultipartUtilImpl {
 
             @Override
             public void apply() {
-                // Get the old block state for update notifications
-                BlockState oldState = world.getBlockState(pos);
-
                 // Actually place the new multipart
                 BlockState newState = LibMultiPart.BLOCK.getDefaultState();
                 newState = newState.with(Properties.WATERLOGGED, hasWater);
-                world.setBlockState(pos, newState, 0); // do not notify yet
+                world.setBlockState(pos, newState, Block.NOTIFY_ALL);
                 MultipartBlockEntity newBe = (MultipartBlockEntity) world.getBlockEntity(pos);
                 assert newBe != null;
                 newBe.container = container;
                 container.blockEntity = newBe;
                 container.addPartInternal(holder);
-
-                // Notify now that the block entity is set up
-                world.updateListeners(pos, oldState, newState, Block.NOTIFY_ALL);
-                world.updateNeighbors(pos, LibMultiPart.BLOCK);
             }
         };
     }
@@ -236,8 +229,12 @@ public final class MultipartUtilImpl {
                 }
 
                 // Notify now that the block entity is set up
+                // FIXME: for some reason, this still isn't updating blocks the way a normal setBlockState with NOTIFY_ALL would.
                 world.updateListeners(pos, oldState, newState, Block.NOTIFY_ALL);
                 world.updateNeighbors(pos, LibMultiPart.BLOCK);
+                oldState.prepare(world, pos, Block.NOTIFY_LISTENERS);
+                newState.updateNeighbors(world, pos, Block.NOTIFY_LISTENERS);
+                newState.prepare(world, pos, Block.NOTIFY_LISTENERS);
             }
         };
     }
