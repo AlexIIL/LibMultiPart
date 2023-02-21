@@ -1,0 +1,8 @@
+{
+  "libmultipart_compat:part_plugin": {
+    "initializer": "alexiil.mc.lib.multipart.compat.waila.LibMultiPartPlugin",
+    "required": [
+      "libmultipart"
+    ]
+  }
+}

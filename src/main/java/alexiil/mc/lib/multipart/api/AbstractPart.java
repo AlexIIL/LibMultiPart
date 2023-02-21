@@ -36,6 +36,7 @@ import net.minecraft.loot.context.LootContext;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
+import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.BlockMirror;
 import net.minecraft.util.BlockRotation;
@@ -730,6 +731,10 @@ public abstract class AbstractPart {
         if (!pickStack.isEmpty()) {
             to.add(pickStack);
         }
+    }
+
+    public Text getName(@Nullable BlockHitResult hitResult) {
+        return getPickStack(hitResult).getName();
     }
 
     /** Called instead of {@link Block#afterBreak(World, PlayerEntity, BlockPos, BlockState, BlockEntity, ItemStack)},

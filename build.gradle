@@ -11,6 +11,11 @@ targetCompatibility = JavaVersion.VERSION_17
 repositories {
     mavenLocal()
     maven { name="AlexIIL"; url="https://maven.alexiil.uk/" }
+
+    // Compat dependencies
+    if (wthit_enabled.toBoolean()) {
+        maven { name="WTHIT"; url="https://maven.bai.lol" }
+    }
 }
 
 archivesBaseName = "LibMultiPart"
@@ -35,6 +40,12 @@ dependencies {
     include "alexiil.mc.lib:libblockattributes-core:$libblockattributes_version"
     include "alexiil.mc.lib:libnetworkstack-base:$libnetworkstack_version"
 
+    // Compat dependencies
+    if (wthit_enabled.toBoolean()) {
+        modCompileOnly "mcp.mobius.waila:wthit-api:fabric-$wthit_version"
+        modLocalRuntime "mcp.mobius.waila:wthit:fabric-$wthit_version"
+    }
+
     // Misc
     implementation "com.google.code.findbugs:jsr305:3.0.1"
     testImplementation "junit:junit:4.12"
@@ -45,6 +56,17 @@ sourceSets {
         java {
             // This is unfinished - so we won't build it quite yet
             exclude "**/PartTags.java"
+
+            // Compat code
+            if (!wthit_enabled.toBoolean()) {
+                exclude "**/alexiil/mc/lib/multipart/compat/waila/**"
+            }
+        }
+        resources {
+            // Compat code
+            if (!wthit_enabled.toBoolean()) {
+                exclude "**/waila_plugins.json"
+            }
         }
     }
 }
@@ -123,9 +145,16 @@ ext.extra_jar_def__fabric_mod_json_replacements = [
   ["\$libnetworkstack_version", "$libnetworkstack_version"]
 ];
 
+// Custom modules
+def compatIncludes = [
+    "alexiil/mc/lib/multipart/compat/**",
+    "waila_plugins.json"
+]
 def allIncludes = [
     "assets/libmultipart/icon.png"
 ];
+def baseExclude = new HashSet<>()
+baseExclude.addAll(compatIncludes)
 
 def mavenDeps = [
     ["com.google.code.findbugs", "jsr305", "3.0.1"]
@@ -136,8 +165,9 @@ def jarDeps = [
     ["alexiil.mc.lib", "libnetworkstack-base", "$libnetworkstack_version"]
 ];
 
-generateJar("base", ["**"], [], true, [], [], mavenDeps);
-generateJar("all", allIncludes, [], false, [], ["base"], mavenDeps, jarDeps);
+generateJar("base", ["**"], baseExclude, true, [], [], mavenDeps);
+generateJar("compat", compatIncludes, [], false, ["base"], [], [])
+generateJar("all", allIncludes, [], false, [], ["base", "compat"], mavenDeps, jarDeps);
 // Don't generate a devonly fatjar - as there's only 1 module.
 
 tasks.withType(AbstractArchiveTask) {
