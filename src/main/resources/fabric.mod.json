@@ -36,6 +36,19 @@
   },
   "__buildscript_diff": {
     "base": {},
+    "compat": {
+      "+id": "libmultipart_compat",
+      "+name": "LibMultiPart (Mod Compatibility)",
+      "+description": "LibMultiPart compatibility with other mods.",
+      "+depends": {
+        "libmultipart": ">=$version"
+      },
+      "~custom": {
+        "+modmenu:parent": "libmutipart"
+      },
+      "-entrypoints": "",
+      "-mixins": ""
+    },
     "all": {
       "+id": "libmultipart_deps_container",
       "+name": "LibMultiPart (Dependency Container)",

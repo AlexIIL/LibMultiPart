@@ -2,3 +2,6 @@ Changes:
 
 * Fixes bug where placing multiparts was never updating neighbor blocks in some ways.
 * Fixes bug where client-side multipart block transformations could cause a crash on world-load.
+* Adds a compat module.
+    * Currently, this module adds compatibility code for the WTHIT tooltip mod, allowing parts to properly display their
+      names in tooltips.
