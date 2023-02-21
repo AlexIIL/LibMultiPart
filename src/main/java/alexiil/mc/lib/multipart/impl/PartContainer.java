@@ -1105,7 +1105,9 @@ public class PartContainer implements MultipartContainer {
     }
 
     private void updateTransform(DirectionTransformation stateTransform) {
-        if (stateTransform != cachedTransformation) {
+        // On rare occasions this can get called on the client.
+        // We don't need to care about that here because parts are expected to sync their rotation state themselves.
+        if (!isClientWorld() && stateTransform != cachedTransformation) {
             DirectionTransformation deltaTransform = DirectionTransformationUtil.getRelativeTransformation(cachedTransformation, stateTransform);
             cachedTransformation = stateTransform;
 
