@@ -733,6 +733,13 @@ public abstract class AbstractPart {
         }
     }
 
+    /** Called to get the display name of a part in the world.
+     * <p>
+     * For example, this is called on the client in the LMP WAILA plugin.
+     *
+     * @param hitResult where the part is being targeted, if anywhere.
+     * @return a display name for this part.
+     */
     public Text getName(@Nullable BlockHitResult hitResult) {
         return getPickStack(hitResult).getName();
     }
