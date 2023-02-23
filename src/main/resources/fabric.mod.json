@@ -43,6 +43,7 @@
       "+depends": {
         "libmultipart": ">=$version"
       },
+      "+icon": "assets/libmultipart/icon_compat.png",
       "~custom": {
         "+modmenu:parent": "libmutipart"
       },

@@ -71,6 +71,11 @@ sourceSets {
     }
 }
 
+processResources {
+    // exclude all xcf file from resulting builds
+    exclude "**/*.xcf"
+}
+
 compileJava {
     options.compilerArgs << "-Xmaxerrs" << "2000"
     options.compilerArgs << "-Xmaxwarns" << "2"
@@ -148,7 +153,8 @@ ext.extra_jar_def__fabric_mod_json_replacements = [
 // Custom modules
 def compatIncludes = [
     "alexiil/mc/lib/multipart/compat/**",
-    "waila_plugins.json"
+    "waila_plugins.json",
+    "icon_compat.png"
 ]
 def allIncludes = [
     "assets/libmultipart/icon.png"
