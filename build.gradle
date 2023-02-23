@@ -154,7 +154,7 @@ ext.extra_jar_def__fabric_mod_json_replacements = [
 def compatIncludes = [
     "alexiil/mc/lib/multipart/compat/**",
     "waila_plugins.json",
-    "icon_compat.png"
+    "assets/libmultipart/icon_compat.png"
 ]
 def allIncludes = [
     "assets/libmultipart/icon.png"
