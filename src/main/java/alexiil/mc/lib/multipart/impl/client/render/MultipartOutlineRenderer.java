@@ -71,7 +71,7 @@ public final class MultipartOutlineRenderer implements WorldRenderEvents.BlockOu
             float ny = (float) (endY - startY);
             float nz = (float) (endZ - startZ);
 
-            float t = MathHelper.fastInverseSqrt(nx * nx + ny * ny + nz * nz);
+            float t = MathHelper.inverseSqrt(nx * nx + ny * ny + nz * nz);
 
             nx *= t;
             ny *= t;

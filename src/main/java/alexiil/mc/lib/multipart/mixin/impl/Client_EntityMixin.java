@@ -46,7 +46,7 @@ public abstract class Client_EntityMixin {
         // The associated Entity method seems to be called on both the client and the server, but the call to
         // `world.addParticle()` only does anything on the client.
         if (world.isClient) {
-            BlockPos blockPos = new BlockPos(getX(), MathHelper.floor(getY() - 0.2), MathHelper.floor(getZ()));
+            BlockPos blockPos = BlockPos.ofFloored(getX(), getY() - 0.2, getZ());
             BlockState state = world.getBlockState(blockPos);
             Block block = state.getBlock();
             if (block instanceof IBlockCustomParticles) {

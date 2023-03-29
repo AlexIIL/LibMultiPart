@@ -34,7 +34,7 @@ public abstract class LivingEntityMixin extends Entity {
             method = "fall(DZLnet/minecraft/block/BlockState;Lnet/minecraft/util/math/BlockPos;)V", cancellable = true)
     private void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition,
                       CallbackInfo ci) {
-        BlockPos blockPos = new BlockPos(getX(), MathHelper.floor(getY() - 0.2), MathHelper.floor(getZ()));
+        BlockPos blockPos = BlockPos.ofFloored(getX(), getY() - 0.2, getZ());
         BlockState state = world.getBlockState(blockPos);
         Block block = state.getBlock();
         if (block instanceof IBlockCustomParticles) {
