@@ -27,7 +27,11 @@
   "icon": "assets/libmultipart/icon.png",
   "authors": [ "AlexIIL" ],
   "license": "Mozilla Public License Version 2.0",
-  "custom": { "modmenu:api": true },
+  "custom": {
+    "modmenu": {
+      "badges": ["library"]
+    }
+  },
   "__buildscript_inherit": {
     "~depends": {
       "+libblockattributes_core": ">=$libblockattributes_version",
@@ -45,7 +49,9 @@
       },
       "+icon": "assets/libmultipart/icon_compat.png",
       "~custom": {
-        "+modmenu:parent": "libmutipart"
+        "~modmenu": {
+          "+parent": "libmultipart"
+        }
       },
       "-entrypoints": "",
       "-mixins": ""
@@ -57,7 +63,9 @@
         "libmultipart": ">=$version"
       },
       "~custom": {
-        "+modmenu:parent": "libmultipart"
+        "~modmenu": {
+          "+parent": "libmultipart"
+        }
       },
       "-entrypoints": "",
       "-mixins": ""
