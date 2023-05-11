@@ -23,6 +23,7 @@ import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.class_8567;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -530,15 +531,14 @@ public class MultipartBlock extends Block
             afterSubpartBreak(player, stack, (IdSubPart<?>) subpart.extra);
         } else {
             if (world instanceof ServerWorld sv) {
-                LootContext.Builder ctxBuilder = new LootContext.Builder(sv);
-                ctxBuilder.random(world.random);
-                ctxBuilder.parameter(LootContextParameters.BLOCK_STATE, state);
-                ctxBuilder.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
-                ctxBuilder.parameter(LootContextParameters.TOOL, stack);
-                ctxBuilder.optionalParameter(LootContextParameters.THIS_ENTITY, player);
-                ctxBuilder.optionalParameter(LootContextParameters.BLOCK_ENTITY, blockEntity);
+                class_8567.class_8568 ctxBuilder = new class_8567.class_8568(sv);
+                ctxBuilder.method_51874(LootContextParameters.BLOCK_STATE, state);
+                ctxBuilder.method_51874(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
+                ctxBuilder.method_51874(LootContextParameters.TOOL, stack);
+                ctxBuilder.method_51877(LootContextParameters.THIS_ENTITY, player);
+                ctxBuilder.method_51877(LootContextParameters.BLOCK_ENTITY, blockEntity);
                 subpart.putLootContext(ctxBuilder);
-                LootContext context = ctxBuilder.build(PartLootParams.PART_TYPE);
+                class_8567 context = ctxBuilder.method_51875(PartLootParams.PART_TYPE);
                 subpart.part.afterBreak(player);
                 subpart.part.addDrops(createDropTarget(subpart.part), context);
                 for (AbstractPart part : ((IdAdditional) subpart.extra).additional) {
@@ -620,13 +620,12 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, LootContext.Builder builder) {
+    public List<ItemStack> getDroppedStacks(BlockState state, class_8567.class_8568 builder) {
         DefaultedList<ItemStack> drops = DefaultedList.of();
-        builder.parameter(LootContextParameters.BLOCK_STATE, state);
-        BlockEntity be = builder.get(LootContextParameters.BLOCK_ENTITY);
+        builder.method_51874(LootContextParameters.BLOCK_STATE, state);
+        BlockEntity be = builder.method_51873(LootContextParameters.BLOCK_ENTITY);
 
-        LootContext lootContext;
-        lootContext = builder.build(LootContextTypes.BLOCK);
+        class_8567 lootContext = builder.method_51875(LootContextTypes.BLOCK);
 
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity mpbe = (MultipartBlockEntity) be;

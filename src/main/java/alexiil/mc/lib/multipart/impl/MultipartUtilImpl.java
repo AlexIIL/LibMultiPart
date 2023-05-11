@@ -115,7 +115,7 @@ public final class MultipartUtilImpl {
             if (!conversions.isEmpty()) {
                 return offerAdder(world, pos, hasWater, conversions, creator, respectEntityBBs);
             }
-        } else if (!state.getMaterial().isReplaceable()) {
+        } else if (!state.isReplaceable()) {
             return null;
         }
 

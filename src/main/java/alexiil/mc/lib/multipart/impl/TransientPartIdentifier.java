@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
+import net.minecraft.class_8567;
 import net.minecraft.loot.context.LootContext;
 import net.minecraft.util.Util;
 
@@ -70,15 +71,15 @@ public final class TransientPartIdentifier {
         return "TransientPartIdentifier{ part = " + part + ", extra = " + extra + " }";
     }
 
-    public void putLootContext(LootContext.Builder builder) {
-        builder.parameter(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+    public void putLootContext(class_8567.class_8568 builder) {
+        builder.method_51874(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
         extra.putLootContext(builder);
     }
 
     public static abstract class ExtraIdData {
         ExtraIdData() {}
 
-        protected abstract void putLootContext(LootContext.Builder builder);
+        protected abstract void putLootContext(class_8567.class_8568 builder);
     }
 
     public static final class IdSubPart<Sub> extends ExtraIdData {
@@ -91,9 +92,9 @@ public final class TransientPartIdentifier {
         }
 
         @Override
-        protected void putLootContext(LootContext.Builder builder) {
-            builder.parameter(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
-            builder.parameter(PartLootParams.ADDITIONAL_PARTS, new BrokenPart[0]);
+        protected void putLootContext(class_8567.class_8568 builder) {
+            builder.method_51874(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
+            builder.method_51874(PartLootParams.ADDITIONAL_PARTS, new BrokenPart[0]);
         }
     }
 
@@ -105,13 +106,13 @@ public final class TransientPartIdentifier {
         }
 
         @Override
-        protected void putLootContext(LootContext.Builder builder) {
+        protected void putLootContext(class_8567.class_8568 builder) {
             BrokenPart[] array = new BrokenPart[additional.size()];
             int i = 0;
             for (AbstractPart part : additional) {
                 array[i++] = new BrokenSinglePart(part);
             }
-            builder.parameter(PartLootParams.ADDITIONAL_PARTS, array);
+            builder.method_51874(PartLootParams.ADDITIONAL_PARTS, array);
         }
     }
 }

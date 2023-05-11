@@ -13,6 +13,7 @@ import java.util.function.BiFunction;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.class_8567;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
@@ -254,32 +255,31 @@ public final class PartHolder implements MultipartHolder {
 
     @Override
     public void dropItems(@Nullable PlayerEntity player) {
-        LootContext context = createLootContext(player);
+        class_8567 context = createLootContext(player);
         part.addDrops(MultipartBlock.createDropTarget(part), context);
     }
 
     @Override
     public DefaultedList<ItemStack> collectDrops(PlayerEntity player) {
-        LootContext context = createLootContext(player);
+        class_8567 context = createLootContext(player);
         DefaultedList<ItemStack> drops = DefaultedList.of();
         part.addDrops(new ItemDropCollector(drops), context);
         return drops;
     }
 
-    private LootContext createLootContext(PlayerEntity player) {
+    private class_8567 createLootContext(PlayerEntity player) {
         ServerWorld sv = (ServerWorld) container.getMultipartWorld();
-        LootContext.Builder ctxBuilder = new LootContext.Builder(sv);
-        ctxBuilder.random(sv.random);
-        ctxBuilder.parameter(LootContextParameters.BLOCK_STATE, container.blockEntity.getCachedState());
-        ctxBuilder.parameter(LootContextParameters.ORIGIN, Vec3d.ofCenter(container.getMultipartPos()));
-        ctxBuilder.parameter(LootContextParameters.TOOL, ItemStack.EMPTY);
-        ctxBuilder.optionalParameter(LootContextParameters.BLOCK_ENTITY, container.blockEntity);
+        class_8567.class_8568 ctxBuilder = new class_8567.class_8568(sv);
+        ctxBuilder.method_51874(LootContextParameters.BLOCK_STATE, container.blockEntity.getCachedState());
+        ctxBuilder.method_51874(LootContextParameters.ORIGIN, Vec3d.ofCenter(container.getMultipartPos()));
+        ctxBuilder.method_51874(LootContextParameters.TOOL, ItemStack.EMPTY);
+        ctxBuilder.method_51877(LootContextParameters.BLOCK_ENTITY, container.blockEntity);
         if (player != null) {
-            ctxBuilder.optionalParameter(LootContextParameters.THIS_ENTITY, player);
+            ctxBuilder.method_51877(LootContextParameters.THIS_ENTITY, player);
         }
-        ctxBuilder.parameter(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
-        ctxBuilder.parameter(PartLootParams.ADDITIONAL_PARTS, new BrokenSinglePart[0]);
-        LootContext context = ctxBuilder.build(PartLootParams.PART_TYPE);
+        ctxBuilder.method_51874(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+        ctxBuilder.method_51874(PartLootParams.ADDITIONAL_PARTS, new BrokenSinglePart[0]);
+        class_8567 context = ctxBuilder.method_51875(PartLootParams.PART_TYPE);
         return context;
     }
 

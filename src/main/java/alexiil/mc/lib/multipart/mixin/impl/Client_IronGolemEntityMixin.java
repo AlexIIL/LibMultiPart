@@ -35,13 +35,13 @@ public abstract class Client_IronGolemEntityMixin extends GolemEntity implements
     private void tickMovment(CallbackInfo ci) {
         // The associated IronGolemEntity method seems to be called on both the client and the server, but the call to
         // `world.addParticle()` only does anything on the client.
-        if (world.isClient) {
+        if (getWorld().isClient) {
             BlockPos pos =
                     new BlockPos(MathHelper.floor(getX()), MathHelper.floor(getY() - 0.2), MathHelper.floor(getZ()));
-            BlockState state = world.getBlockState(pos);
+            BlockState state = getWorld().getBlockState(pos);
             Block block = state.getBlock();
             if (block instanceof IBlockCustomParticles) {
-                if (((IBlockCustomParticles) block).spawnIronGolemParticles(world, pos, state,
+                if (((IBlockCustomParticles) block).spawnIronGolemParticles(getWorld(), pos, state,
                         (IronGolemEntity) (Object) this, getRandom())) {
                     ci.cancel();
                 }

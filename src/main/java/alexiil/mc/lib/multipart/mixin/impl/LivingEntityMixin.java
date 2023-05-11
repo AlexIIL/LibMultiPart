@@ -35,11 +35,11 @@ public abstract class LivingEntityMixin extends Entity {
     private void fall(double heightDifference, boolean onGround, BlockState landedState, BlockPos landedPosition,
                       CallbackInfo ci) {
         BlockPos blockPos = BlockPos.ofFloored(getX(), getY() - 0.2, getZ());
-        BlockState state = world.getBlockState(blockPos);
+        BlockState state = getWorld().getBlockState(blockPos);
         Block block = state.getBlock();
         if (block instanceof IBlockCustomParticles) {
             // This injector injects into an if statement that checks `!world.isClient`
-            if (((IBlockCustomParticles) block).spawnFallParticles((ServerWorld) world, blockPos, state,
+            if (((IBlockCustomParticles) block).spawnFallParticles((ServerWorld) getWorld(), blockPos, state,
                     (LivingEntity) (Object) this, random)) {
                 ci.cancel();
 

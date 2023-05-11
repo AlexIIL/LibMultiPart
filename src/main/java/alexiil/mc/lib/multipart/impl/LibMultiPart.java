@@ -7,21 +7,22 @@
  */
 package alexiil.mc.lib.multipart.impl;
 
-import alexiil.mc.lib.multipart.api.misc.FloatSupplier;
+import java.util.function.Predicate;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.Material;
+
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
-import java.util.function.Predicate;
+import alexiil.mc.lib.multipart.api.misc.FloatSupplier;
 
 public class LibMultiPart implements ModInitializer {
 
@@ -46,9 +47,8 @@ public class LibMultiPart implements ModInitializer {
             );
         }
 
-        Material material = new Material.Builder(MapColor.BLACK).build();
         BLOCK = new MultipartBlock(
-            FabricBlockSettings.of(material)//
+            FabricBlockSettings.of()//
                 .dropsNothing()//
                 .hardness(0.5f)//
                 .resistance(2.0f)//

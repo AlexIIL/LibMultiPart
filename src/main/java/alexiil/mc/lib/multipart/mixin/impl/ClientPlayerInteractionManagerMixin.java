@@ -136,7 +136,7 @@ public class ClientPlayerInteractionManagerMixin implements IClientPlayerInterac
         float delta = block.calcBlockBreakingDelta(state, pl, view, pos, key);
         if (playHitSound) {
             boolean reallyPlay = blockBreakingSoundCooldown % 4 == 0 || blockBreakingSoundCooldown == 4.1f;
-            if (reallyPlay && block.playHitSound(pl.world, pos, state, pl, key)) {
+            if (reallyPlay && block.playHitSound(pl.getWorld(), pos, state, pl, key)) {
                 blockBreakingSoundCooldown = 0.1f;
             }
         }
