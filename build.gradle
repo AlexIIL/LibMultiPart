@@ -162,6 +162,8 @@ def allIncludes = [
 def baseExclude = new HashSet<>()
 baseExclude.addAll(compatIncludes)
 
+compatIncludes.add("assets/libmultipart/icon.png")
+
 def mavenDeps = [
     ["com.google.code.findbugs", "jsr305", "3.0.1"]
 ];

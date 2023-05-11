@@ -50,7 +50,13 @@
       "+icon": "assets/libmultipart/icon_compat.png",
       "~custom": {
         "~modmenu": {
-          "+parent": "libmultipart"
+          "+parent": {
+            "id": "libmultipart",
+            "name": "LibMultiPart",
+            "description": "A MultiPart library for fabric. Based on LibBlockAttributes and LibNetworkStack",
+            "icon": "assets/libmultipart/icon.png",
+            "badges": ["library"]
+          }
         }
       },
       "-entrypoints": "",
@@ -64,7 +70,13 @@
       },
       "~custom": {
         "~modmenu": {
-          "+parent": "libmultipart"
+          "+parent": {
+            "id": "libmultipart",
+            "name": "LibMultiPart",
+            "description": "A MultiPart library for fabric. Based on LibBlockAttributes and LibNetworkStack",
+            "icon": "assets/libmultipart/icon.png",
+            "badges": ["library"]
+          }
         }
       },
       "-entrypoints": "",
