@@ -18,7 +18,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.class_8567;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.particle.BlockDustParticle;
 import net.minecraft.client.particle.ParticleManager;
@@ -34,6 +33,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.sound.SoundCategory;
@@ -120,11 +120,14 @@ public abstract class AbstractPart {
     /** Writes the payload that will be passed into
      * {@link PartDefinition#loadFromBuffer(MultipartHolder, NetByteBuf, IMsgReadCtx)} on the client. (This is called on
      * the server and sent to the client). Note that this will be called *instead* of write and read payload. */
-    public void writeCreationData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
+    public void writeCreationData(NetByteBuf buffer, IMsgWriteCtx ctx) {
+    }
 
-    public void writeRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {}
+    public void writeRenderData(NetByteBuf buffer, IMsgWriteCtx ctx) {
+    }
 
-    public void readRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {}
+    public void readRenderData(NetByteBuf buffer, IMsgReadCtx ctx) throws InvalidInputDataException {
+    }
 
     /** Sends the given {@link NetIdDataK} or {@link NetIdSignalK} to every player currently watching this multipart. */
     public final <T> void sendNetworkUpdate(T obj, NetIdTyped<T> netId) {
@@ -427,7 +430,9 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
+    protected final void spawnSprintParticle(
+        Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Identifier spriteId
+    ) {
         Sprite sprite;
         if (spriteId == null) {
             sprite = null;
@@ -438,7 +443,9 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnSprintParticle(Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnSprintParticle(
+        Entity sprintingEntity, Random entityRandom, BlockState state, @Nullable Sprite sprite
+    ) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
@@ -477,7 +484,9 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId) {
+    protected final void spawnIronGolemParticle(
+        IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId
+    ) {
         Sprite sprite;
         if (spriteId == null) {
             sprite = null;
@@ -488,7 +497,9 @@ public abstract class AbstractPart {
     }
 
     @Environment(EnvType.CLIENT)
-    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite) {
+    protected final void spawnIronGolemParticle(
+        IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite
+    ) {
         World world = container.getMultipartWorld();
         BlockPos blockPos = container.getMultipartPos();
         ParticleManager manager = MinecraftClient.getInstance().particleManager;
@@ -519,7 +530,7 @@ public abstract class AbstractPart {
     public boolean onSpawnFallParticles(LivingEntity fallenEntity, Random entityRandom) {
         float f = MathHelper.ceil(fallenEntity.fallDistance - 3.0f);
         double d = Math.min(0.2f + f / 15.0f, 2.5);
-        int count = (int)(150.0 * d);
+        int count = (int) (150.0 * d);
         sendSpawnFallParticles(fallenEntity.getPos(), count);
         return true;
     }
@@ -584,7 +595,7 @@ public abstract class AbstractPart {
             double dy = random.nextGaussian() * 0.15;
             double dz = random.nextGaussian() * 0.15;
             BlockDustParticle particle = new BlockDustParticle(
-                    (ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
+                (ClientWorld) world, pos.getX(), pos.getY(), pos.getZ(), dx, dy, dz, state, blockPos
             );
             if (sprite != null) {
                 particle.setSprite(new SingleSpriteProvider(sprite));
@@ -672,7 +683,7 @@ public abstract class AbstractPart {
 
     /** Called whenever this part is picked by the player (similar to
      * {@link Block#getPickStack(BlockView, BlockPos, BlockState)})
-     * 
+     *
      * @return The stack that should be picked, or ItemStack.EMPTY if no stack can be picked from this part.
      * @deprecated Use (and implement) {@link #getPickStack(BlockHitResult)} instead. */
     @Deprecated
@@ -717,7 +728,7 @@ public abstract class AbstractPart {
         boolean dropsAsEntity();
     }
 
-    public void addDrops(ItemDropTarget target, class_8567 context) {
+    public void addDrops(ItemDropTarget target, LootContextParameterSet params) {
         DefaultedList<ItemStack> list = DefaultedList.of();
         addDrops(list);
         if (!list.isEmpty()) {

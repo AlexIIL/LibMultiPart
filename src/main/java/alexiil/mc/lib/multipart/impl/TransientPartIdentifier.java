@@ -11,8 +11,9 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-import net.minecraft.class_8567;
-import net.minecraft.loot.context.LootContext;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.util.Util;
 
 import alexiil.mc.lib.multipart.api.AbstractPart;
@@ -21,8 +22,6 @@ import alexiil.mc.lib.multipart.api.PartLootParams.BrokenPart;
 import alexiil.mc.lib.multipart.api.PartLootParams.BrokenSinglePart;
 import alexiil.mc.lib.multipart.api.PartLootParams.BrokenSubPart;
 import alexiil.mc.lib.multipart.api.SubdividedPart;
-
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 public final class TransientPartIdentifier {
     public final AbstractPart part;
@@ -71,15 +70,16 @@ public final class TransientPartIdentifier {
         return "TransientPartIdentifier{ part = " + part + ", extra = " + extra + " }";
     }
 
-    public void putLootContext(class_8567.class_8568 builder) {
-        builder.method_51874(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+    public void putLootContext(LootContextParameterSet.Builder builder) {
+        builder.add(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
         extra.putLootContext(builder);
     }
 
     public static abstract class ExtraIdData {
-        ExtraIdData() {}
+        ExtraIdData() {
+        }
 
-        protected abstract void putLootContext(class_8567.class_8568 builder);
+        protected abstract void putLootContext(LootContextParameterSet.Builder builder);
     }
 
     public static final class IdSubPart<Sub> extends ExtraIdData {
@@ -92,9 +92,9 @@ public final class TransientPartIdentifier {
         }
 
         @Override
-        protected void putLootContext(class_8567.class_8568 builder) {
-            builder.method_51874(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
-            builder.method_51874(PartLootParams.ADDITIONAL_PARTS, new BrokenPart[0]);
+        protected void putLootContext(LootContextParameterSet.Builder builder) {
+            builder.add(PartLootParams.BROKEN_PART, new BrokenSubPart<>(part, subpart));
+            builder.add(PartLootParams.ADDITIONAL_PARTS, new BrokenPart[0]);
         }
     }
 
@@ -106,13 +106,13 @@ public final class TransientPartIdentifier {
         }
 
         @Override
-        protected void putLootContext(class_8567.class_8568 builder) {
+        protected void putLootContext(LootContextParameterSet.Builder builder) {
             BrokenPart[] array = new BrokenPart[additional.size()];
             int i = 0;
             for (AbstractPart part : additional) {
                 array[i++] = new BrokenSinglePart(part);
             }
-            builder.method_51874(PartLootParams.ADDITIONAL_PARTS, array);
+            builder.add(PartLootParams.ADDITIONAL_PARTS, array);
         }
     }
 }

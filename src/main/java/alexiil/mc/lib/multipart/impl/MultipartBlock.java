@@ -23,7 +23,6 @@ import net.minecraft.block.Waterloggable;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.class_8567;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -34,7 +33,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.loot.context.LootContextTypes;
 import net.minecraft.server.world.ServerWorld;
@@ -97,7 +96,8 @@ public class MultipartBlock extends Block
      * *always* be stored in the part itself.
      *
      * @see alexiil.mc.lib.multipart.api.event.PartTransformEvent */
-    public static final EnumProperty<DirectionTransformation> TRANSFORMATION = EnumProperty.of("transformation", DirectionTransformation.class);
+    public static final EnumProperty<DirectionTransformation> TRANSFORMATION =
+        EnumProperty.of("transformation", DirectionTransformation.class);
 
     public MultipartBlock(Settings settings) {
         super(settings);
@@ -407,11 +407,13 @@ public class MultipartBlock extends Block
 
     @Override
     @Environment(EnvType.CLIENT)
-    public boolean spawnSprintingParticles(World world, BlockPos pos, BlockState state, Entity sprintingEntity,
-                                           Random entityRandom) {
+    public boolean spawnSprintingParticles(
+        World world, BlockPos pos, BlockState state, Entity sprintingEntity,
+        Random entityRandom
+    ) {
         // Clearance always seems to be 0.2 for these entity-collision particles
         TransientPartIdentifier colliding =
-                getMultipartColliding(state, world, pos, sprintingEntity.getBoundingBox(), 0.2);
+            getMultipartColliding(state, world, pos, sprintingEntity.getBoundingBox(), 0.2);
         if (colliding != null) {
             return colliding.part.spawnSprintParticle(sprintingEntity, entityRandom);
         }
@@ -423,11 +425,13 @@ public class MultipartBlock extends Block
 
     @Override
     @Environment(EnvType.CLIENT)
-    public boolean spawnIronGolemParticles(World world, BlockPos pos, BlockState state, IronGolemEntity ironGolem,
-                                           Random entityRandom) {
+    public boolean spawnIronGolemParticles(
+        World world, BlockPos pos, BlockState state, IronGolemEntity ironGolem,
+        Random entityRandom
+    ) {
         // Clearance always seems to be 0.2 for these entity-collision particles
         TransientPartIdentifier colliding =
-                getMultipartColliding(state, world, pos, ironGolem.getBoundingBox(), 0.2);
+            getMultipartColliding(state, world, pos, ironGolem.getBoundingBox(), 0.2);
         if (colliding != null) {
             return colliding.part.spawnIronGolemParticle(ironGolem, entityRandom);
         }
@@ -438,11 +442,13 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public boolean spawnFallParticles(ServerWorld world, BlockPos pos, BlockState state, LivingEntity fallenEntity,
-                                      Random entityRandom) {
+    public boolean spawnFallParticles(
+        ServerWorld world, BlockPos pos, BlockState state, LivingEntity fallenEntity,
+        Random entityRandom
+    ) {
         // Clearance always seems to be 0.2 for these entity-collision particles
         TransientPartIdentifier colliding =
-                getMultipartColliding(state, world, pos, fallenEntity.getBoundingBox(), 0.2);
+            getMultipartColliding(state, world, pos, fallenEntity.getBoundingBox(), 0.2);
         if (colliding != null) {
             return colliding.part.onSpawnFallParticles(fallenEntity, entityRandom);
         }
@@ -531,14 +537,14 @@ public class MultipartBlock extends Block
             afterSubpartBreak(player, stack, (IdSubPart<?>) subpart.extra);
         } else {
             if (world instanceof ServerWorld sv) {
-                class_8567.class_8568 ctxBuilder = new class_8567.class_8568(sv);
-                ctxBuilder.method_51874(LootContextParameters.BLOCK_STATE, state);
-                ctxBuilder.method_51874(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
-                ctxBuilder.method_51874(LootContextParameters.TOOL, stack);
-                ctxBuilder.method_51877(LootContextParameters.THIS_ENTITY, player);
-                ctxBuilder.method_51877(LootContextParameters.BLOCK_ENTITY, blockEntity);
+                LootContextParameterSet.Builder ctxBuilder = new LootContextParameterSet.Builder(sv);
+                ctxBuilder.add(LootContextParameters.BLOCK_STATE, state);
+                ctxBuilder.add(LootContextParameters.ORIGIN, Vec3d.ofCenter(pos));
+                ctxBuilder.add(LootContextParameters.TOOL, stack);
+                ctxBuilder.addOptional(LootContextParameters.THIS_ENTITY, player);
+                ctxBuilder.addOptional(LootContextParameters.BLOCK_ENTITY, blockEntity);
                 subpart.putLootContext(ctxBuilder);
-                class_8567 context = ctxBuilder.method_51875(PartLootParams.PART_TYPE);
+                LootContextParameterSet context = ctxBuilder.build(PartLootParams.PART_TYPE);
                 subpart.part.afterBreak(player);
                 subpart.part.addDrops(createDropTarget(subpart.part), context);
                 for (AbstractPart part : ((IdAdditional) subpart.extra).additional) {
@@ -620,12 +626,12 @@ public class MultipartBlock extends Block
     }
 
     @Override
-    public List<ItemStack> getDroppedStacks(BlockState state, class_8567.class_8568 builder) {
+    public List<ItemStack> getDroppedStacks(BlockState state, LootContextParameterSet.Builder builder) {
         DefaultedList<ItemStack> drops = DefaultedList.of();
-        builder.method_51874(LootContextParameters.BLOCK_STATE, state);
-        BlockEntity be = builder.method_51873(LootContextParameters.BLOCK_ENTITY);
+        builder.add(LootContextParameters.BLOCK_STATE, state);
+        BlockEntity be = builder.getOptional(LootContextParameters.BLOCK_ENTITY);
 
-        class_8567 lootContext = builder.method_51875(LootContextTypes.BLOCK);
+        LootContextParameterSet parameterSet = builder.build(LootContextTypes.BLOCK);
 
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity mpbe = (MultipartBlockEntity) be;
@@ -633,7 +639,7 @@ public class MultipartBlock extends Block
             ItemDropTarget target = new ItemDropCollector(drops);
 
             for (PartHolder holder : mpbe.container.parts) {
-                holder.part.addDrops(target, lootContext);
+                holder.part.addDrops(target, parameterSet);
             }
         }
         return drops;
@@ -711,8 +717,10 @@ public class MultipartBlock extends Block
 
     @Nullable
     @Override
-    public TransientPartIdentifier getMultipartColliding(BlockState state, BlockView view, BlockPos pos,
-                                                         Box toCollideWith, double clearance) {
+    public TransientPartIdentifier getMultipartColliding(
+        BlockState state, BlockView view, BlockPos pos,
+        Box toCollideWith, double clearance
+    ) {
         BlockEntity be = view.getBlockEntity(pos);
         if (be instanceof MultipartBlockEntity) {
             MultipartBlockEntity multi = (MultipartBlockEntity) be;

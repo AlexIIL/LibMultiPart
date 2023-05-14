@@ -13,10 +13,11 @@ import java.util.function.BiFunction;
 
 import javax.annotation.Nullable;
 
-import net.minecraft.class_8567;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.loot.context.LootContext;
+import net.minecraft.loot.context.LootContextParameterSet;
 import net.minecraft.loot.context.LootContextParameters;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -42,8 +43,6 @@ import alexiil.mc.lib.multipart.api.MultipartHolder;
 import alexiil.mc.lib.multipart.api.PartDefinition;
 import alexiil.mc.lib.multipart.api.PartLootParams;
 import alexiil.mc.lib.multipart.api.PartLootParams.BrokenSinglePart;
-
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 public final class PartHolder implements MultipartHolder {
     public final PartContainer container;
@@ -255,32 +254,31 @@ public final class PartHolder implements MultipartHolder {
 
     @Override
     public void dropItems(@Nullable PlayerEntity player) {
-        class_8567 context = createLootContext(player);
-        part.addDrops(MultipartBlock.createDropTarget(part), context);
+        LootContextParameterSet params = createLootContext(player);
+        part.addDrops(MultipartBlock.createDropTarget(part), params);
     }
 
     @Override
     public DefaultedList<ItemStack> collectDrops(PlayerEntity player) {
-        class_8567 context = createLootContext(player);
+        LootContextParameterSet params = createLootContext(player);
         DefaultedList<ItemStack> drops = DefaultedList.of();
-        part.addDrops(new ItemDropCollector(drops), context);
+        part.addDrops(new ItemDropCollector(drops), params);
         return drops;
     }
 
-    private class_8567 createLootContext(PlayerEntity player) {
+    private LootContextParameterSet createLootContext(PlayerEntity player) {
         ServerWorld sv = (ServerWorld) container.getMultipartWorld();
-        class_8567.class_8568 ctxBuilder = new class_8567.class_8568(sv);
-        ctxBuilder.method_51874(LootContextParameters.BLOCK_STATE, container.blockEntity.getCachedState());
-        ctxBuilder.method_51874(LootContextParameters.ORIGIN, Vec3d.ofCenter(container.getMultipartPos()));
-        ctxBuilder.method_51874(LootContextParameters.TOOL, ItemStack.EMPTY);
-        ctxBuilder.method_51877(LootContextParameters.BLOCK_ENTITY, container.blockEntity);
+        LootContextParameterSet.Builder ctxBuilder = new LootContextParameterSet.Builder(sv);
+        ctxBuilder.add(LootContextParameters.BLOCK_STATE, container.blockEntity.getCachedState());
+        ctxBuilder.add(LootContextParameters.ORIGIN, Vec3d.ofCenter(container.getMultipartPos()));
+        ctxBuilder.add(LootContextParameters.TOOL, ItemStack.EMPTY);
+        ctxBuilder.addOptional(LootContextParameters.BLOCK_ENTITY, container.blockEntity);
         if (player != null) {
-            ctxBuilder.method_51877(LootContextParameters.THIS_ENTITY, player);
+            ctxBuilder.addOptional(LootContextParameters.THIS_ENTITY, player);
         }
-        ctxBuilder.method_51874(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
-        ctxBuilder.method_51874(PartLootParams.ADDITIONAL_PARTS, new BrokenSinglePart[0]);
-        class_8567 context = ctxBuilder.method_51875(PartLootParams.PART_TYPE);
-        return context;
+        ctxBuilder.add(PartLootParams.BROKEN_PART, new BrokenSinglePart(part));
+        ctxBuilder.add(PartLootParams.ADDITIONAL_PARTS, new BrokenSinglePart[0]);
+        return ctxBuilder.build(PartLootParams.PART_TYPE);
     }
 
     // ###############################
@@ -325,7 +323,7 @@ public final class PartHolder implements MultipartHolder {
     }
 
     /** Internal method for adding a required part.
-     * 
+     *
      * @return True if this changed anything, false otherwise. */
     boolean addRequiredPart0(PartHolder req) {
         if (req == null || req == this) {
@@ -368,7 +366,7 @@ public final class PartHolder implements MultipartHolder {
     }
 
     /** Internal method for removing a required part.
-     * 
+     *
      * @return True if this changed anything, false otherwise. */
     boolean removeRequiredPart0(PartHolder req) {
         if (req == null || req == this) {
