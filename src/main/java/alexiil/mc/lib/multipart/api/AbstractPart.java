@@ -467,59 +467,6 @@ public abstract class AbstractPart {
         manager.addParticle(particle);
     }
 
-    /** Spawns a single particle for when an iron golem walks on this part.
-     *
-     * @param ironGolem The iron golem doing the walking.
-     * @param entityRandom The iron golem's random for use in particle position &amp; velocity calculations.
-     * @return True to cancel the default iron golem walking particle from spawning, false otherwise. */
-    @Environment(EnvType.CLIENT)
-    public boolean spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom) {
-        spawnIronGolemParticle(ironGolem, entityRandom, getClosestBlockState());
-        return true;
-    }
-
-    @Environment(EnvType.CLIENT)
-    protected final void spawnIronGolemParticle(IronGolemEntity ironGolem, Random entityRandom, BlockState state) {
-        spawnIronGolemParticle(ironGolem, entityRandom, state, (Sprite) null);
-    }
-
-    @Environment(EnvType.CLIENT)
-    protected final void spawnIronGolemParticle(
-        IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Identifier spriteId
-    ) {
-        Sprite sprite;
-        if (spriteId == null) {
-            sprite = null;
-        } else {
-            sprite = getBlockAtlas().apply(spriteId);
-        }
-        spawnIronGolemParticle(ironGolem, entityRandom, state, sprite);
-    }
-
-    @Environment(EnvType.CLIENT)
-    protected final void spawnIronGolemParticle(
-        IronGolemEntity ironGolem, Random entityRandom, BlockState state, @Nullable Sprite sprite
-    ) {
-        World world = container.getMultipartWorld();
-        BlockPos blockPos = container.getMultipartPos();
-        ParticleManager manager = MinecraftClient.getInstance().particleManager;
-
-        double width = ironGolem.getWidth();
-
-        double x = ironGolem.getX() + (entityRandom.nextDouble() - 0.5) * width;
-        double y = ironGolem.getY() + 0.1;
-        double z = ironGolem.getZ() + (entityRandom.nextDouble() - 0.5) * width;
-        double dx = (entityRandom.nextDouble() - 0.5) * 4.0;
-        double dy = 0.5;
-        double dz = (entityRandom.nextDouble() - 0.5) * 4.0;
-
-        BlockDustParticle particle = new BlockDustParticle((ClientWorld) world, x, y, z, dx, dy, dz, state, blockPos);
-        if (sprite != null) {
-            particle.setSprite(new SingleSpriteProvider(sprite));
-        }
-        manager.addParticle(particle);
-    }
-
     /** Called on the server when an entity has fallen on this part and is attempting to spawn particles for it.
      *
      * This is to send packets to clients to actually spawn the particles.

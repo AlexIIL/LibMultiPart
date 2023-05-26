@@ -27,7 +27,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -416,24 +415,6 @@ public class MultipartBlock extends Block
             getMultipartColliding(state, world, pos, sprintingEntity.getBoundingBox(), 0.2);
         if (colliding != null) {
             return colliding.part.spawnSprintParticle(sprintingEntity, entityRandom);
-        }
-
-        // You pretty much always want to return true here, regardless of whether particles were actually spawned,
-        // because returning true prevents the missing-texture particles from being spawned.
-        return true;
-    }
-
-    @Override
-    @Environment(EnvType.CLIENT)
-    public boolean spawnIronGolemParticles(
-        World world, BlockPos pos, BlockState state, IronGolemEntity ironGolem,
-        Random entityRandom
-    ) {
-        // Clearance always seems to be 0.2 for these entity-collision particles
-        TransientPartIdentifier colliding =
-            getMultipartColliding(state, world, pos, ironGolem.getBoundingBox(), 0.2);
-        if (colliding != null) {
-            return colliding.part.spawnIronGolemParticle(ironGolem, entityRandom);
         }
 
         // You pretty much always want to return true here, regardless of whether particles were actually spawned,

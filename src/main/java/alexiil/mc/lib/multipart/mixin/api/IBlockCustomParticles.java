@@ -29,8 +29,5 @@ public interface IBlockCustomParticles {
     @Environment(EnvType.CLIENT)
     boolean spawnSprintingParticles(World world, BlockPos pos, BlockState state, Entity sprintingEntity, Random entityRandom);
 
-    @Environment(EnvType.CLIENT)
-    boolean spawnIronGolemParticles(World world, BlockPos pos, BlockState state, IronGolemEntity ironGolem, Random entityRandom);
-
     boolean spawnFallParticles(ServerWorld world, BlockPos pos, BlockState state, LivingEntity fallenEntity, Random entityRandom);
 }
