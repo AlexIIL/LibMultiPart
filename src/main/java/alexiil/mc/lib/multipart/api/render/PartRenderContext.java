@@ -53,8 +53,14 @@ public interface PartRenderContext extends RenderContext {
     }
 
     @Override
+    @Deprecated
     default Consumer<BakedModel> fallbackConsumer() {
         return getRealRenderContext().fallbackConsumer();
+    }
+
+    @Override
+    default BakedModelConsumer bakedModelConsumer() {
+        return getRealRenderContext().bakedModelConsumer();
     }
 
     @Override
