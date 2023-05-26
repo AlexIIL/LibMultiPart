@@ -1,3 +1,4 @@
 Changes:
 
 * Updated to Minecraft 1.20
+* Removed iron-golem walking particles for parts, as Mojang just uses regular sprinting particles for iron golems now.
