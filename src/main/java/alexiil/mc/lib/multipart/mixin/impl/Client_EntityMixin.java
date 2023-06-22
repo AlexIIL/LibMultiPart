@@ -26,7 +26,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class Client_EntityMixin {
 
     @Shadow
-    public World world;
+    private World world;
 
     @Shadow
     public abstract double getX();
