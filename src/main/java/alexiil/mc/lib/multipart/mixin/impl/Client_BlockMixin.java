@@ -42,9 +42,13 @@ public class Client_BlockMixin {
             (block instanceof IBlockDynamicCull && ((IBlockDynamicCull) block).hasDynamicCull(state))
                 || (oBlock instanceof IBlockDynamicCull && ((IBlockDynamicCull) oBlock).hasDynamicCull(oState))
         ) {
-            VoxelShape voxelShape = state.getCullingFace(view, pos, facing);
-            VoxelShape voxelShape2 = oState.getCullingFace(view, offset, facing.getOpposite());
-            ci.setReturnValue(VoxelShapes.matchesAnywhere(voxelShape, voxelShape2, BooleanBiFunction.ONLY_FIRST));
+            if (oState.isOpaque()) {
+                VoxelShape voxelShape = state.getCullingFace(view, pos, facing);
+                VoxelShape voxelShape2 = oState.getCullingFace(view, offset, facing.getOpposite());
+                ci.setReturnValue(VoxelShapes.matchesAnywhere(voxelShape, voxelShape2, BooleanBiFunction.ONLY_FIRST));
+            } else {
+                ci.setReturnValue(true);
+            }
         }
     }
 }
