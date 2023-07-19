@@ -1,0 +1,3 @@
+Changes:
+
+* Added "AbstractPart.preConvertNativeMultipart", which is called just before a "NativeMultipart" gets replaced.
