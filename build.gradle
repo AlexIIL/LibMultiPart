@@ -123,8 +123,18 @@ java.withSourcesJar()
 
 publishing {
     repositories {
-        maven {
-            url System.getenv("MAVEN_DIR") ?: "$projectDir/build/maven"
+        if (System.getenv("UPLOAD_MAVEN_URL") != null) {
+            maven {
+                url System.getenv("UPLOAD_MAVEN_URL");
+                credentials {
+                    username System.getenv("UPLOAD_USERNAME");
+                    password System.getenv("UPLOAD_PASSWORD");
+                }
+            }
+        } else {
+            maven {
+                url System.getenv("MAVEN_DIR") ?: "$projectDir/build/maven"
+            }
         }
     }
 }
