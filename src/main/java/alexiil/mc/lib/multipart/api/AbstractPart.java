@@ -178,6 +178,13 @@ public abstract class AbstractPart {
         container.recalculateShapeSynced();
     }
 
+    /** Called when a {@link NativeMultipart} {@link Block} is about to be converted to this {@link AbstractPart}. This
+     * method is invoked before any changes to the world are made, so you can get the current {@link NativeMultipart}
+     * {@link Block} (and {@link BlockEntity}, if applicable) from the world. */
+    public void preConvertNativeMultipart() {
+        // Nothing to do by default
+    }
+
     /** Called whenever this part was added to the {@link MultipartContainer}, either in
      * {@link BlockEntity#cancelRemoval()} or when it is manually added by an item.
      * <p>

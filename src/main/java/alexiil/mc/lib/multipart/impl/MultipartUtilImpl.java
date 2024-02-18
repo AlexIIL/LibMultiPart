@@ -210,6 +210,11 @@ public final class MultipartUtilImpl {
                 // Cleanup the temporary additions
                 container.parts.clear();
 
+                // Inform the new parts that they are about to replace the existing NativeMultipart
+                for (PartHolder holder : existingHolders) {
+                    holder.part.preConvertNativeMultipart();
+                }
+
                 // Get the old block state for update notifications
                 BlockState oldState = world.getBlockState(pos);
 
