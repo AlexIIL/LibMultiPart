@@ -130,7 +130,7 @@ import java.net.http.HttpResponse;
 if (System.getenv("UPLOAD_MAVEN_URL") != null) {
     task packageJavadoc(type: Zip, dependsOn: javadoc) {
         from javadoc.destinationDir
-        archiveFileName = "libnetworkstack-javadoc-" + version + ".zip"
+        archiveFileName = "libmultipart-javadoc-" + version + ".zip"
     }
 
     task uploadJavadoc(dependsOn: packageJavadoc) {
